@@ -1,14 +1,16 @@
 import Link from "next/link";
 import { Suspense } from "react";
 import { NoClub } from "@/app/clubs/no-club";
+import { ClubSelect } from "@/app/ui/club-select";
 import { RequireDatabase } from "@/app/ui/database-missing";
 import { Loading } from "@/app/ui/loading";
 import { formatVnd, monthEnd, monthStart } from "@/lib/billing";
-import { getPriceSettings, loadClub, todayInVietnam } from "@/lib/club";
+import { getPriceSettings, listClubs, loadClub, todayInVietnam } from "@/lib/club";
 import { addDays, formatDayLabel, formatMonthLabel, formatTime } from "@/lib/dates";
 import { loadDebtors } from "@/lib/debts";
 import { ensureFeeSlips, waiveFullMonthAbsences } from "@/lib/fees";
 import { listTransactions, summarize } from "@/lib/fund";
+import { listClubCourts } from "@/lib/courts";
 import { ensureSessions, listSessions } from "@/lib/schedule";
 
 function Card({ children, className = "" }: { children: React.ReactNode; className?: string }) {
@@ -16,7 +18,7 @@ function Card({ children, className = "" }: { children: React.ReactNode; classNa
 }
 
 async function Dashboard() {
-  const { club } = await loadClub();
+  const { userId, club } = await loadClub();
   if (!club) return <NoClub />;
 
   const today = todayInVietnam();
@@ -32,10 +34,12 @@ async function Dashboard() {
     waiveFullMonthAbsences(club.id, today),
   ]);
 
-  const [sessions, transactions, debtors] = await Promise.all([
+  const [sessions, transactions, debtors, clubs, courts] = await Promise.all([
     listSessions(club.id, today, addDays(today, 6)),
     listTransactions(club.id),
     loadDebtors(club.id),
+    listClubs(userId),
+    listClubCourts(club.id),
   ]);
   // DB-2: money collected from members this month, and what is still owed for this month.
   const collected = transactions
@@ -58,7 +62,8 @@ async function Dashboard() {
         </span>
         <div className="min-w-0 flex-1">
           <p className="text-xs text-muted">{formatDayLabel(today)}</p>
-          <h1 className="truncate text-xl font-bold tracking-tight">{club.name}</h1>
+          <h1 className="sr-only">{club.name}</h1>
+          <ClubSelect clubs={clubs.map((c) => ({ id: c.id, name: c.name }))} currentId={club.id} variant="title" />
         </div>
       </div>
 
@@ -93,7 +98,7 @@ async function Dashboard() {
             <p className="mt-1">
               Tạo{" "}
               <Link href="/schedule/weekly" className="font-semibold underline">
-                lịch tuần
+                lịch cố định
               </Link>{" "}
               để app tự tạo buổi.
             </p>
@@ -138,6 +143,29 @@ async function Dashboard() {
             );
           })}
         </ul>
+      )}
+
+      {courts.length > 0 && (
+        <>
+          <div className="mx-5 mt-2">
+            <h2 className="section-title">Sân của CLB</h2>
+          </div>
+          <ul className="mx-5 flex flex-col gap-2">
+            {courts.map((c) => (
+              <li key={c.id}>
+                <Link href={`/settings/courts/${c.id}`} className="card flex items-center gap-3 px-4 py-3">
+                  <span className="min-w-0 flex-1">
+                    <span className="block font-bold tracking-tight">{c.name}</span>
+                    <span className="block truncate text-xs text-muted">{c.address ?? "Chưa có địa chỉ"}</span>
+                  </span>
+                  <span className="shrink-0 text-sm font-bold">
+                    {c.price > 0 ? `${formatVnd(c.price)}/giờ` : "Chưa có giá"}
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </>
       )}
 
       <div className="mx-5 mt-2">

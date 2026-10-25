@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Suspense } from "react";
 import { NoClub } from "@/app/clubs/no-club";
+import { ClubPicker } from "@/app/ui/club-picker";
 import { RequireDatabase } from "@/app/ui/database-missing";
 import { Loading } from "@/app/ui/loading";
 import { PageHeader } from "@/app/ui/page-header";
@@ -183,7 +184,14 @@ async function FundContent({ searchParams }: { searchParams: PageProps<"/fund">[
 export default function FundPage({ searchParams }: PageProps<"/fund">) {
   return (
     <main className="flex flex-1 flex-col">
-      <PageHeader title="Quỹ" />
+      <PageHeader
+        title="Quỹ"
+        right={
+          <Suspense>
+            <ClubPicker />
+          </Suspense>
+        }
+      />
       <Suspense fallback={<Loading />}>
         <RequireDatabase>
           <FundContent searchParams={searchParams} />

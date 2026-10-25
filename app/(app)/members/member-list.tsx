@@ -40,7 +40,7 @@ export function MemberList({
           placeholder="Tìm theo tên hoặc số điện thoại"
           className="h-12 rounded-full border border-line-strong bg-surface px-5 text-base outline-none focus:border-2 focus:border-brand-600"
         />
-        <nav className="flex gap-2 overflow-x-auto">
+        <nav className="no-scrollbar -mx-5 flex gap-2 overflow-x-auto px-5">
           {MEMBER_FILTERS.map((f) => (
             <button
               key={f.key}

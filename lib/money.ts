@@ -15,3 +15,13 @@ export function parseVnd(input: string): number | null {
 export function formatVndInput(amount: number): string {
   return formatVnd(amount).replace("đ", "");
 }
+
+/**
+ * What a money field shows while typing: digits only, grouped as VND ("300000" → "300.000").
+ * A trailing "k" means thousands ("45k" → "45.000"). Empty stays empty.
+ */
+export function formatVndTyping(input: string): string {
+  const thousands = /\d\s*k$/i.test(input.trim());
+  const digits = (input.replace(/\D/g, "") + (thousands ? "000" : "")).replace(/^0+(?=\d)/, "");
+  return digits.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+}

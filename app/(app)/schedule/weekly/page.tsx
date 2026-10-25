@@ -18,7 +18,7 @@ async function WeeklyContent() {
     <>
       <p className="px-5 pt-1 text-sm text-muted">App tự tạo buổi cho 4 tuần tới theo các khung giờ này.</p>
       {schedules.length === 0 ? (
-        <p className="px-5 py-10 text-center text-sm text-muted">Chưa có lịch tuần. Bấm + để thêm.</p>
+        <p className="px-5 py-10 text-center text-sm text-muted">Chưa có lịch cố định. Bấm + để thêm.</p>
       ) : (
         <ul className="flex flex-col gap-2 px-5 py-4">
           {schedules.map((s) => (
@@ -57,7 +57,7 @@ async function WeeklyContent() {
 export default function WeeklySchedulePage() {
   return (
     <main className="flex flex-1 flex-col">
-      <PageHeader title="Lịch tuần" backHref="/schedule" />
+      <PageHeader title="Lịch cố định" backHref="/schedule" />
       <Suspense fallback={<Loading />}>
         <RequireDatabase>
           <WeeklyContent />

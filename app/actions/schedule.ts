@@ -121,7 +121,7 @@ export async function updateSession(
     .eq("id", sessionId)
     .eq("club_id", club.id);
   // The only unique rule on sessions: one session per weekly slot per day.
-  if (error?.code === "23505") return { error: "Lịch tuần này đã có buổi vào ngày đó.", values };
+  if (error?.code === "23505") return { error: "Lịch cố định này đã có buổi vào ngày đó.", values };
   if (error) return { error: SAVE_FAILED, values };
   refreshSchedulePages();
   redirect(`/schedule?date=${parsed.data.session_date}`);

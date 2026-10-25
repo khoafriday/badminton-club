@@ -5,6 +5,7 @@ import { Fab } from "@/app/ui/fab";
 import { Loading } from "@/app/ui/loading";
 import { PageHeader } from "@/app/ui/page-header";
 import { NoClub } from "@/app/clubs/no-club";
+import { ClubPicker } from "@/app/ui/club-picker";
 import { loadClub } from "@/lib/club";
 import { parseMemberFilter, type MemberRow } from "@/lib/member-filter";
 import { db } from "@/lib/supabase";
@@ -24,8 +25,7 @@ async function Members({ searchParams }: { searchParams: PageProps<"/members">["
 
   return (
     <>
-      <div className="flex items-center justify-between px-5 pb-3">
-        <p className="text-sm text-muted">{club.name}</p>
+      <div className="flex items-center justify-end px-5 pb-3">
         <Link href="/fees" className="rounded-full bg-brand-50 px-3 py-2 text-xs font-bold text-brand-700">
           Phí tháng ›
         </Link>
@@ -43,7 +43,14 @@ async function Members({ searchParams }: { searchParams: PageProps<"/members">["
 export default function MembersPage({ searchParams }: PageProps<"/members">) {
   return (
     <main className="flex flex-1 flex-col">
-      <PageHeader title="Thành viên" />
+      <PageHeader
+        title="Thành viên"
+        right={
+          <Suspense>
+            <ClubPicker />
+          </Suspense>
+        }
+      />
       <Suspense fallback={<Loading />}>
         <RequireDatabase>
           <Members searchParams={searchParams} />

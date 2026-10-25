@@ -22,6 +22,17 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   );
 }
 
+/** Separates the current club's settings (above) from the ones shared by every club (below). */
+function SettingsDivider() {
+  return (
+    <div className="flex items-center gap-3 px-5 pt-4 pb-2">
+      <hr className="flex-1 border-line-strong" />
+      <span className="text-[11px] font-bold tracking-wider text-faint uppercase">Dùng chung mọi CLB</span>
+      <hr className="flex-1 border-line-strong" />
+    </div>
+  );
+}
+
 async function SettingsContent() {
   const { userId, club } = await loadClub();
   if (!club) return <NoClub />;
@@ -29,7 +40,40 @@ async function SettingsContent() {
 
   return (
     <>
-      <Section title="Giá">
+      <Section title="Chọn CLB">
+        <ul className="flex flex-col gap-2">
+          {clubs.map((c) => (
+            <li key={c.id}>
+              {c.id === club.id ? (
+                <div className="flex h-12 items-center justify-between rounded-2xl border-2 border-brand-600 px-4">
+                  <span className="font-semibold">{c.name}</span>
+                  <span className="rounded-full bg-brand-50 px-2.5 py-1 text-xs font-bold text-brand-700">Đang dùng</span>
+                </div>
+              ) : (
+                <form action={switchClub.bind(null, c.id)}>
+                  <button className="flex h-12 w-full items-center justify-between rounded-2xl bg-surface-2 px-4 text-left">
+                    <span className="font-semibold">{c.name}</span>
+                    <span className="text-xs text-muted">Chuyển sang ›</span>
+                  </button>
+                </form>
+              )}
+            </li>
+          ))}
+        </ul>
+        <Link
+          href="/settings/clubs/new"
+          className="flex h-11 items-center justify-center rounded-full border border-line-strong bg-surface text-sm font-bold text-ink"
+        >
+          + Tạo CLB mới
+        </Link>
+      </Section>
+
+      <Section title="Thông tin CLB">
+        <ClubInfoForm key={club.id} courts={courts} initial={{ name: club.name, court_id: club.court_id ?? "" }} />
+        <ArchiveClubButton clubName={club.name} />
+      </Section>
+
+      <Section title="Giá tham gia">
         {/* key: a club switch must reset the form, not keep the last club's values. */}
         <PricesForm
           key={club.id}
@@ -42,12 +86,8 @@ async function SettingsContent() {
         />
       </Section>
 
-      <Section title="Thông tin CLB">
-        <ClubInfoForm key={club.id} courts={courts} initial={{ name: club.name, court_id: club.court_id ?? "" }} />
-      </Section>
-
+      <SettingsDivider />
       <Section title="Sân cầu">
-        <p className="text-xs text-muted">Dùng chung cho mọi CLB của bạn.</p>
         {courts.length > 0 && (
           <ul className="flex flex-col gap-2">
             {courts.map((c) => (
@@ -79,35 +119,6 @@ async function SettingsContent() {
         >
           + Thêm sân
         </Link>
-      </Section>
-
-      <Section title="Các CLB của bạn">
-        <ul className="flex flex-col gap-2">
-          {clubs.map((c) => (
-            <li key={c.id}>
-              {c.id === club.id ? (
-                <div className="flex h-12 items-center justify-between rounded-2xl border-2 border-brand-600 px-4">
-                  <span className="font-semibold">{c.name}</span>
-                  <span className="rounded-full bg-brand-50 px-2.5 py-1 text-xs font-bold text-brand-700">Đang dùng</span>
-                </div>
-              ) : (
-                <form action={switchClub.bind(null, c.id)}>
-                  <button className="flex h-12 w-full items-center justify-between rounded-2xl bg-surface-2 px-4 text-left">
-                    <span className="font-semibold">{c.name}</span>
-                    <span className="text-xs text-muted">Chuyển sang ›</span>
-                  </button>
-                </form>
-              )}
-            </li>
-          ))}
-        </ul>
-        <Link
-          href="/settings/clubs/new"
-          className="flex h-11 items-center justify-center rounded-full border border-line-strong bg-surface text-sm font-bold text-ink"
-        >
-          + Tạo CLB mới
-        </Link>
-        <ArchiveClubButton clubName={club.name} />
       </Section>
     </>
   );
