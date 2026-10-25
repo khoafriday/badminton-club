@@ -1,36 +1,42 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Badminton Club
 
-## Getting Started
+App web quản lý CLB cầu lông: thành viên, lịch đánh, điểm danh, thu tiền và quỹ. Thiết kế cho điện thoại trước, host trên Vercel, dữ liệu trên Supabase.
 
-First, run the development server:
+## Trạng thái
+
+Bản mẫu Bước 4. Đã có:
+
+- `lib/billing.ts`: toàn bộ quy tắc tính tiền (giá vãng lai Nam/Nữ, phí tháng, vào giữa tháng, nghỉ cả tháng, tổng tiền buổi, quỹ tồn). Có test trong `lib/billing.test.ts`.
+- `supabase/migrations/0001_init.sql`: 10 bảng và 2 hàm ghi sổ thu chi.
+- Đăng nhập 1 tài khoản, ID và mật khẩu lấy từ biến môi trường.
+- Màn Điểm danh buổi tại `/sessions/demo`, chạy bằng dữ liệu mẫu (chưa nối database).
+
+## Chạy trên máy
+
+Cần Node.js 20 trở lên.
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
+cp .env.example .env.local   # rồi điền ADMIN_ID, ADMIN_PASSWORD, SESSION_SECRET
+npm run dev                  # mở http://localhost:3000
+npm test                     # chạy test phần tính tiền
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Đưa lên Vercel
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+1. Vercel, Add New, Project, chọn repo này.
+2. Trước khi bấm Deploy, mở Environment Variables và thêm:
+   - `ADMIN_ID`: ID đăng nhập
+   - `ADMIN_PASSWORD`: mật khẩu
+   - `SESSION_SECRET`: chuỗi ngẫu nhiên từ 32 ký tự trở lên
+3. Bấm Deploy.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+ID và mật khẩu không nằm trong code. Muốn đổi thì sửa biến môi trường trên Vercel rồi Redeploy.
 
-## Learn More
+## Tạo database trên Supabase
 
-To learn more about Next.js, take a look at the following resources:
+1. Tạo project mới trên supabase.com.
+2. Mở SQL Editor, dán nội dung `supabase/migrations/0001_init.sql`, bấm Run.
+3. Lấy Project URL và service role key (Project Settings, API), thêm vào Vercel với tên `SUPABASE_URL` và `SUPABASE_SERVICE_ROLE_KEY`.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Service role key chỉ dùng ở server. Không đưa key này vào code phía trình duyệt.
