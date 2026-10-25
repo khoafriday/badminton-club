@@ -21,11 +21,16 @@ async function Dashboard() {
 
   const today = todayInVietnam();
   const month = { from: monthStart(today), to: monthEnd(today) };
-  const settings = await getPriceSettings(club.id);
   // The jobs that keep data current run when the app is opened (decided in Bước 3, no cron).
-  const { scheduleCount } = await ensureSessions(club.id, today);
-  await ensureFeeSlips(club.id, today, today, settings);
-  await waiveFullMonthAbsences(club.id, today);
+  // They touch different rows, so they run together.
+  const [settings, { scheduleCount }] = await Promise.all([
+    getPriceSettings(club.id).then(async (s) => {
+      await ensureFeeSlips(club.id, today, today, s);
+      return s;
+    }),
+    ensureSessions(club.id, today),
+    waiveFullMonthAbsences(club.id, today),
+  ]);
 
   const [sessions, transactions, debtors] = await Promise.all([
     listSessions(club.id, today, addDays(today, 6)),

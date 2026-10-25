@@ -11,6 +11,7 @@ import { DebtList } from "./debt-list";
 async function DebtsContent() {
   const { club } = await loadClub();
   if (!club) return <NoClub />;
+  // Waiving has to finish first: a slip that becomes Miễn is no longer a debt.
   await waiveFullMonthAbsences(club.id, todayInVietnam());
   return <DebtList debtors={await loadDebtors(club.id)} />;
 }

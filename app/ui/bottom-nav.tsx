@@ -1,7 +1,8 @@
 "use client";
 
-import Link from "next/link";
+import Link, { useLinkStatus } from "next/link";
 import { usePathname } from "next/navigation";
+import { Spinner } from "./loading";
 
 const TABS = [
   { href: "/", label: "Tổng quan", icon: "🏠" },
@@ -18,6 +19,17 @@ function isActive(pathname: string, href: string) {
   // Monthly fees are reached from the Members screen.
   if (href === "/members") return pathname.startsWith("/members") || pathname.startsWith("/fees");
   return pathname.startsWith(href);
+}
+
+/** The tab's icon, swapped for a spinner while the tapped screen is still on its way. */
+function TabIcon({ icon, active }: { icon: string; active: boolean }) {
+  const { pending } = useLinkStatus();
+  if (pending) return <Spinner className="size-[18px]" />;
+  return (
+    <span className={`text-lg leading-none ${active ? "" : "opacity-70 brightness-150 grayscale"}`} aria-hidden>
+      {icon}
+    </span>
+  );
 }
 
 /** Reads the URL, so it must sit inside <Suspense>; the fallback is the same menu with no tab lit. */
@@ -39,9 +51,7 @@ export function NavBar({ pathname }: { pathname: string | null }) {
                 active ? "bg-brand-600 text-white" : "text-nav-text"
               }`}
             >
-              <span className={`text-lg leading-none ${active ? "" : "opacity-70 brightness-150 grayscale"}`} aria-hidden>
-                {tab.icon}
-              </span>
+              <TabIcon icon={tab.icon} active={active} />
               {tab.label}
             </Link>
           );
