@@ -14,14 +14,11 @@ export async function createMember(_prev: MemberFormState, formData: FormData): 
   const parsed = parseMember(values);
   if ("error" in parsed) return { error: parsed.error, values };
 
-  const { data, error } = await db()
-    .from("members")
-    .insert({ ...parsed.data, club_id: club.id })
-    .select("id")
-    .single();
+  const { error } = await db().from("members").insert({ ...parsed.data, club_id: club.id });
   if (error) return { error: "Không lưu được. Thử lại sau.", values };
+  // Back to the list: the detail screen looks like the add form, so landing there read as "not saved".
   revalidatePath("/members");
-  redirect(`/members/${data.id}`);
+  redirect("/members");
 }
 
 export async function updateMember(
