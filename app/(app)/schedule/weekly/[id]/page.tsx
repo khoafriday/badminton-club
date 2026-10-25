@@ -21,7 +21,7 @@ async function EditSchedule({ params }: { params: Promise<{ id: string }> }) {
       <ScheduleForm
         action={updateSchedule.bind(null, schedule.id)}
         submitLabel="Lưu"
-        venuePlaceholder={club.venue_name ?? ""}
+        venuePlaceholder={club.court_name ?? ""}
         initialValues={{
           weekday: String(schedule.weekday),
           start_time: formatTime(schedule.start_time),

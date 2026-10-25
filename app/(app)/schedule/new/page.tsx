@@ -17,7 +17,7 @@ async function NewSession({ searchParams }: { searchParams: PageProps<"/schedule
       <SessionForm
         action={createSession}
         submitLabel="Thêm buổi"
-        venuePlaceholder={club.venue_name ?? ""}
+        venuePlaceholder={club.court_name ?? ""}
         initialValues={{ session_date: date, start_time: "19:00", end_time: "21:00", venue_name: "", note: "" }}
       />
     </div>

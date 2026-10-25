@@ -30,7 +30,7 @@ async function WeeklyContent() {
                 <span className={`flex-1 ${s.is_active ? "" : "text-zinc-400"}`}>
                   <span className="font-semibold">{WEEKDAY_LABEL[s.weekday]}</span>
                   <span className="block text-sm">
-                    {formatTime(s.start_time)} đến {formatTime(s.end_time)} · {s.venue_name ?? club.venue_name ?? "Chưa có sân"}
+                    {formatTime(s.start_time)} đến {formatTime(s.end_time)} · {s.venue_name ?? club.court_name ?? "Chưa có sân"}
                   </span>
                 </span>
                 {!s.is_active && (

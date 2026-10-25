@@ -12,7 +12,7 @@ Bản mẫu. Đã có:
 - Nối Supabase ở server (`lib/supabase.ts`). Lần đầu mở app sẽ hiện form tạo CLB.
 - Màn Thành viên `/members`: danh sách, tìm theo tên hoặc số điện thoại, lọc Cố định / Vãng lai / Nghỉ, thêm, sửa, đổi loại, đổi Đang chơi / Nghỉ.
 - Menu dưới 5 mục: Tổng quan, Lịch, Thành viên, Quỹ, Cài đặt (Tổng quan và Quỹ đang làm).
-- Cài đặt: giá phí tháng và giá vãng lai Nam/Nữ, thông tin CLB và sân, nhiều CLB (tạo, chuyển, xóa), đăng xuất.
+- Cài đặt: giá phí tháng và giá vãng lai Nam/Nữ, thông tin CLB, danh sách sân cầu (tên, địa chỉ, giá thuê mỗi giờ, dùng chung cho mọi CLB; mỗi CLB chọn 1 sân), nhiều CLB (tạo, chuyển, xóa), đăng xuất.
 - Lịch: xem theo tuần hoặc tháng, lịch tuần (app tự tạo buổi cho 4 tuần tới), thêm buổi lẻ, sửa, hủy, khôi phục, xóa buổi chưa có dữ liệu.
 - Màn Điểm danh buổi tại `/sessions/demo`, vẫn chạy bằng dữ liệu mẫu.
 

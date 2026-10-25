@@ -24,7 +24,7 @@ async function EditSession({ params }: { params: Promise<{ id: string }> }) {
       <SessionForm
         action={updateSession.bind(null, session.id)}
         submitLabel="Lưu"
-        venuePlaceholder={club.venue_name ?? ""}
+        venuePlaceholder={club.court_name ?? ""}
         initialValues={{
           session_date: session.session_date,
           start_time: formatTime(session.start_time),

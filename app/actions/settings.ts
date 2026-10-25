@@ -4,38 +4,38 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { requireClub, requireUser } from "@/lib/club";
+import { getCourt, setClubCourt } from "@/lib/courts";
 import { parseVnd } from "@/lib/money";
 import { db } from "@/lib/supabase";
 
-const optionalText = z
-  .string()
-  .trim()
-  .transform((v) => v || null);
-
 const clubInfoSchema = z.object({
   name: z.string().trim().min(1, "Nhập tên CLB."),
-  venue_name: optionalText,
-  venue_address: optionalText,
+  court_id: z.string().transform((v) => v || null),
 });
 
-type ClubInfoValues = { name: string; venue_name: string; venue_address: string };
+type ClubInfoValues = { name: string; court_id: string };
 export type ClubInfoState = { error: string | null; saved: boolean; values: ClubInfoValues };
 
 export async function updateClubInfo(_prev: ClubInfoState, formData: FormData): Promise<ClubInfoState> {
-  const { club } = await requireClub();
+  const { userId, club } = await requireClub();
   const values: ClubInfoValues = {
     name: String(formData.get("name") ?? ""),
-    venue_name: String(formData.get("venue_name") ?? ""),
-    venue_address: String(formData.get("venue_address") ?? ""),
+    court_id: String(formData.get("court_id") ?? ""),
   };
   const parsed = clubInfoSchema.safeParse(values);
   if (!parsed.success) return { error: parsed.error.issues[0].message, saved: false, values };
+  const { name, court_id } = parsed.data;
+  if (court_id && !(await getCourt(userId, court_id))) {
+    return { error: "Sân này không còn. Chọn sân khác.", saved: false, values };
+  }
 
-  const { error } = await db()
-    .from("clubs")
-    .update({ ...parsed.data, updated_at: new Date().toISOString() })
-    .eq("id", club.id);
+  const { error } = await db().from("clubs").update({ name, updated_at: new Date().toISOString() }).eq("id", club.id);
   if (error) return { error: "Không lưu được. Thử lại sau.", saved: false, values };
+  try {
+    await setClubCourt(club.id, court_id);
+  } catch {
+    return { error: "Không lưu được sân. Thử lại sau.", saved: false, values };
+  }
   revalidatePath("/", "layout");
   return { error: null, saved: true, values };
 }

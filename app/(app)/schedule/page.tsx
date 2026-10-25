@@ -122,7 +122,7 @@ async function ScheduleContent({ searchParams }: { searchParams: PageProps<"/sch
                           {formatTime(s.start_time)} đến {formatTime(s.end_time)}
                         </span>
                         <span className="block text-xs text-zinc-500">
-                          {s.venue_name ?? club.venue_name ?? "Chưa có sân"}
+                          {s.venue_name ?? club.court_name ?? "Chưa có sân"}
                           {s.schedule_id ? "" : " · Buổi lẻ"}
                         </span>
                       </span>

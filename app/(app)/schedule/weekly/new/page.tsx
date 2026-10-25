@@ -15,7 +15,7 @@ async function NewSchedule() {
       <ScheduleForm
         action={createSchedule}
         submitLabel="Thêm khung giờ"
-        venuePlaceholder={club.venue_name ?? ""}
+        venuePlaceholder={club.court_name ?? ""}
         initialValues={{ weekday: "", start_time: "19:00", end_time: "21:00", venue_name: "" }}
       />
     </div>

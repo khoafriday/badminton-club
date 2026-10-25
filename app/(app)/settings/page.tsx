@@ -8,6 +8,8 @@ import { Loading } from "@/app/ui/loading";
 import { PageHeader } from "@/app/ui/page-header";
 import { formatVnd } from "@/lib/billing";
 import { getClubDetails, getPriceSettings, listClubs, loadClub } from "@/lib/club";
+import { listCourts } from "@/lib/courts";
+import { formatVndInput } from "@/lib/money";
 import { ArchiveClubButton, ClubInfoForm, PricesForm } from "./settings-forms";
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
@@ -19,16 +21,14 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   );
 }
 
-// Prices show with dot separators so 300.000 reads at a glance; parseVnd reads them back.
-const asInput = (amount: number) => formatVnd(amount).replace("đ", "");
-
 async function SettingsContent() {
   const { userId, club } = await loadClub();
   if (!club) return <NoClub />;
-  const [details, prices, clubs] = await Promise.all([
+  const [details, prices, clubs, courts] = await Promise.all([
     getClubDetails(club.id),
     getPriceSettings(club.id),
     listClubs(userId),
+    listCourts(userId),
   ]);
 
   return (
@@ -38,10 +38,10 @@ async function SettingsContent() {
         <PricesForm
           key={club.id}
           initial={{
-            monthly_fee_male: asInput(prices.monthlyFeeMale),
-            monthly_fee_female: asInput(prices.monthlyFeeFemale),
-            guest_price_male: asInput(prices.guestPriceMale),
-            guest_price_female: asInput(prices.guestPriceFemale),
+            monthly_fee_male: formatVndInput(prices.monthlyFeeMale),
+            monthly_fee_female: formatVndInput(prices.monthlyFeeFemale),
+            guest_price_male: formatVndInput(prices.guestPriceMale),
+            guest_price_female: formatVndInput(prices.guestPriceFemale),
           }}
         />
       </Section>
@@ -49,12 +49,44 @@ async function SettingsContent() {
       <Section title="Thông tin CLB">
         <ClubInfoForm
           key={club.id}
-          initial={{
-            name: details.name,
-            venue_name: details.venue_name ?? "",
-            venue_address: details.venue_address ?? "",
-          }}
+          courts={courts}
+          initial={{ name: details.name, court_id: details.court_id ?? "" }}
         />
+      </Section>
+
+      <Section title="Sân cầu">
+        <p className="-mt-2 text-xs text-zinc-500">Dùng chung cho mọi CLB của bạn.</p>
+        {courts.length > 0 && (
+          <ul className="flex flex-col gap-2">
+            {courts.map((c) => (
+              <li key={c.id}>
+                <Link
+                  href={`/settings/courts/${c.id}`}
+                  className="flex items-center justify-between gap-3 rounded-lg border border-zinc-300 px-3 py-2"
+                >
+                  <span className="min-w-0">
+                    <span className="block font-medium">
+                      {c.name}
+                      {c.id === details.court_id && (
+                        <span className="ml-2 text-xs font-semibold text-brand-700">CLB này</span>
+                      )}
+                    </span>
+                    <span className="block truncate text-xs text-zinc-500">{c.address ?? "Chưa có địa chỉ"}</span>
+                  </span>
+                  <span className="shrink-0 text-sm text-zinc-700">
+                    {c.price > 0 ? `${formatVnd(c.price)}/giờ` : "Chưa có giá"}
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )}
+        <Link
+          href="/settings/courts/new"
+          className="flex h-11 items-center justify-center rounded-lg border-2 border-brand-600 text-sm font-semibold text-brand-700"
+        >
+          + Thêm sân
+        </Link>
       </Section>
 
       <Section title="Các CLB của bạn">

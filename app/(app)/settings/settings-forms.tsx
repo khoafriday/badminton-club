@@ -8,6 +8,7 @@ import {
   type ClubInfoState,
   type PricesState,
 } from "@/app/actions/settings";
+import { CourtSelect, type CourtOption } from "@/app/ui/court-select";
 import { inputClass, labelClass, primaryButtonClass } from "@/app/ui/form";
 
 function FormStatus({ error, saved }: { error: string | null; saved: boolean }) {
@@ -18,23 +19,17 @@ function FormStatus({ error, saved }: { error: string | null; saved: boolean }) 
   );
 }
 
-export function ClubInfoForm({ initial }: { initial: ClubInfoState["values"] }) {
+export function ClubInfoForm({ initial, courts }: { initial: ClubInfoState["values"]; courts: CourtOption[] }) {
   const [state, formAction, pending] = useActionState(updateClubInfo, { error: null, saved: false, values: initial });
-  const v = state.values;
+  // Server values unless the last save failed: adding the first court picks it for the club from another page.
+  const v = state.error ? state.values : initial;
   return (
     <form key={JSON.stringify(v)} action={formAction} className="flex flex-col gap-3">
       <label className={labelClass}>
         Tên CLB
         <input name="name" defaultValue={v.name} required className={inputClass} />
       </label>
-      <label className={labelClass}>
-        Tên sân
-        <input name="venue_name" defaultValue={v.venue_name} className={inputClass} />
-      </label>
-      <label className={labelClass}>
-        Địa chỉ sân
-        <input name="venue_address" defaultValue={v.venue_address} className={inputClass} />
-      </label>
+      <CourtSelect courts={courts} value={v.court_id} emptyHint="Chưa có sân. Thêm sân ở mục Sân cầu bên dưới." />
       <FormStatus error={state.error} saved={state.saved} />
       <button disabled={pending} className={primaryButtonClass}>
         {pending ? "Đang lưu..." : "Lưu thông tin CLB"}
@@ -43,13 +38,28 @@ export function ClubInfoForm({ initial }: { initial: ClubInfoState["values"] }) 
   );
 }
 
-function PriceInput({ name, label, value }: { name: string; label: string; value: string }) {
+export function PriceInput({
+  name,
+  label,
+  value,
+  unit = "đ",
+}: {
+  name: string;
+  label: string;
+  value: string;
+  unit?: string;
+}) {
   return (
     <label className={labelClass}>
       {label}
       <div className="relative">
-        <input name={name} defaultValue={value} inputMode="numeric" className={`${inputClass} pr-8`} />
-        <span className="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-zinc-400">đ</span>
+        <input
+          name={name}
+          defaultValue={value}
+          inputMode="numeric"
+          className={`${inputClass} ${unit.length > 1 ? "pr-16" : "pr-8"}`}
+        />
+        <span className="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-zinc-400">{unit}</span>
       </div>
     </label>
   );
