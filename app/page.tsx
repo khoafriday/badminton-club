@@ -11,10 +11,16 @@ export default function Home() {
           <button className="text-sm text-zinc-500">Đăng xuất</button>
         </form>
       </header>
-      <p className="text-zinc-600">Bản mẫu Bước 4. Các màn còn lại sẽ làm ở bước sau.</p>
+      <p className="text-zinc-600">Màn Thành viên đã lưu dữ liệu thật. Điểm danh vẫn là dữ liệu mẫu.</p>
+      <Link
+        href="/members"
+        className="flex h-12 items-center justify-center rounded-lg bg-brand-600 font-semibold text-white"
+      >
+        Thành viên
+      </Link>
       <Link
         href="/sessions/demo"
-        className="flex h-12 items-center justify-center rounded-lg bg-brand-600 font-semibold text-white"
+        className="flex h-12 items-center justify-center rounded-lg border border-brand-600 font-semibold text-brand-700"
       >
         Mở màn Điểm danh buổi (dữ liệu mẫu)
       </Link>
