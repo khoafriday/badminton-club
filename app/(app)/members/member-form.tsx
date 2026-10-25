@@ -3,6 +3,7 @@
 import { useActionState, useState } from "react";
 import type { MemberFormState } from "@/app/actions/members";
 import type { MemberFormValues } from "@/lib/members";
+import { Choice } from "@/app/ui/choice";
 import { inputClass, labelClass, primaryButtonClass } from "@/app/ui/form";
 
 type Props = {
@@ -12,28 +13,6 @@ type Props = {
   /** The Đang chơi / Nghỉ choice only makes sense for an existing member. */
   showStatus?: boolean;
 };
-
-function Choice({ name, value, label, checked, onChange }: {
-  name: string;
-  value: string;
-  label: string;
-  checked: boolean;
-  onChange?: (value: string) => void;
-}) {
-  return (
-    <label className="flex h-11 flex-1 cursor-pointer items-center justify-center rounded-lg border border-zinc-300 text-sm font-medium has-checked:border-brand-600 has-checked:bg-brand-50 has-checked:text-brand-700">
-      <input
-        type="radio"
-        name={name}
-        value={value}
-        defaultChecked={checked}
-        onChange={() => onChange?.(value)}
-        className="sr-only"
-      />
-      {label}
-    </label>
-  );
-}
 
 export function MemberForm({ action, initialValues, submitLabel, showStatus }: Props) {
   const [state, formAction, pending] = useActionState(action, { error: null, values: initialValues });

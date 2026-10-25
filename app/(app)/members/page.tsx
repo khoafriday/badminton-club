@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { Suspense } from "react";
 import { RequireDatabase } from "@/app/ui/database-missing";
+import { Fab } from "@/app/ui/fab";
 import { Loading } from "@/app/ui/loading";
+import { PageHeader } from "@/app/ui/page-header";
 import { NoClub } from "@/app/clubs/no-club";
 import { loadClub } from "@/lib/club";
 import { db } from "@/lib/supabase";
@@ -57,7 +59,7 @@ async function MemberList({ searchParams }: { searchParams: PageProps<"/members"
 
   return (
     <>
-      <div className="flex flex-col gap-3 border-b border-zinc-100 px-5 pb-3">
+      <div className="flex flex-col gap-3 border-b border-zinc-100 px-5 py-3">
         <p className="text-sm text-zinc-500">{club.name}</p>
         <form action="/members" className="flex gap-2">
           {filter !== "all" && <input type="hidden" name="filter" value={filter} />}
@@ -112,26 +114,15 @@ async function MemberList({ searchParams }: { searchParams: PageProps<"/members"
         </ul>
       )}
 
-      <Link
-        href="/members/new"
-        aria-label="Thêm thành viên"
-        className="fixed bottom-6 right-[max(1.5rem,calc(50%-14rem+1.5rem))] flex size-14 items-center justify-center rounded-full bg-brand-600 text-3xl text-white shadow-lg active:bg-brand-700"
-      >
-        +
-      </Link>
+      <Fab href="/members/new" label="Thêm thành viên" />
     </>
   );
 }
 
 export default function MembersPage({ searchParams }: PageProps<"/members">) {
   return (
-    <main className="flex flex-1 flex-col pb-24">
-      <header className="flex h-14 items-center justify-between px-5">
-        <h1 className="text-lg font-bold">Thành viên</h1>
-        <Link href="/" className="text-sm text-zinc-500">
-          Trang chủ
-        </Link>
-      </header>
+    <main className="flex flex-1 flex-col pb-20">
+      <PageHeader title="Thành viên" />
       <Suspense fallback={<Loading />}>
         <RequireDatabase>
           <MemberList searchParams={searchParams} />

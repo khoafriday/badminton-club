@@ -1,9 +1,22 @@
 import "server-only";
 import { redirect } from "next/navigation";
+import type { PriceSettings } from "./billing";
 import { currentUser } from "./session";
 import { db } from "./supabase";
 
-export type Club = { id: string; name: string; venue_name: string | null };
+/** `court_name` is the club's court from Settings (SAN-1), null until one is picked. */
+export type Club = { id: string; name: string; court_name: string | null };
+
+// PostgREST returns the court as one object (club_courts.court_id points at one row).
+type ClubRow = { id: string; name: string; club_courts: { court_id: string; courts: { name: string } | null }[] };
+
+// The MVP gives a club one court; when several are allowed, the first one is the default.
+const CLUB_COLUMNS = "id, name, club_courts(court_id, courts(name))";
+const toClub = (row: ClubRow): Club => ({
+  id: row.id,
+  name: row.name,
+  court_name: row.club_courts[0]?.courts?.name ?? null,
+});
 
 export async function requireUser(): Promise<string> {
   const user = await currentUser();
@@ -27,14 +40,7 @@ export async function getCurrentClub(userId: string): Promise<Club | null> {
     .single();
   if (profileError) throw profileError;
 
-  const { data: clubs, error } = await db()
-    .from("clubs")
-    .select("id, name, venue_name")
-    .eq("owner_id", userId)
-    .is("archived_at", null)
-    .order("created_at");
-  if (error) throw error;
-
+  const clubs = await listClubs(userId);
   return clubs.find((c) => c.id === profile.last_club_id) ?? clubs[0] ?? null;
 }
 
@@ -54,4 +60,51 @@ export async function requireClub(): Promise<{ userId: string; club: Club }> {
 /** Today's date (YYYY-MM-DD) in Vietnam, whatever timezone the server runs in. */
 export function todayInVietnam(): string {
   return new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Ho_Chi_Minh" }).format(new Date());
+}
+
+export type ClubDetails = Club & { court_id: string | null };
+
+export async function getClubDetails(clubId: string): Promise<ClubDetails> {
+  const { data, error } = await db()
+    .from("clubs")
+    .select(CLUB_COLUMNS)
+    .eq("id", clubId)
+    .single()
+    .overrideTypes<ClubRow, { merge: false }>();
+  if (error) throw error;
+  return { ...toClub(data), court_id: data.club_courts[0]?.court_id ?? null };
+}
+
+/** All clubs the user owns that are not archived, oldest first. */
+export async function listClubs(userId: string): Promise<Club[]> {
+  const { data, error } = await db()
+    .from("clubs")
+    .select(CLUB_COLUMNS)
+    .eq("owner_id", userId)
+    .is("archived_at", null)
+    .order("created_at")
+    .overrideTypes<ClubRow[], { merge: false }>();
+  if (error) throw error;
+  return data.map(toClub);
+}
+
+/** Club prices (GIA-1, GIA-2, PHI-3). A club created without a settings row gets one with zero prices. */
+export async function getPriceSettings(clubId: string): Promise<PriceSettings> {
+  const { data, error } = await db()
+    .from("club_settings")
+    .select("monthly_fee_male, monthly_fee_female, guest_price_male, guest_price_female")
+    .eq("club_id", clubId)
+    .maybeSingle();
+  if (error) throw error;
+  if (!data) {
+    await db().from("club_settings").upsert({ club_id: clubId }, { onConflict: "club_id", ignoreDuplicates: true });
+    return { monthlyFeeMale: 0, monthlyFeeFemale: 0, guestPriceMale: 0, guestPriceFemale: 0 };
+  }
+  // bigint columns can arrive as strings; prices are whole VND well inside Number range.
+  return {
+    monthlyFeeMale: Number(data.monthly_fee_male),
+    monthlyFeeFemale: Number(data.monthly_fee_female),
+    guestPriceMale: Number(data.guest_price_male),
+    guestPriceFemale: Number(data.guest_price_female),
+  };
 }
