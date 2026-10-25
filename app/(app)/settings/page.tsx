@@ -11,6 +11,7 @@ import { getPriceSettings, listClubs, loadClub } from "@/lib/club";
 import { listCourts } from "@/lib/courts";
 import { formatVndInput } from "@/lib/money";
 import { ArchiveClubButton, ClubInfoForm, PricesForm } from "./settings-forms";
+import { ThemePicker } from "./theme-picker";
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -121,6 +122,10 @@ export default function SettingsPage() {
           <SettingsContent />
         </RequireDatabase>
       </Suspense>
+      <Section title="Giao diện">
+        <ThemePicker />
+        <p className="text-xs text-muted">Theo máy: tự đổi sáng hoặc tối theo cài đặt của điện thoại.</p>
+      </Section>
       <div className="px-5 pt-2 pb-6">
         <form action={logout}>
           <button className="card h-12 w-full text-sm font-bold text-red-600">Đăng xuất</button>
