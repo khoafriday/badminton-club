@@ -11,7 +11,9 @@ Bản mẫu. Đã có:
 - Đăng nhập 1 tài khoản, ID và mật khẩu lấy từ biến môi trường.
 - Nối Supabase ở server (`lib/supabase.ts`). Lần đầu mở app sẽ hiện form tạo CLB.
 - Màn Thành viên `/members`: danh sách, tìm theo tên hoặc số điện thoại, lọc Cố định / Vãng lai / Nghỉ, thêm, sửa, đổi loại, đổi Đang chơi / Nghỉ.
-- Menu dưới 5 mục: Tổng quan, Lịch, Thành viên, Quỹ, Cài đặt (Tổng quan và Quỹ đang làm).
+- Menu dưới 5 mục: Tổng quan, Lịch, Thành viên, Quỹ, Cài đặt.
+- Tổng quan: buổi 7 ngày tới, tiền đã thu và còn nợ trong tháng, quỹ tồn. Người còn nợ `/debts`, bấm Đã nộp ngay tại chỗ.
+- Quỹ: quỹ tồn, tổng thu chi theo tháng, quý, toàn bộ. Ghi, sửa, xóa khoản thu chi tay.
 - Cài đặt: giá phí tháng và giá vãng lai Nam/Nữ, thông tin CLB, danh sách sân cầu (tên, địa chỉ, giá thuê mỗi giờ, dùng chung cho mọi CLB; mỗi CLB chọn 1 sân), nhiều CLB (tạo, chuyển, xóa), đăng xuất.
 - Lịch: xem theo tuần hoặc tháng, lịch tuần (app tự tạo buổi cho 4 tuần tới), thêm buổi lẻ, sửa, hủy, khôi phục, xóa buổi chưa có dữ liệu. Sân của buổi và lịch tuần chọn từ danh sách sân cầu.
 - Điểm danh từng buổi: có mặt, thêm nhanh khách (người cũ hoặc người mới), giá tự điền theo giới tính, sửa giá riêng, Đã nộp ghi vào sổ thu chi.
