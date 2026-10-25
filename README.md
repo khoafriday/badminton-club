@@ -22,7 +22,7 @@ Bản mẫu. Đã có:
 
 ## Chạy trên máy
 
-Cần Node.js 20 trở lên.
+Cần Node.js 24 (xem `.nvmrc`; dùng nvm thì chạy `nvm use`).
 
 ```bash
 npm install
