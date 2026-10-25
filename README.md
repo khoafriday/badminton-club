@@ -45,7 +45,22 @@ ID và mật khẩu không nằm trong code. Muốn đổi thì sửa biến mô
 ## Tạo database trên Supabase
 
 1. Tạo project mới trên supabase.com.
-2. Mở SQL Editor, chạy lần lượt từng file trong `supabase/migrations/` theo thứ tự số (0001, 0002, ...): dán nội dung, bấm Run. Khi có file mới, chỉ chạy file mới.
+2. Mở SQL Editor, chạy lần lượt từng file trong `supabase/migrations/` theo thứ tự số (0001, 0002, ...): dán nội dung, bấm Run. Sau khi cài phần Tự chạy SQL khi merge bên dưới, file mới sẽ tự chạy.
 3. Lấy Project URL và service role key (Project Settings, API), thêm vào Vercel với tên `SUPABASE_URL` và `SUPABASE_SERVICE_ROLE_KEY`.
 
 Service role key chỉ dùng ở server. Không đưa key này vào code phía trình duyệt.
+
+## Tự chạy SQL khi merge
+
+Workflow `.github/workflows/supabase-migrations.yml` chạy các file mới trong `supabase/migrations/` lên Supabase mỗi khi có file mới vào nhánh `main`. File đã chạy thì bỏ qua. Xem kết quả ở tab Actions trên GitHub. Muốn chạy lại bằng tay: Actions, Supabase migrations, Run workflow.
+
+Cài một lần:
+
+1. Tạo access token: Supabase, Account, Access Tokens, Generate new token.
+2. Trên GitHub: repo này, Settings, Secrets and variables, Actions, New repository secret. Thêm 3 secret:
+   - `SUPABASE_ACCESS_TOKEN`: token vừa tạo.
+   - `SUPABASE_DB_PASSWORD`: mật khẩu database của project (đặt khi tạo project; quên thì đặt lại ở Project Settings, Database).
+   - `SUPABASE_PROJECT_ID`: mã project, là phần `xxxx` trong `https://xxxx.supabase.co`.
+3. Chạy `supabase/setup/mark_existing_migrations.sql` một lần trong SQL Editor. File này ghi nhận 0001 đến 0004 đã chạy tay rồi.
+
+Khi viết file migration mới: bản app đang chạy phải vẫn chạy được sau khi file chạy xong (chỉ thêm bảng, thêm cột, không xóa hay đổi tên). SQL chỉ chạy sau khi merge, nên bản Preview của PR có file mới sẽ lỗi cho tới khi merge, trừ khi chạy tay trước trong SQL Editor.
