@@ -64,7 +64,7 @@ export function PriceInput({
           inputMode="numeric"
           className={`${inputClass} ${unit.length > 1 ? "pr-16" : "pr-8"}`}
         />
-        <span className="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-zinc-400">{unit}</span>
+        <span className="pointer-events-none absolute top-1/2 right-4 -translate-y-1/2 text-faint">{unit}</span>
       </div>
     </label>
   );
@@ -75,17 +75,17 @@ export function PricesForm({ initial }: { initial: PricesState["values"] }) {
   const v = state.values;
   return (
     <form key={JSON.stringify(v)} action={formAction} className="flex flex-col gap-3">
-      <p className="text-sm font-semibold">Phí tháng (cố định)</p>
+      <p className="text-sm font-bold">Phí tháng (cố định)</p>
       <div className="grid grid-cols-2 gap-3">
         <PriceInput name="monthly_fee_male" label="Nam" value={v.monthly_fee_male} />
         <PriceInput name="monthly_fee_female" label="Nữ" value={v.monthly_fee_female} />
       </div>
-      <p className="mt-2 text-sm font-semibold">Giá mỗi buổi (vãng lai)</p>
+      <p className="mt-2 text-sm font-bold">Giá mỗi buổi (vãng lai)</p>
       <div className="grid grid-cols-2 gap-3">
         <PriceInput name="guest_price_male" label="Nam" value={v.guest_price_male} />
         <PriceInput name="guest_price_female" label="Nữ" value={v.guest_price_female} />
       </div>
-      <p className="text-xs text-zinc-500">Đổi giá chỉ áp dụng cho buổi và tháng mới. Số tiền đã ghi không đổi.</p>
+      <p className="text-xs text-muted">Đổi giá chỉ áp dụng cho buổi và tháng mới. Số tiền đã ghi không đổi.</p>
       <FormStatus error={state.error} saved={state.saved} />
       <button disabled={pending} className={primaryButtonClass}>
         {pending ? "Đang lưu..." : "Lưu giá"}
@@ -102,7 +102,7 @@ export function ArchiveClubButton({ clubName }: { clubName: string }) {
         if (!confirm(`Xóa CLB "${clubName}"? Dữ liệu tiền vẫn được giữ trong database.`)) e.preventDefault();
       }}
     >
-      <button className="h-11 w-full rounded-lg border border-red-200 text-sm font-semibold text-red-600">
+      <button className="h-11 w-full rounded-full border border-red-200 text-sm font-semibold text-red-600">
         Xóa CLB này
       </button>
     </form>

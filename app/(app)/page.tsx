@@ -12,7 +12,7 @@ import { listTransactions, summarize } from "@/lib/fund";
 import { ensureSessions, listSessions } from "@/lib/schedule";
 
 function Card({ children, className = "" }: { children: React.ReactNode; className?: string }) {
-  return <section className={`mx-5 rounded-xl border border-zinc-200 p-4 ${className}`}>{children}</section>;
+  return <section className={`card mx-5 p-4 ${className}`}>{children}</section>;
 }
 
 async function Dashboard() {
@@ -46,10 +46,22 @@ async function Dashboard() {
   const upcoming = sessions.filter((s) => s.status === "active");
 
   return (
-    <div className="flex flex-col gap-4 py-4">
-      <p className="px-5 text-sm text-zinc-500">
-        {club.name} · {formatDayLabel(today)}
-      </p>
+    <div className="flex flex-col gap-3 pb-4">
+      <div className="flex items-center gap-3 px-5 pt-3 pb-1">
+        <span className="flex size-11 items-center justify-center rounded-full bg-cta text-xl" aria-hidden>
+          🏸
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="text-xs text-muted">{formatDayLabel(today)}</p>
+          <h1 className="truncate text-xl font-bold tracking-tight">{club.name}</h1>
+        </div>
+      </div>
+
+      <Link href="/fund" className="hero mx-5 block p-5">
+        <span className="block text-xs opacity-80">Quỹ hiện tại</span>
+        <span className="mt-1 block text-[34px] leading-tight font-extrabold tracking-tight">{formatVnd(balance)}</span>
+        <span className="mt-1 block text-xs opacity-85">Xem thu chi ›</span>
+      </Link>
 
       {(noPrices || !club.court_name || scheduleCount === 0) && (
         <Card className="border-amber-200 bg-amber-50 text-sm text-amber-900">
@@ -84,72 +96,68 @@ async function Dashboard() {
         </Card>
       )}
 
-      <Card>
-        <div className="flex items-center justify-between">
-          <h2 className="font-bold">Buổi sắp tới</h2>
-          <Link href="/schedule" className="text-sm font-semibold text-brand-700">
-            Lịch ›
-          </Link>
-        </div>
-        {upcoming.length === 0 ? (
-          <p className="mt-2 text-sm text-zinc-500">Không có buổi nào trong 7 ngày tới.</p>
-        ) : (
-          <ul className="mt-2 flex flex-col gap-2">
-            {upcoming.slice(0, 4).map((s) => (
+      <div className="mx-5 mt-2 flex items-center justify-between">
+        <h2 className="section-title">Buổi sắp tới</h2>
+        <Link href="/schedule" className="text-xs font-bold text-brand-700">
+          Xem lịch ›
+        </Link>
+      </div>
+      {upcoming.length === 0 ? (
+        <Card>
+          <p className="text-sm text-muted">Không có buổi nào trong 7 ngày tới.</p>
+        </Card>
+      ) : (
+        <ul className="mx-5 flex flex-col gap-2">
+          {upcoming.slice(0, 4).map((s) => {
+            const isToday = s.session_date === today;
+            return (
               <li key={s.id}>
-                <Link
-                  href={`/sessions/${s.id}`}
-                  className={`flex items-center gap-3 rounded-lg px-3 py-2 ${
-                    s.session_date === today ? "bg-brand-600 text-white" : "bg-zinc-50"
-                  }`}
-                >
-                  <span className="flex-1">
-                    <span className="block text-sm font-semibold">
-                      {s.session_date === today ? "Hôm nay" : formatDayLabel(s.session_date)}
+                <Link href={`/sessions/${s.id}`} className="card flex items-center gap-3 px-4 py-3">
+                  <span className="min-w-0 flex-1">
+                    <span className="block font-bold tracking-tight">
+                      {isToday ? "Hôm nay" : formatDayLabel(s.session_date)}
                     </span>
-                    <span className="block text-xs opacity-80">
+                    <span className="block text-xs text-muted">
                       {formatTime(s.start_time)} đến {formatTime(s.end_time)} · {s.court_name ?? club.court_name ?? ""}
                     </span>
                   </span>
-                  <span className="text-sm font-semibold">Điểm danh ›</span>
+                  <span
+                    className={`shrink-0 rounded-full px-3 py-1 text-xs font-bold ${
+                      isToday ? "bg-brand-600 text-white" : "bg-brand-50 text-brand-700"
+                    }`}
+                  >
+                    Điểm danh ›
+                  </span>
                 </Link>
               </li>
-            ))}
-          </ul>
-        )}
-      </Card>
+            );
+          })}
+        </ul>
+      )}
 
-      <Card>
-        <h2 className="font-bold">{formatMonthLabel(today.slice(0, 7))}</h2>
-        <div className="mt-2 grid grid-cols-2 gap-3">
-          <div>
-            <p className="text-xs text-zinc-500">Đã thu</p>
-            <p className="text-lg font-bold text-brand-700">{formatVnd(collected)}</p>
-          </div>
-          <Link href="/debts">
-            <p className="text-xs text-zinc-500">Còn nợ ›</p>
-            <p className={`text-lg font-bold ${owedThisMonth > 0 ? "text-amber-600" : ""}`}>
-              {formatVnd(owedThisMonth)}
-            </p>
-          </Link>
+      <div className="mx-5 mt-2">
+        <h2 className="section-title">{formatMonthLabel(today.slice(0, 7))}</h2>
+      </div>
+      <div className="mx-5 grid grid-cols-2 gap-3">
+        <div className="card p-4">
+          <p className="text-xs text-muted">Đã thu</p>
+          <p className="mt-1 text-lg font-bold tracking-tight text-brand-700">{formatVnd(collected)}</p>
         </div>
-        {owedAll > owedThisMonth && (
-          <p className="mt-2 text-xs text-zinc-500">
-            Tính cả các tháng trước: còn nợ {formatVnd(owedAll)}.{" "}
-            <Link href="/debts" className="font-semibold text-brand-700">
-              Xem ai nợ
-            </Link>
+        <Link href="/debts" className="card p-4">
+          <p className="text-xs text-muted">Còn nợ ›</p>
+          <p className={`mt-1 text-lg font-bold tracking-tight ${owedThisMonth > 0 ? "text-red-600" : ""}`}>
+            {formatVnd(owedThisMonth)}
           </p>
-        )}
-      </Card>
-
-      <Link href="/fund" className="mx-5 flex items-center justify-between rounded-xl bg-brand-600 p-4 text-white">
-        <span>
-          <span className="block text-sm opacity-90">Quỹ tồn</span>
-          <span className="block text-2xl font-bold">{formatVnd(balance)}</span>
-        </span>
-        <span className="text-sm font-semibold">Quỹ ›</span>
-      </Link>
+        </Link>
+      </div>
+      {owedAll > owedThisMonth && (
+        <p className="mx-5 text-xs text-muted">
+          Tính cả các tháng trước: còn nợ {formatVnd(owedAll)}.{" "}
+          <Link href="/debts" className="font-semibold text-brand-700">
+            Xem ai nợ
+          </Link>
+        </p>
+      )}
     </div>
   );
 }
@@ -157,9 +165,6 @@ async function Dashboard() {
 export default function Home() {
   return (
     <main className="flex flex-1 flex-col">
-      <header className="flex h-14 items-center border-b border-zinc-100 px-5">
-        <h1 className="text-lg font-bold">🏸 Badminton Club</h1>
-      </header>
       <Suspense fallback={<Loading />}>
         <RequireDatabase>
           <Dashboard />

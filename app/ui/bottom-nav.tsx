@@ -27,24 +27,26 @@ export function BottomNav() {
 
 export function NavBar({ pathname }: { pathname: string | null }) {
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-20 mx-auto flex w-full max-w-md border-t border-zinc-200 bg-white pb-[env(safe-area-inset-bottom)]">
-      {TABS.map((tab) => {
-        const active = pathname !== null && isActive(pathname, tab.href);
-        return (
-          <Link
-            key={tab.href}
-            href={tab.href}
-            className={`flex h-16 flex-1 flex-col items-center justify-center gap-0.5 text-[11px] font-medium ${
-              active ? "text-brand-700" : "text-zinc-500"
-            }`}
-          >
-            <span className={`text-xl ${active ? "" : "opacity-60 grayscale"}`} aria-hidden>
-              {tab.icon}
-            </span>
-            {tab.label}
-          </Link>
-        );
-      })}
+    <nav className="fixed inset-x-0 bottom-[calc(1rem+env(safe-area-inset-bottom))] z-20 mx-auto w-full max-w-md px-4">
+      <div className="flex gap-1 rounded-[28px] bg-nav p-1.5 shadow-hero backdrop-blur">
+        {TABS.map((tab) => {
+          const active = pathname !== null && isActive(pathname, tab.href);
+          return (
+            <Link
+              key={tab.href}
+              href={tab.href}
+              className={`flex h-14 flex-1 flex-col items-center justify-center gap-0.5 rounded-[22px] text-[10.5px] font-medium ${
+                active ? "bg-brand-600 text-white" : "text-nav-text"
+              }`}
+            >
+              <span className={`text-lg leading-none ${active ? "" : "opacity-70 brightness-150 grayscale"}`} aria-hidden>
+                {tab.icon}
+              </span>
+              {tab.label}
+            </Link>
+          );
+        })}
+      </div>
     </nav>
   );
 }

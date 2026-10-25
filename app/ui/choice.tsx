@@ -15,7 +15,7 @@ export function Choice({
   onChange?: (value: string) => void;
 }) {
   return (
-    <label className="flex h-11 flex-1 cursor-pointer items-center justify-center rounded-lg border border-zinc-300 px-2 text-sm font-medium has-checked:border-brand-600 has-checked:bg-brand-50 has-checked:text-brand-700">
+    <label className="flex h-11 flex-1 cursor-pointer items-center justify-center rounded-full border border-line-strong bg-surface px-2 text-sm font-semibold text-ink has-checked:border-cta has-checked:bg-cta has-checked:text-on-cta">
       <input
         type="radio"
         name={name}

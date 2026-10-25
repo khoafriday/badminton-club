@@ -7,7 +7,7 @@ export async function RequireDatabase({ children }: { children: React.ReactNode 
   const missing = missingDatabaseEnv();
   if (missing.length === 0) return children;
   return (
-    <div className="m-5 rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+    <div className="m-5 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
       <p className="font-semibold">Chưa nối database</p>
       <p className="mt-1">Bản deploy này đang thiếu: {missing.join(", ")}.</p>
       <p className="mt-1">

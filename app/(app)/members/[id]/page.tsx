@@ -30,23 +30,43 @@ async function MemberDetail({ params }: { params: Promise<{ id: string }> }) {
   if (!m) notFound();
 
   return (
-    <div className="px-5 py-6">
-      <MemberForm
-        action={updateMember.bind(null, m.id)}
-        submitLabel="Lưu"
-        showStatus
-        initialValues={{
-          full_name: m.full_name,
-          gender: m.gender,
-          phone: m.phone ?? "",
-          member_type: m.member_type,
-          status: m.status,
-          // A guest switched to fixed starts today unless changed.
-          fixed_since: m.fixed_since ?? todayInVietnam(),
-          note: m.note ?? "",
-        }}
-      />
+    <div className="flex flex-col gap-6 px-5 pt-1 pb-6">
+      <div className="flex flex-col items-center gap-2 text-center">
+        <span className="flex size-20 items-center justify-center rounded-full bg-brand-50 text-3xl font-bold text-brand-700">
+          {m.full_name.trim().charAt(0).toUpperCase()}
+        </span>
+        <h2 className="text-[22px] font-bold tracking-tight">{m.full_name}</h2>
+        <div className="flex flex-wrap justify-center gap-1.5 text-xs font-bold">
+          <span className="rounded-full bg-brand-50 px-3 py-1 text-brand-700">
+            {m.member_type === "fixed" ? "Cố định" : "Vãng lai"}
+          </span>
+          <span className="rounded-full bg-surface-2 px-3 py-1 text-muted">{m.gender === "male" ? "Nam" : "Nữ"}</span>
+          <span className="rounded-full bg-surface-2 px-3 py-1 text-muted">
+            {m.status === "active" ? "Đang chơi" : "Nghỉ"}
+          </span>
+        </div>
+      </div>
       <MemberHistory memberId={m.id} />
+      <section>
+        <h2 className="section-title mb-2">Thông tin</h2>
+        <div className="card p-4">
+          <MemberForm
+            action={updateMember.bind(null, m.id)}
+            submitLabel="Lưu"
+            showStatus
+            initialValues={{
+              full_name: m.full_name,
+              gender: m.gender,
+              phone: m.phone ?? "",
+              member_type: m.member_type,
+              status: m.status,
+              // A guest switched to fixed starts today unless changed.
+              fixed_since: m.fixed_since ?? todayInVietnam(),
+              note: m.note ?? "",
+            }}
+          />
+        </div>
+      </section>
     </div>
   );
 }
@@ -56,25 +76,33 @@ const PAY_LABEL = { paid: "Đã nộp", unpaid: "Chưa nộp", exempt: "Miễn",
 async function MemberHistory({ memberId }: { memberId: string }) {
   const { visits, slips, owed } = await loadMemberHistory(memberId);
   return (
-    <div className="mt-8 flex flex-col gap-6">
-      <div className={`rounded-xl p-4 ${owed > 0 ? "bg-amber-50 text-amber-800" : "bg-brand-50 text-brand-700"}`}>
-        <p className="text-sm">Còn nợ</p>
-        <p className="text-xl font-bold">{formatVnd(owed)}</p>
+    <div className="flex flex-col gap-6">
+      <div className="grid grid-cols-2 gap-3">
+        <div className="card p-4">
+          <p className="text-xs text-muted">Số buổi đã đi</p>
+          <p className="mt-1 text-lg font-bold tracking-tight">{visits.length} buổi</p>
+        </div>
+        <div className="card p-4">
+          <p className="text-xs text-muted">Còn nợ</p>
+          <p className={`mt-1 text-lg font-bold tracking-tight ${owed > 0 ? "text-red-600" : "text-brand-700"}`}>
+            {formatVnd(owed)}
+          </p>
+        </div>
       </div>
 
       <section>
-        <h2 className="mb-2 font-bold">Phí tháng</h2>
+        <h2 className="section-title mb-2">Phí tháng</h2>
         {slips.length === 0 ? (
-          <p className="text-sm text-zinc-500">Chưa có phiếu.</p>
+          <p className="text-sm text-muted">Chưa có phiếu.</p>
         ) : (
-          <ul className="divide-y divide-zinc-100">
+          <ul className="card divide-y divide-line px-4">
             {slips.slice(0, 6).map((s) => (
               <li key={s.id}>
-                <Link href={`/fees?month=${s.month}`} className="flex items-center justify-between py-2 text-sm">
+                <Link href={`/fees?month=${s.month}`} className="flex items-center justify-between py-3 text-sm">
                   <span>{formatMonthLabel(s.month)}</span>
                   <span
                     className={
-                      s.status === "unpaid" && s.billingMode === "monthly" ? "text-amber-600" : "text-zinc-600"
+                      s.status === "unpaid" && s.billingMode === "monthly" ? "font-semibold text-red-600" : "text-muted"
                     }
                   >
                     {s.billingMode === "per_session"
@@ -89,20 +117,20 @@ async function MemberHistory({ memberId }: { memberId: string }) {
       </section>
 
       <section>
-        <h2 className="mb-2 font-bold">Các buổi đã đi · {visits.length}</h2>
+        <h2 className="section-title mb-2">Các buổi đã đi</h2>
         {visits.length === 0 ? (
-          <p className="text-sm text-zinc-500">Chưa đi buổi nào.</p>
+          <p className="text-sm text-muted">Chưa đi buổi nào.</p>
         ) : (
-          <ul className="divide-y divide-zinc-100">
+          <ul className="card divide-y divide-line px-4">
             {visits.slice(0, 10).map((v) => (
               <li key={v.attendanceId}>
-                <Link href={`/sessions/${v.sessionId}`} className="flex items-center justify-between py-2 text-sm">
+                <Link href={`/sessions/${v.sessionId}`} className="flex items-center justify-between py-3 text-sm">
                   <span>{formatDayLabel(v.date)}</span>
                   <span
                     className={
                       v.chargeMode === "per_session" && v.paymentStatus === "unpaid"
-                        ? "text-amber-600"
-                        : "text-zinc-600"
+                        ? "font-semibold text-red-600"
+                        : "text-muted"
                     }
                   >
                     {v.chargeMode === "monthly"

@@ -49,7 +49,7 @@ export function TxForm({ action, initialValues, categories, submitLabel }: Props
         Số tiền
         <div className="relative">
           <input name="amount" defaultValue={v.amount} inputMode="numeric" required className={`${inputClass} pr-8`} />
-          <span className="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-zinc-400">đ</span>
+          <span className="pointer-events-none absolute top-1/2 right-4 -translate-y-1/2 text-faint">đ</span>
         </div>
       </label>
       <label className={labelClass}>

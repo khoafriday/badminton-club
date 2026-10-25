@@ -30,7 +30,7 @@ export function ScheduleForm({ action, initialValues, courts, submitLabel }: Pro
   return (
     <form key={JSON.stringify(v)} action={formAction} className="flex flex-col gap-4">
       <fieldset className="flex flex-col gap-1">
-        <legend className="mb-1 text-sm font-medium">Thứ</legend>
+        <legend className="mb-1.5 text-sm font-semibold text-muted">Thứ</legend>
         <div className="flex gap-1">
           {WEEKDAYS.map(([value, label]) => (
             <Choice key={value} name="weekday" value={value} label={label} checked={v.weekday === value} />
