@@ -30,8 +30,9 @@ async function attendanceInSession(sessionId: string, attendanceId: string) {
   return data;
 }
 
-function refresh(sessionId: string) {
-  revalidatePath(`/sessions/${sessionId}`);
+function refresh() {
+  // The dashboard, debts list and member pages show the same lines.
+  revalidatePath("/", "layout");
 }
 
 /** TT-1: mark present (creates the line with the default price) or absent (removes an unpaid line). */
@@ -51,7 +52,7 @@ export async function setPresence(sessionId: string, memberId: string, present: 
     if (line.payment_status === "paid") return { error: "Người này đã nộp tiền. Bỏ Đã nộp trước khi bỏ điểm danh." };
     const { error } = await db().from("attendance").delete().eq("id", line.id);
     if (error) return FAILED;
-    refresh(sessionId);
+    refresh();
     return { error: null };
   }
 
@@ -81,7 +82,7 @@ export async function setPresence(sessionId: string, memberId: string, present: 
     { onConflict: "session_id,member_id", ignoreDuplicates: true },
   );
   if (error) return FAILED;
-  refresh(sessionId);
+  refresh();
   return { error: null };
 }
 
@@ -98,7 +99,7 @@ export async function setLinePaid(sessionId: string, attendanceId: string, paid:
     p_actor: ctx.userId,
   });
   if (error) return FAILED;
-  refresh(sessionId);
+  refresh();
   return { error: null };
 }
 
@@ -126,7 +127,7 @@ export async function setLinePrice(sessionId: string, attendanceId: string, inpu
     });
     if (rpcError) return FAILED;
   }
-  refresh(sessionId);
+  refresh();
   return { error: null };
 }
 

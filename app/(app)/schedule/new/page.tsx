@@ -16,7 +16,9 @@ async function NewSession({ searchParams }: { searchParams: PageProps<"/schedule
   const date = typeof sp.date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(sp.date) ? sp.date : todayInVietnam();
   return (
     <div className="px-5 py-6">
+      {/* key: the page is reused when opened again for another date, so the form must start over. */}
       <SessionForm
+        key={date}
         action={createSession}
         submitLabel="Thêm buổi"
         courts={courts}

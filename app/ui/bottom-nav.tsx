@@ -12,7 +12,7 @@ const TABS = [
 ] as const;
 
 function isActive(pathname: string, href: string) {
-  if (href === "/") return pathname === "/";
+  if (href === "/") return pathname === "/" || pathname.startsWith("/debts");
   // A session belongs to the Lịch tab.
   if (href === "/schedule") return pathname.startsWith("/schedule") || pathname.startsWith("/sessions");
   // Monthly fees are reached from the Members screen.
