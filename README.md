@@ -42,6 +42,8 @@ npm test                     # chạy test
 
 ID và mật khẩu không nằm trong code. Muốn đổi thì sửa biến môi trường trên Vercel rồi Redeploy.
 
+`vercel.json` đặt server chạy ở Singapore (`sin1`), cùng vùng với Supabase (`ap-southeast-1`). Nếu chuyển Supabase sang vùng khác thì đổi vùng ở file này theo.
+
 ## Tạo database trên Supabase
 
 1. Tạo project mới trên supabase.com.
