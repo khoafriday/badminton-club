@@ -14,7 +14,9 @@ Bản mẫu. Đã có:
 - Menu dưới 5 mục: Tổng quan, Lịch, Thành viên, Quỹ, Cài đặt (Tổng quan và Quỹ đang làm).
 - Cài đặt: giá phí tháng và giá vãng lai Nam/Nữ, thông tin CLB, danh sách sân cầu (tên, địa chỉ, giá thuê mỗi giờ, dùng chung cho mọi CLB; mỗi CLB chọn 1 sân), nhiều CLB (tạo, chuyển, xóa), đăng xuất.
 - Lịch: xem theo tuần hoặc tháng, lịch tuần (app tự tạo buổi cho 4 tuần tới), thêm buổi lẻ, sửa, hủy, khôi phục, xóa buổi chưa có dữ liệu.
-- Màn Điểm danh buổi tại `/sessions/demo`, vẫn chạy bằng dữ liệu mẫu.
+- Điểm danh từng buổi: có mặt, thêm nhanh khách (người cũ hoặc người mới), giá tự điền theo giới tính, sửa giá riêng, Đã nộp ghi vào sổ thu chi.
+- Phí tháng `/fees`: phiếu tự tạo đầu tháng cho người cố định, Đã nộp, Miễn, hết tháng không đi buổi nào tự chuyển Miễn.
+- Chi tiết thành viên có tiền còn nợ, phiếu phí tháng và các buổi đã đi.
 
 ## Chạy trên máy
 

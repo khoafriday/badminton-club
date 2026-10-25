@@ -14,12 +14,6 @@ export default function Home() {
         >
           Xem lịch
         </Link>
-        <Link
-          href="/sessions/demo"
-          className="flex h-12 items-center justify-center rounded-lg border border-brand-600 font-semibold text-brand-700"
-        >
-          Màn Điểm danh (dữ liệu mẫu)
-        </Link>
       </div>
     </main>
   );
