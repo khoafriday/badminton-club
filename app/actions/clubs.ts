@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { z } from "zod";
 import { requireUser } from "@/lib/club";
 import { db } from "@/lib/supabase";
@@ -43,5 +44,6 @@ export async function createClub(_prev: ClubFormState, formData: FormData): Prom
   await db().from("profiles").update({ last_club_id: club.id, updated_at: new Date().toISOString() }).eq("id", userId);
   // Every screen showed the create-club form until now; re-render them with the new club.
   revalidatePath("/", "layout");
+  if (formData.get("redirect_to") === "/settings") redirect("/settings");
   return { error: null, values };
 }

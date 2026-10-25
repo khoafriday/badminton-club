@@ -6,11 +6,13 @@ import { inputClass, labelClass, primaryButtonClass } from "@/app/ui/form";
 
 const initialState: ClubFormState = { error: null, values: { name: "", venue_name: "", venue_address: "" } };
 
-export function ClubForm() {
+/** `redirectTo` sends the user to that page after creating; without it the current page re-renders. */
+export function ClubForm({ redirectTo }: { redirectTo?: "/settings" }) {
   const [state, formAction, pending] = useActionState(createClub, initialState);
 
   return (
     <form action={formAction} className="flex flex-col gap-4">
+      {redirectTo && <input type="hidden" name="redirect_to" value={redirectTo} />}
       <label className={labelClass}>
         Tên CLB
         <input name="name" defaultValue={state.values.name} required className={inputClass} />
