@@ -14,3 +14,6 @@ insert into supabase_migrations.schema_migrations (version, name) values
   ('0003', 'courts'),
   ('0004', 'session_courts')
 on conflict (version) do nothing;
+-- Not exposed through the API (outside the public schema). RLS on anyway; the CLI connects as the
+-- table owner, which RLS does not restrict.
+alter table supabase_migrations.schema_migrations enable row level security;
