@@ -4,12 +4,14 @@ App web quản lý CLB cầu lông: thành viên, lịch đánh, điểm danh, t
 
 ## Trạng thái
 
-Bản mẫu Bước 4. Đã có:
+Bản mẫu. Đã có:
 
 - `lib/billing.ts`: toàn bộ quy tắc tính tiền (giá vãng lai Nam/Nữ, phí tháng, vào giữa tháng, nghỉ cả tháng, tổng tiền buổi, quỹ tồn). Có test trong `lib/billing.test.ts`.
 - `supabase/migrations/0001_init.sql`: 10 bảng và 2 hàm ghi sổ thu chi.
 - Đăng nhập 1 tài khoản, ID và mật khẩu lấy từ biến môi trường.
-- Màn Điểm danh buổi tại `/sessions/demo`, chạy bằng dữ liệu mẫu (chưa nối database).
+- Nối Supabase ở server (`lib/supabase.ts`). Lần đầu mở app sẽ hiện form tạo CLB.
+- Màn Thành viên `/members`: danh sách, tìm theo tên hoặc số điện thoại, lọc Cố định / Vãng lai / Nghỉ, thêm, sửa, đổi loại, đổi Đang chơi / Nghỉ.
+- Màn Điểm danh buổi tại `/sessions/demo`, vẫn chạy bằng dữ liệu mẫu.
 
 ## Chạy trên máy
 
@@ -19,7 +21,7 @@ Cần Node.js 20 trở lên.
 npm install
 cp .env.example .env.local   # rồi điền ADMIN_ID, ADMIN_PASSWORD, SESSION_SECRET
 npm run dev                  # mở http://localhost:3000
-npm test                     # chạy test phần tính tiền
+npm test                     # chạy test
 ```
 
 ## Đưa lên Vercel
