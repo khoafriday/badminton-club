@@ -20,10 +20,9 @@ async function SessionDetail({ params }: { params: Promise<{ id: string }> }) {
   if (!UUID.test(id)) notFound();
   const { club } = await loadClub();
   if (!club) notFound();
-  const session = await getSession(club.id, id);
+  const [session, settings] = await Promise.all([getSession(club.id, id), getPriceSettings(club.id)]);
   if (!session) notFound();
   const cancelled = session.status === "cancelled";
-  const settings = await getPriceSettings(club.id);
   await ensureFeeSlips(club.id, session.session_date, todayInVietnam(), settings);
   const [lists, used] = await Promise.all([loadAttendance(club.id, session, settings), sessionsWithData([session.id])]);
   const hasData = used.size > 0;

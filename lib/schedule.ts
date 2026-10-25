@@ -51,9 +51,7 @@ export async function listSchedules(clubId: string): Promise<ScheduleRow[]> {
 /** LICH-2: creates the sessions of the coming weeks for every active weekly schedule. Safe to run on every visit. */
 export async function ensureSessions(clubId: string, today: string): Promise<{ scheduleCount: number }> {
   const schedules = await listSchedules(clubId);
-  for (const schedule of schedules) {
-    await fillSchedule(clubId, schedule, today);
-  }
+  await Promise.all(schedules.map((schedule) => fillSchedule(clubId, schedule, today)));
   return { scheduleCount: schedules.length };
 }
 

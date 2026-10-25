@@ -1,5 +1,6 @@
 import "server-only";
 import { redirect } from "next/navigation";
+import { cache } from "react";
 import type { PriceSettings } from "./billing";
 import { currentUser } from "./session";
 import { db } from "./supabase";
@@ -25,25 +26,27 @@ export async function requireUser(): Promise<string> {
   return user;
 }
 
-// The login ID doubles as the profile id. Creates the row on first use.
+// The login ID doubles as the profile id. The row is created on first use.
 async function ensureProfile(userId: string) {
   const { error } = await db().from("profiles").upsert({ id: userId }, { onConflict: "id", ignoreDuplicates: true });
   if (error) throw error;
 }
 
-/** The club the user last worked on, else their first club. Null when they have none yet. */
-export async function getCurrentClub(userId: string): Promise<Club | null> {
-  await ensureProfile(userId);
-  const { data: profile, error: profileError } = await db()
-    .from("profiles")
-    .select("last_club_id")
-    .eq("id", userId)
-    .single();
+/**
+ * The club the user last worked on, else their first club. Null when they have none yet.
+ * Cached per request: a page and its parts call this many times but the database is asked once.
+ */
+export const getCurrentClub = cache(async (userId: string): Promise<Club | null> => {
+  // Profile and clubs are read together; the profile row is only written the first time.
+  const [{ data: profile, error: profileError }, clubs] = await Promise.all([
+    db().from("profiles").select("last_club_id").eq("id", userId).maybeSingle(),
+    listClubs(userId),
+  ]);
   if (profileError) throw profileError;
+  if (!profile) await ensureProfile(userId);
 
-  const clubs = await listClubs(userId);
-  return clubs.find((c) => c.id === profile.last_club_id) ?? clubs[0] ?? null;
-}
+  return clubs.find((c) => c.id === profile?.last_club_id) ?? clubs[0] ?? null;
+});
 
 /** Signed-in user and their current club, or null club when they have not created one yet. */
 export async function loadClub(): Promise<{ userId: string; club: Club | null }> {

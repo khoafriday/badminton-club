@@ -82,35 +82,38 @@ export async function waiveFullMonthAbsences(clubId: string, today: string) {
     .lt("period_month", monthStart(today));
   if (error) throw error;
 
-  for (const s of slips) {
-    const { count, error: countError } = await db()
-      .from("attendance")
-      .select("id, sessions!inner(session_date, status)", { count: "exact", head: true })
-      .eq("member_id", s.member_id)
-      .eq("is_present", true)
-      .eq("sessions.status", "active")
-      .gte("sessions.session_date", s.period_month)
-      .lte("sessions.session_date", monthEnd(s.period_month));
-    if (countError) throw countError;
+  // One count per slip, sent together so the wait does not grow with the number of slips.
+  await Promise.all(
+    slips.map(async (s) => {
+      const { count, error: countError } = await db()
+        .from("attendance")
+        .select("id, sessions!inner(session_date, status)", { count: "exact", head: true })
+        .eq("member_id", s.member_id)
+        .eq("is_present", true)
+        .eq("sessions.status", "active")
+        .gte("sessions.session_date", s.period_month)
+        .lte("sessions.session_date", monthEnd(s.period_month));
+      if (countError) throw countError;
 
-    const slip = applyFullMonthAbsence(
-      {
-        periodMonth: s.period_month,
-        billingMode: s.billing_mode,
-        amountDue: Number(s.amount_due),
-        paymentStatus: s.payment_status,
-        waiveReason: s.waive_reason,
-      },
-      count ?? 0,
-    );
-    if (slip.paymentStatus === "waived") {
-      await db()
-        .from("membership_fees")
-        .update({ payment_status: "waived", waive_reason: slip.waiveReason, updated_at: new Date().toISOString() })
-        .eq("id", s.id)
-        .eq("payment_status", "unpaid");
-    }
-  }
+      const slip = applyFullMonthAbsence(
+        {
+          periodMonth: s.period_month,
+          billingMode: s.billing_mode,
+          amountDue: Number(s.amount_due),
+          paymentStatus: s.payment_status,
+          waiveReason: s.waive_reason,
+        },
+        count ?? 0,
+      );
+      if (slip.paymentStatus === "waived") {
+        await db()
+          .from("membership_fees")
+          .update({ payment_status: "waived", waive_reason: slip.waiveReason, updated_at: new Date().toISOString() })
+          .eq("id", s.id)
+          .eq("payment_status", "unpaid");
+      }
+    }),
+  );
 }
 
 export async function listFeeSlips(clubId: string, month: string): Promise<FeeSlipRow[]> {

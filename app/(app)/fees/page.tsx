@@ -16,8 +16,10 @@ async function FeesContent({ searchParams }: { searchParams: PageProps<"/fees">[
 
   const today = todayInVietnam();
   const month = typeof sp.month === "string" && /^\d{4}-\d{2}$/.test(sp.month) ? sp.month : today.slice(0, 7);
-  await ensureFeeSlips(club.id, `${month}-01`, today, await getPriceSettings(club.id));
-  await waiveFullMonthAbsences(club.id, today);
+  await Promise.all([
+    getPriceSettings(club.id).then((settings) => ensureFeeSlips(club.id, `${month}-01`, today, settings)),
+    waiveFullMonthAbsences(club.id, today),
+  ]);
   const slips = await listFeeSlips(club.id, `${month}-01`);
 
   return (
