@@ -38,7 +38,7 @@ async function SessionDetail({ params }: { params: Promise<{ id: string }> }) {
             </p>
             <p className="text-sm text-zinc-600">
               {formatTime(session.start_time)} đến {formatTime(session.end_time)} ·{" "}
-              {session.venue_name ?? club.court_name ?? "Chưa có sân"}
+              {session.court_name ?? club.court_name ?? "Chưa có sân"}
             </p>
             {session.note && <p className="mt-1 text-sm text-zinc-500">{session.note}</p>}
           </div>

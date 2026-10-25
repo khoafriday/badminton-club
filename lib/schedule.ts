@@ -3,27 +3,38 @@ import { addDays } from "./dates";
 import { planSessionDates, type SchedulePlanInput } from "./schedule-plan";
 import { db } from "./supabase";
 
-export type ScheduleRow = SchedulePlanInput & {
-  id: string;
-  start_time: string;
-  end_time: string;
-  venue_name: string | null;
-};
+/** SAN-1: court_id null means the club's court; court_name is then null too. */
+type CourtFields = { court_id: string | null; court_name: string | null };
 
-export type SessionRow = {
+export type ScheduleRow = SchedulePlanInput &
+  CourtFields & {
+    id: string;
+    start_time: string;
+    end_time: string;
+  };
+
+export type SessionRow = CourtFields & {
   id: string;
   schedule_id: string | null;
   session_date: string;
   start_time: string;
   end_time: string;
-  venue_name: string | null;
   status: "active" | "cancelled";
   cancel_reason: string | null;
   note: string | null;
 };
 
-const SESSION_COLUMNS = "id, schedule_id, session_date, start_time, end_time, venue_name, status, cancel_reason, note";
-const SCHEDULE_COLUMNS = "id, weekday, start_time, end_time, venue_name, is_active, effective_from, effective_to, generated_until";
+// courts(name) comes back as one object or null: court_id points at one row.
+type WithCourt<T> = Omit<T, "court_name"> & { courts: { name: string } | null };
+
+function withCourtName<R extends { courts: { name: string } | null }>({ courts, ...row }: R) {
+  return { ...row, court_name: courts?.name ?? null };
+}
+
+const SESSION_COLUMNS =
+  "id, schedule_id, session_date, start_time, end_time, court_id, courts(name), status, cancel_reason, note";
+const SCHEDULE_COLUMNS =
+  "id, weekday, start_time, end_time, court_id, courts(name), is_active, effective_from, effective_to, generated_until";
 
 export async function listSchedules(clubId: string): Promise<ScheduleRow[]> {
   const { data, error } = await db()
@@ -31,9 +42,10 @@ export async function listSchedules(clubId: string): Promise<ScheduleRow[]> {
     .select(SCHEDULE_COLUMNS)
     .eq("club_id", clubId)
     .order("weekday")
-    .order("start_time");
+    .order("start_time")
+    .overrideTypes<WithCourt<ScheduleRow>[], { merge: false }>();
   if (error) throw error;
-  return data;
+  return data.map(withCourtName);
 }
 
 /** LICH-2: creates the sessions of the coming weeks for every active weekly schedule. Safe to run on every visit. */
@@ -55,7 +67,7 @@ async function fillSchedule(clubId: string, schedule: ScheduleRow, today: string
       session_date,
       start_time: schedule.start_time,
       end_time: schedule.end_time,
-      venue_name: schedule.venue_name,
+      court_id: schedule.court_id,
     }));
     // A session already on that date (for example one the admin cancelled) is kept as it is.
     const { error } = await db()
@@ -98,9 +110,10 @@ export async function resyncSchedule(clubId: string, scheduleId: string, today: 
     .eq("id", scheduleId)
     .eq("club_id", clubId)
     .select(SCHEDULE_COLUMNS)
-    .single();
+    .single()
+    .overrideTypes<WithCourt<ScheduleRow>, { merge: false }>();
   if (scheduleError) throw scheduleError;
-  await fillSchedule(clubId, schedule, today);
+  await fillSchedule(clubId, withCourtName(schedule), today);
 }
 
 /** Session ids that have attendance or ledger lines, so they may only be cancelled, not deleted (LICH-7). */
@@ -123,9 +136,10 @@ export async function listSessions(clubId: string, from: string, to: string): Pr
     .gte("session_date", from)
     .lte("session_date", to)
     .order("session_date")
-    .order("start_time");
+    .order("start_time")
+    .overrideTypes<WithCourt<SessionRow>[], { merge: false }>();
   if (error) throw error;
-  return data;
+  return data.map(withCourtName);
 }
 
 export async function getSession(clubId: string, sessionId: string): Promise<SessionRow | null> {
@@ -134,7 +148,8 @@ export async function getSession(clubId: string, sessionId: string): Promise<Ses
     .select(SESSION_COLUMNS)
     .eq("id", sessionId)
     .eq("club_id", clubId)
-    .maybeSingle();
+    .maybeSingle()
+    .overrideTypes<WithCourt<SessionRow> | null, { merge: false }>();
   if (error) throw error;
-  return data;
+  return data && withCourtName(data);
 }

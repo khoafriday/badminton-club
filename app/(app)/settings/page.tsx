@@ -7,7 +7,7 @@ import { RequireDatabase } from "@/app/ui/database-missing";
 import { Loading } from "@/app/ui/loading";
 import { PageHeader } from "@/app/ui/page-header";
 import { formatVnd } from "@/lib/billing";
-import { getClubDetails, getPriceSettings, listClubs, loadClub } from "@/lib/club";
+import { getPriceSettings, listClubs, loadClub } from "@/lib/club";
 import { listCourts } from "@/lib/courts";
 import { formatVndInput } from "@/lib/money";
 import { ArchiveClubButton, ClubInfoForm, PricesForm } from "./settings-forms";
@@ -24,12 +24,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 async function SettingsContent() {
   const { userId, club } = await loadClub();
   if (!club) return <NoClub />;
-  const [details, prices, clubs, courts] = await Promise.all([
-    getClubDetails(club.id),
-    getPriceSettings(club.id),
-    listClubs(userId),
-    listCourts(userId),
-  ]);
+  const [prices, clubs, courts] = await Promise.all([getPriceSettings(club.id), listClubs(userId), listCourts(userId)]);
 
   return (
     <>
@@ -47,11 +42,7 @@ async function SettingsContent() {
       </Section>
 
       <Section title="Thông tin CLB">
-        <ClubInfoForm
-          key={club.id}
-          courts={courts}
-          initial={{ name: details.name, court_id: details.court_id ?? "" }}
-        />
+        <ClubInfoForm key={club.id} courts={courts} initial={{ name: club.name, court_id: club.court_id ?? "" }} />
       </Section>
 
       <Section title="Sân cầu">
@@ -67,7 +58,7 @@ async function SettingsContent() {
                   <span className="min-w-0">
                     <span className="block font-medium">
                       {c.name}
-                      {c.id === details.court_id && (
+                      {c.id === club.court_id && (
                         <span className="ml-2 text-xs font-semibold text-brand-700">CLB này</span>
                       )}
                     </span>

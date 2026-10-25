@@ -29,7 +29,12 @@ export function ClubInfoForm({ initial, courts }: { initial: ClubInfoState["valu
         Tên CLB
         <input name="name" defaultValue={v.name} required className={inputClass} />
       </label>
-      <CourtSelect courts={courts} value={v.court_id} emptyHint="Chưa có sân. Thêm sân ở mục Sân cầu bên dưới." />
+      <CourtSelect
+        courts={courts}
+        value={v.court_id}
+        emptyLabel="Chưa chọn sân"
+        emptyHint="Chưa có sân. Thêm sân ở mục Sân cầu bên dưới."
+      />
       <FormStatus error={state.error} saved={state.saved} />
       <button disabled={pending} className={primaryButtonClass}>
         {pending ? "Đang lưu..." : "Lưu thông tin CLB"}

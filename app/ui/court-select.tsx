@@ -2,13 +2,21 @@ import { inputClass, labelClass } from "./form";
 
 export type CourtOption = { id: string; name: string };
 
-/** SAN-1: the club's court, picked from the courts in Settings. The MVP allows one per club. */
-export function CourtSelect({ courts, value, emptyHint }: { courts: CourtOption[]; value: string; emptyHint: string }) {
+type Props = {
+  courts: CourtOption[];
+  value: string;
+  /** Label of the "no court" choice; null when a court must be picked whenever one exists. */
+  emptyLabel: string | null;
+  emptyHint: string;
+};
+
+/** SAN-1: a court picked from the courts in Settings. */
+export function CourtSelect({ courts, value, emptyLabel, emptyHint }: Props) {
   return (
     <label className={labelClass}>
       Sân
       <select name="court_id" defaultValue={value} className={inputClass}>
-        <option value="">Chưa chọn sân</option>
+        {(emptyLabel !== null || courts.length === 0) && <option value="">{emptyLabel ?? "Chưa có sân"}</option>}
         {courts.map((c) => (
           <option key={c.id} value={c.id}>
             {c.name}

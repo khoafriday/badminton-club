@@ -5,15 +5,17 @@ import { RequireDatabase } from "@/app/ui/database-missing";
 import { Loading } from "@/app/ui/loading";
 import { PageHeader } from "@/app/ui/page-header";
 import { loadClub } from "@/lib/club";
+import { listCourts } from "@/lib/courts";
 import { formatTime } from "@/lib/dates";
 import { listSchedules } from "@/lib/schedule";
 import { ScheduleForm } from "../../schedule-form";
 
 async function EditSchedule({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const { club } = await loadClub();
+  const { userId, club } = await loadClub();
   if (!club) notFound();
-  const schedule = (await listSchedules(club.id)).find((s) => s.id === id);
+  const [schedules, courts] = await Promise.all([listSchedules(club.id), listCourts(userId)]);
+  const schedule = schedules.find((s) => s.id === id);
   if (!schedule) notFound();
 
   return (
@@ -21,12 +23,12 @@ async function EditSchedule({ params }: { params: Promise<{ id: string }> }) {
       <ScheduleForm
         action={updateSchedule.bind(null, schedule.id)}
         submitLabel="Lưu"
-        venuePlaceholder={club.court_name ?? ""}
+        courts={courts}
         initialValues={{
           weekday: String(schedule.weekday),
           start_time: formatTime(schedule.start_time),
           end_time: formatTime(schedule.end_time),
-          venue_name: schedule.venue_name ?? "",
+          court_id: schedule.court_id ?? club.court_id ?? "",
         }}
       />
       <p className="text-xs text-zinc-500">
