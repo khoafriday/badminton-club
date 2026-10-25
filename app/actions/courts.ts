@@ -62,6 +62,15 @@ export async function deleteCourt(courtId: string): Promise<DeleteCourtState> {
   if (active.length > 0) {
     return { error: `Sân đang được dùng bởi ${active.map((u) => u.clubs.name).join(", ")}. Đổi sân cho CLB trước.` };
   }
+  // Sessions keep the court they were played on, so a court with sessions stays.
+  const [sessions, schedules] = await Promise.all([
+    db().from("sessions").select("id", { count: "exact", head: true }).eq("court_id", courtId),
+    db().from("session_schedules").select("id", { count: "exact", head: true }).eq("court_id", courtId),
+  ]);
+  if (sessions.error || schedules.error) return { error: "Không xóa được. Thử lại sau." };
+  if ((sessions.count ?? 0) + (schedules.count ?? 0) > 0) {
+    return { error: "Sân đã có buổi tập hoặc lịch tuần dùng, không xóa được." };
+  }
   // A deleted (archived) club keeps its money history, not its court.
   if (uses.length > 0) {
     await db()

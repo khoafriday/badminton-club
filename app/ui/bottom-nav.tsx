@@ -15,6 +15,8 @@ function isActive(pathname: string, href: string) {
   if (href === "/") return pathname === "/";
   // A session belongs to the Lịch tab.
   if (href === "/schedule") return pathname.startsWith("/schedule") || pathname.startsWith("/sessions");
+  // Monthly fees are reached from the Members screen.
+  if (href === "/members") return pathname.startsWith("/members") || pathname.startsWith("/fees");
   return pathname.startsWith(href);
 }
 

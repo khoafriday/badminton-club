@@ -6,6 +6,8 @@ const optionalText = z
   .string()
   .trim()
   .transform((v) => v || null);
+// SAN-1: a court from Settings; empty means the club's court.
+const courtId = z.string().transform((v) => v || null);
 
 function endAfterStart<T extends { start_time: string; end_time: string }>(value: T, ctx: z.RefinementCtx) {
   if (value.end_time.slice(0, 5) <= value.start_time.slice(0, 5)) {
@@ -18,7 +20,7 @@ export const scheduleSchema = z
     weekday: z.coerce.number().int().min(1, "Chọn thứ.").max(7, "Chọn thứ."),
     start_time: time,
     end_time: time,
-    venue_name: optionalText,
+    court_id: courtId,
   })
   .superRefine(endAfterStart);
 
@@ -27,17 +29,17 @@ export const sessionSchema = z
     session_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Chọn ngày."),
     start_time: time,
     end_time: time,
-    venue_name: optionalText,
+    court_id: courtId,
     note: optionalText,
   })
   .superRefine(endAfterStart);
 
-export type ScheduleFormValues = { weekday: string; start_time: string; end_time: string; venue_name: string };
+export type ScheduleFormValues = { weekday: string; start_time: string; end_time: string; court_id: string };
 export type SessionFormValues = {
   session_date: string;
   start_time: string;
   end_time: string;
-  venue_name: string;
+  court_id: string;
   note: string;
 };
 

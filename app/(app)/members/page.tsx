@@ -60,7 +60,12 @@ async function MemberList({ searchParams }: { searchParams: PageProps<"/members"
   return (
     <>
       <div className="flex flex-col gap-3 border-b border-zinc-100 px-5 py-3">
-        <p className="text-sm text-zinc-500">{club.name}</p>
+        <div className="flex items-center justify-between">
+          <p className="text-sm text-zinc-500">{club.name}</p>
+          <Link href="/fees" className="text-sm font-semibold text-brand-700">
+            Phí tháng ›
+          </Link>
+        </div>
         <form action="/members" className="flex gap-2">
           {filter !== "all" && <input type="hidden" name="filter" value={filter} />}
           <input

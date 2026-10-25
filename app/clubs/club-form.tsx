@@ -21,6 +21,7 @@ export function ClubForm({ courts, redirectTo }: { courts: CourtOption[]; redire
       <CourtSelect
         courts={courts}
         value={state.values.court_id}
+        emptyLabel="Chưa chọn sân"
         emptyHint="Chưa có sân. Tạo CLB xong, thêm sân trong Cài đặt."
       />
       <p aria-live="polite" className="min-h-5 text-sm text-red-600">

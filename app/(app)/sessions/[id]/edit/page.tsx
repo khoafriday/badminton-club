@@ -5,6 +5,7 @@ import { RequireDatabase } from "@/app/ui/database-missing";
 import { Loading } from "@/app/ui/loading";
 import { PageHeader } from "@/app/ui/page-header";
 import { loadClub } from "@/lib/club";
+import { listCourts } from "@/lib/courts";
 import { formatTime } from "@/lib/dates";
 import { getSession } from "@/lib/schedule";
 import { SessionForm } from "../../../schedule/session-form";
@@ -14,9 +15,9 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 async function EditSession({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   if (!UUID.test(id)) notFound();
-  const { club } = await loadClub();
+  const { userId, club } = await loadClub();
   if (!club) notFound();
-  const session = await getSession(club.id, id);
+  const [session, courts] = await Promise.all([getSession(club.id, id), listCourts(userId)]);
   if (!session) notFound();
 
   return (
@@ -24,12 +25,12 @@ async function EditSession({ params }: { params: Promise<{ id: string }> }) {
       <SessionForm
         action={updateSession.bind(null, session.id)}
         submitLabel="Lưu"
-        venuePlaceholder={club.court_name ?? ""}
+        courts={courts}
         initialValues={{
           session_date: session.session_date,
           start_time: formatTime(session.start_time),
           end_time: formatTime(session.end_time),
-          venue_name: session.venue_name ?? "",
+          court_id: session.court_id ?? club.court_id ?? "",
           note: session.note ?? "",
         }}
       />

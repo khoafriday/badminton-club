@@ -2,17 +2,18 @@
 
 import { useActionState } from "react";
 import type { SessionFormState } from "@/app/actions/schedule";
+import { CourtSelect, type CourtOption } from "@/app/ui/court-select";
 import { inputClass, labelClass, primaryButtonClass } from "@/app/ui/form";
 import type { SessionFormValues } from "@/lib/schedule-forms";
 
 type Props = {
   action: (prev: SessionFormState, formData: FormData) => Promise<SessionFormState>;
   initialValues: SessionFormValues;
-  venuePlaceholder: string;
+  courts: CourtOption[];
   submitLabel: string;
 };
 
-export function SessionForm({ action, initialValues, venuePlaceholder, submitLabel }: Props) {
+export function SessionForm({ action, initialValues, courts, submitLabel }: Props) {
   const [state, formAction, pending] = useActionState(action, { error: null, values: initialValues });
   const v = state.values;
   return (
@@ -31,11 +32,12 @@ export function SessionForm({ action, initialValues, venuePlaceholder, submitLab
           <input type="time" name="end_time" defaultValue={v.end_time} required className={inputClass} />
         </label>
       </div>
-      <label className={labelClass}>
-        Sân
-        <input name="venue_name" defaultValue={v.venue_name} placeholder={venuePlaceholder} className={inputClass} />
-        <span className="text-xs font-normal text-zinc-500">Để trống thì dùng sân của CLB.</span>
-      </label>
+      <CourtSelect
+        courts={courts}
+        value={v.court_id}
+        emptyLabel={null}
+        emptyHint="Chưa có sân. Thêm sân trong Cài đặt."
+      />
       <label className={labelClass}>
         Ghi chú
         <input name="note" defaultValue={v.note} className={inputClass} />

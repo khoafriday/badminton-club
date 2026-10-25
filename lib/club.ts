@@ -4,8 +4,8 @@ import type { PriceSettings } from "./billing";
 import { currentUser } from "./session";
 import { db } from "./supabase";
 
-/** `court_name` is the club's court from Settings (SAN-1), null until one is picked. */
-export type Club = { id: string; name: string; court_name: string | null };
+/** The club's court from Settings (SAN-1), null until one is picked. */
+export type Club = { id: string; name: string; court_id: string | null; court_name: string | null };
 
 // PostgREST returns the court as one object (club_courts.court_id points at one row).
 type ClubRow = { id: string; name: string; club_courts: { court_id: string; courts: { name: string } | null }[] };
@@ -15,6 +15,7 @@ const CLUB_COLUMNS = "id, name, club_courts(court_id, courts(name))";
 const toClub = (row: ClubRow): Club => ({
   id: row.id,
   name: row.name,
+  court_id: row.club_courts[0]?.court_id ?? null,
   court_name: row.club_courts[0]?.courts?.name ?? null,
 });
 
@@ -60,19 +61,6 @@ export async function requireClub(): Promise<{ userId: string; club: Club }> {
 /** Today's date (YYYY-MM-DD) in Vietnam, whatever timezone the server runs in. */
 export function todayInVietnam(): string {
   return new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Ho_Chi_Minh" }).format(new Date());
-}
-
-export type ClubDetails = Club & { court_id: string | null };
-
-export async function getClubDetails(clubId: string): Promise<ClubDetails> {
-  const { data, error } = await db()
-    .from("clubs")
-    .select(CLUB_COLUMNS)
-    .eq("id", clubId)
-    .single()
-    .overrideTypes<ClubRow, { merge: false }>();
-  if (error) throw error;
-  return { ...toClub(data), court_id: data.club_courts[0]?.court_id ?? null };
 }
 
 /** All clubs the user owns that are not archived, oldest first. */
