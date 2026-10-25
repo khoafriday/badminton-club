@@ -6,7 +6,7 @@ export function Fab({ href, label }: { href: string; label: string }) {
     <Link
       href={href}
       aria-label={label}
-      className="fixed bottom-24 right-[max(1.5rem,calc(50%-14rem+1.5rem))] z-10 flex size-14 items-center justify-center rounded-full bg-brand-600 text-3xl text-white shadow-lg active:bg-brand-700"
+      className="fixed right-[max(1.5rem,calc(50%-14rem+1.5rem))] bottom-[calc(6.5rem+env(safe-area-inset-bottom))] z-10 flex size-14 items-center justify-center rounded-full bg-brand-600 text-3xl text-white shadow-hero active:opacity-80"
     >
       +
     </Link>

@@ -76,42 +76,47 @@ export function Attendance({ sessionId, readOnly, fixed, guests, guestOptions, g
 
   return (
     <>
-      <section className="mx-5 grid grid-cols-3 rounded-xl border border-zinc-200 p-3 text-center">
+      <section className="card mx-5 grid grid-cols-3 gap-2 p-2.5 text-center">
         <Total label="Phải thu" value={totals.due} />
         <Total label="Đã thu" value={totals.paid} />
         <Total label="Còn nợ" value={totals.outstanding} warn={totals.outstanding > 0} />
       </section>
 
       {error && (
-        <p role="alert" className="mx-5 mt-3 rounded-lg bg-red-50 p-3 text-sm text-red-700">
+        <p role="alert" className="mx-5 mt-3 rounded-2xl bg-red-50 p-3 text-sm text-red-700">
           {error}
         </p>
       )}
 
-      <div className="mx-5 mt-5 flex items-center justify-between">
-        <h2 className="font-semibold">
+      <div className="mx-5 mt-6 mb-2 flex items-center justify-between">
+        <h2 className="section-title">
           Cố định · {presentFixed}/{lists.fixed.length} có mặt
         </h2>
-        <Link href={feesHref} className="text-sm font-semibold text-brand-700">
+        <Link href={feesHref} className="text-xs font-bold text-brand-700">
           Phí tháng ›
         </Link>
       </div>
-      {lists.fixed.length === 0 && <p className="mx-5 mt-2 text-sm text-zinc-500">Chưa có thành viên cố định.</p>}
-      <ul className="mx-5 divide-y divide-zinc-100">
+      {lists.fixed.length === 0 && <p className="mx-5 mt-2 text-sm text-muted">Chưa có thành viên cố định.</p>}
+      <ul className="mx-5 flex flex-col gap-2">
         {lists.fixed.map((r) => (
-          <li key={r.memberId} className="flex min-h-14 items-center gap-3 py-2">
+          <li key={r.memberId} className="card flex min-h-16 items-center gap-3 px-3 py-2">
             <PresenceButton row={r} disabled={readOnly} onToggle={() => togglePresence(r)} />
             <div className="min-w-0 flex-1">
-              <p className={`truncate ${r.isPresent ? "" : "text-zinc-400"}`}>{r.name}</p>
+              <p className={`truncate font-semibold ${r.isPresent ? "" : "text-faint"}`}>{r.name}</p>
               {r.chargeMode === "per_session" && (
-                <p className="text-xs text-zinc-500">Vào giữa tháng, tính giá vãng lai</p>
+                <p className="text-xs text-muted">Vào giữa tháng, tính giá vãng lai</p>
               )}
             </div>
             {r.chargeMode === "monthly" ? (
-              <span
-                className={`text-xs font-semibold ${r.monthlyFee === "paid" ? "text-brand-700" : "text-amber-600"}`}
-              >
-                Tháng: {r.monthlyFee ? FEE_LABEL[r.monthlyFee] : "Chưa có phiếu"}
+              <span className="flex flex-col items-end gap-1 text-sm font-bold">
+                Phí tháng
+                <span
+                  className={`rounded-full px-2.5 py-0.5 text-[11px] ${
+                    r.monthlyFee === "paid" ? "bg-brand-50 text-brand-700" : "bg-red-50 text-red-600"
+                  }`}
+                >
+                  {r.monthlyFee ? FEE_LABEL[r.monthlyFee] : "Chưa có phiếu"}
+                </span>
               </span>
             ) : (
               <ChargeControls
@@ -137,12 +142,12 @@ export function Attendance({ sessionId, readOnly, fixed, guests, guestOptions, g
         ))}
       </ul>
 
-      <div className="mx-5 mt-6 flex items-center justify-between">
-        <h2 className="font-semibold">Vãng lai · {lists.guests.length} người</h2>
+      <div className="mx-5 mt-6 mb-2 flex items-center justify-between">
+        <h2 className="section-title">Vãng lai · {lists.guests.length} người</h2>
         {!readOnly && (
           <button
             onClick={() => setAddingGuest(true)}
-            className="h-10 rounded-lg border-2 border-brand-600 px-4 text-sm font-semibold text-brand-700"
+            className="h-9 rounded-full bg-brand-600 px-4 text-sm font-bold text-white"
           >
             + Khách
           </button>
@@ -167,15 +172,16 @@ export function Attendance({ sessionId, readOnly, fixed, guests, guestOptions, g
           }}
         />
       )}
-      <ul className="mx-5 divide-y divide-zinc-100">
+      <ul className="mx-5 flex flex-col gap-2">
         {lists.guests.map((r) => (
-          <li key={r.memberId} className="flex min-h-14 items-center gap-3 py-2">
+          <li key={r.memberId} className="card flex min-h-16 items-center gap-3 px-3 py-2">
             <PresenceButton row={r} disabled={readOnly || !r.attendanceId} onToggle={() => togglePresence(r)} />
             <div className="min-w-0 flex-1">
-              <p className="truncate">
-                {r.name} · {GENDER_LABEL[r.gender]}
+              <p className="truncate font-semibold">{r.name}</p>
+              <p className="text-xs text-muted">
+                {GENDER_LABEL[r.gender]}
+                {r.priceNote && ` · ${r.priceNote}`}
               </p>
-              {r.priceNote && <p className="text-xs text-zinc-500">{r.priceNote}</p>}
             </div>
             <ChargeControls
               row={r}
@@ -199,7 +205,7 @@ export function Attendance({ sessionId, readOnly, fixed, guests, guestOptions, g
         ))}
       </ul>
       {!readOnly && lists.guests.length > 0 && (
-        <p className="mx-5 mt-2 text-xs text-zinc-500">
+        <p className="mx-5 mt-2 text-xs text-muted">
           Bấm vào giá để sửa giá riêng. Bỏ dấu ✓ để xóa khách khỏi buổi.
         </p>
       )}
@@ -230,9 +236,9 @@ function optimisticGuest(
 
 function Total({ label, value, warn }: { label: string; value: number; warn?: boolean }) {
   return (
-    <div>
-      <p className="text-xs text-zinc-500">{label}</p>
-      <p className={`font-bold ${warn ? "text-amber-600" : ""}`}>{formatVnd(value)}</p>
+    <div className="rounded-2xl bg-surface-2 px-1 py-2.5">
+      <p className="text-xs text-muted">{label}</p>
+      <p className={`font-bold tracking-tight ${warn ? "text-red-600" : ""}`}>{formatVnd(value)}</p>
     </div>
   );
 }
@@ -244,8 +250,8 @@ function PresenceButton({ row, disabled, onToggle }: { row: AttendanceView; disa
       disabled={disabled}
       aria-pressed={row.isPresent}
       aria-label={`${row.name}: ${row.isPresent ? "có mặt" : "vắng"}`}
-      className={`flex size-11 shrink-0 items-center justify-center rounded-full border-2 text-lg disabled:opacity-50 ${
-        row.isPresent ? "border-brand-600 bg-brand-100 text-brand-700" : "border-zinc-300 text-transparent"
+      className={`flex size-11 shrink-0 items-center justify-center rounded-full border-2 text-lg font-bold disabled:opacity-50 ${
+        row.isPresent ? "border-brand-600 bg-brand-600 text-white" : "border-line-strong text-transparent"
       }`}
     >
       ✓
@@ -288,10 +294,10 @@ function ChargeControls({
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
           aria-label="Giá buổi này"
-          className="h-10 w-24 rounded-lg border border-zinc-300 px-2 text-right"
+          className="h-10 w-24 rounded-2xl border border-line-strong bg-surface px-2 text-right"
         />
-        <button className="h-10 rounded-lg bg-brand-600 px-3 text-sm font-semibold text-white">Lưu</button>
-        <button type="button" onClick={onCancelEdit} aria-label="Bỏ qua" className="h-10 px-2 text-zinc-500">
+        <button className="h-10 rounded-full bg-cta px-3 text-sm font-semibold text-on-cta">Lưu</button>
+        <button type="button" onClick={onCancelEdit} aria-label="Bỏ qua" className="h-10 px-2 text-muted">
           ✕
         </button>
       </form>
@@ -304,15 +310,15 @@ function ChargeControls({
       <button
         onClick={onEdit}
         disabled={disabled}
-        className="text-sm underline decoration-dotted underline-offset-4 disabled:no-underline"
+        className="text-sm font-bold underline decoration-dotted underline-offset-4 disabled:no-underline"
       >
         {formatVnd(row.amountDue)}
       </button>
       <button
         onClick={onTogglePaid}
         disabled={disabled}
-        className={`h-9 min-w-20 rounded-full border px-3 text-xs font-semibold disabled:opacity-40 ${
-          paid ? "border-brand-600 bg-brand-100 text-brand-700" : "border-zinc-300 text-zinc-700"
+        className={`h-9 min-w-20 rounded-full px-3 text-xs font-bold disabled:opacity-40 ${
+          paid ? "bg-brand-50 text-brand-700" : "bg-red-50 text-red-600"
         }`}
       >
         {paid ? "Đã nộp" : "Chưa nộp"}
@@ -340,13 +346,13 @@ function AddGuest({
   const matches = query ? options.filter((o) => o.name.toLowerCase().includes(query)).slice(0, 5) : options.slice(0, 5);
 
   return (
-    <div className="mx-5 mt-3 flex flex-col gap-3 rounded-xl border border-brand-600 bg-brand-50 p-3">
+    <div className="card mx-5 mb-3 flex flex-col gap-3 border-2 border-brand-600 p-3">
       <input
         autoFocus
         placeholder="Tên khách (gõ để tìm người cũ)"
         value={name}
         onChange={(e) => setName(e.target.value)}
-        className="h-11 rounded-lg border border-zinc-300 bg-white px-3"
+        className="h-12 rounded-2xl border border-line-strong bg-surface px-4 outline-none focus:border-2 focus:border-brand-600"
       />
       {matches.length > 0 && (
         <ul className="flex flex-col gap-1">
@@ -354,12 +360,12 @@ function AddGuest({
             <li key={o.id}>
               <button
                 onClick={() => onPickExisting(o)}
-                className="flex h-10 w-full items-center justify-between rounded-lg bg-white px-3 text-left text-sm"
+                className="flex h-11 w-full items-center justify-between rounded-2xl bg-surface-2 px-4 text-left text-sm font-medium"
               >
                 <span>
                   {o.name} · {GENDER_LABEL[o.gender]}
                 </span>
-                <span className="text-brand-700">+ Thêm</span>
+                <span className="font-bold text-brand-700">+ Thêm</span>
               </button>
             </li>
           ))}
@@ -373,25 +379,25 @@ function AddGuest({
             onAddNew(name.trim(), gender);
           }}
         >
-          <p className="text-xs text-zinc-600">Hoặc thêm khách mới tên &quot;{name.trim()}&quot;:</p>
+          <p className="text-xs text-muted">Hoặc thêm khách mới tên &quot;{name.trim()}&quot;:</p>
           <div className="grid grid-cols-2 gap-2">
             {(["male", "female"] as const).map((g) => (
               <button
                 key={g}
                 type="button"
                 onClick={() => setGender(g)}
-                className={`h-11 rounded-lg border text-sm font-semibold ${
-                  gender === g ? "border-brand-600 bg-white text-brand-700" : "border-zinc-300 text-zinc-600"
+                className={`h-11 rounded-full border text-sm font-semibold ${
+                  gender === g ? "border-cta bg-cta text-on-cta" : "border-line-strong text-muted"
                 }`}
               >
                 {GENDER_LABEL[g]} · {formatVnd(prices[g])}
               </button>
             ))}
           </div>
-          <button className="h-11 rounded-lg bg-brand-600 text-sm font-semibold text-white">Thêm khách mới</button>
+          <button className="h-12 rounded-full bg-brand-600 text-sm font-bold text-white">Thêm khách mới</button>
         </form>
       )}
-      <button onClick={onClose} className="h-10 text-sm text-zinc-600">
+      <button onClick={onClose} className="h-10 text-sm text-muted">
         Đóng
       </button>
     </div>

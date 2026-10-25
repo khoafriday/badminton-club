@@ -26,7 +26,7 @@ export function CourtForm({ action, initialValues, submitLabel }: Props) {
         <input name="address" defaultValue={v.address} className={inputClass} />
       </label>
       <PriceInput name="price" label="Giá thuê mỗi giờ" value={v.price} unit="đ/giờ" />
-      <p className="text-xs text-zinc-500">Giá chỉ để xem. Tiền sân vẫn ghi tay trong Quỹ.</p>
+      <p className="text-xs text-muted">Giá chỉ để xem. Tiền sân vẫn ghi tay trong Quỹ.</p>
       <p aria-live="polite" className="min-h-5 text-sm text-red-600">
         {state.error}
       </p>
@@ -52,7 +52,7 @@ export function DeleteCourtButton({ courtId, courtName }: { courtId: string; cou
       </p>
       <button
         disabled={pending}
-        className="h-11 w-full rounded-lg border border-red-200 text-sm font-semibold text-red-600"
+        className="h-11 w-full rounded-full border border-red-200 text-sm font-semibold text-red-600"
       >
         {pending ? "Đang xóa..." : "Xóa sân này"}
       </button>

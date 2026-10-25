@@ -5,7 +5,7 @@ import { BottomNav, NavBar } from "@/app/ui/bottom-nav";
 export default function AppLayout({ children }: LayoutProps<"/">) {
   return (
     <>
-      <div className="flex flex-1 flex-col pb-20">{children}</div>
+      <div className="flex flex-1 flex-col pb-32">{children}</div>
       <Suspense fallback={<NavBar pathname={null} />}>
         <BottomNav />
       </Suspense>

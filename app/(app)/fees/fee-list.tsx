@@ -48,34 +48,36 @@ export function FeeList({ items }: { items: FeeItem[] }) {
   const t = totals(list);
   return (
     <>
-      <section className="mx-5 mt-4 grid grid-cols-3 rounded-xl border border-zinc-200 p-3 text-center">
-        <div>
-          <p className="text-xs text-zinc-500">Phải thu</p>
-          <p className="font-bold">{formatVnd(t.due)}</p>
+      <section className="card mx-5 mt-3 grid grid-cols-3 gap-2 p-2.5 text-center">
+        <div className="rounded-2xl bg-surface-2 px-1 py-2.5">
+          <p className="text-xs text-muted">Phải thu</p>
+          <p className="text-sm font-bold tracking-tight">{formatVnd(t.due)}</p>
         </div>
-        <div>
-          <p className="text-xs text-zinc-500">Đã thu</p>
-          <p className="font-bold">{formatVnd(t.paid)}</p>
+        <div className="rounded-2xl bg-surface-2 px-1 py-2.5">
+          <p className="text-xs text-muted">Đã thu</p>
+          <p className="text-sm font-bold tracking-tight text-brand-700">{formatVnd(t.paid)}</p>
         </div>
-        <div>
-          <p className="text-xs text-zinc-500">Còn nợ</p>
-          <p className={`font-bold ${t.outstanding > 0 ? "text-amber-600" : ""}`}>{formatVnd(t.outstanding)}</p>
+        <div className="rounded-2xl bg-surface-2 px-1 py-2.5">
+          <p className="text-xs text-muted">Còn nợ</p>
+          <p className={`text-sm font-bold tracking-tight ${t.outstanding > 0 ? "text-red-600" : ""}`}>
+            {formatVnd(t.outstanding)}
+          </p>
         </div>
       </section>
       {error && (
-        <p role="alert" className="mx-5 mt-3 rounded-lg bg-red-50 p-3 text-sm text-red-700">
+        <p role="alert" className="mx-5 mt-3 rounded-2xl bg-red-50 p-3 text-sm text-red-700">
           {error}
         </p>
       )}
       {list.length === 0 ? (
-        <p className="px-5 py-10 text-center text-sm text-zinc-500">Không có phiếu phí tháng nào trong tháng này.</p>
+        <p className="px-5 py-10 text-center text-sm text-muted">Không có phiếu phí tháng nào trong tháng này.</p>
       ) : (
-        <ul className="mx-5 mt-3 divide-y divide-zinc-100">
+        <ul className="mx-5 mt-3 flex flex-col gap-2">
           {list.map((f) => (
-            <li key={f.id} className="flex min-h-16 items-center gap-3 py-2">
+            <li key={f.id} className="card flex min-h-16 items-center gap-3 px-4 py-2">
               <Link href={`/members/${f.memberId}`} className="min-w-0 flex-1">
-                <p className="truncate font-medium">{f.name}</p>
-                <p className="text-xs text-zinc-500">
+                <p className="truncate font-semibold">{f.name}</p>
+                <p className="text-xs text-muted">
                   {f.billingMode === "per_session"
                     ? "Vào giữa tháng, tính theo buổi"
                     : f.status === "waived"
@@ -93,10 +95,8 @@ export function FeeList({ items }: { items: FeeItem[] }) {
                           setFeeWaived(f.id, f.status !== "waived"),
                         )
                       }
-                      className={`h-9 rounded-full border px-3 text-xs font-semibold disabled:opacity-50 ${
-                        f.status === "waived"
-                          ? "border-zinc-400 bg-zinc-100 text-zinc-700"
-                          : "border-zinc-200 text-zinc-500"
+                      className={`h-9 rounded-full px-3 text-xs font-bold disabled:opacity-50 ${
+                        f.status === "waived" ? "bg-cta text-on-cta" : "bg-surface-2 text-muted"
                       }`}
                     >
                       Miễn
@@ -108,10 +108,8 @@ export function FeeList({ items }: { items: FeeItem[] }) {
                       onClick={() =>
                         run(f.id, f.status === "paid" ? "unpaid" : "paid", () => setFeePaid(f.id, f.status !== "paid"))
                       }
-                      className={`h-9 min-w-20 rounded-full border px-3 text-xs font-semibold disabled:opacity-50 ${
-                        f.status === "paid"
-                          ? "border-brand-600 bg-brand-100 text-brand-700"
-                          : "border-zinc-300 text-zinc-700"
+                      className={`h-9 min-w-20 rounded-full px-3 text-xs font-bold disabled:opacity-50 ${
+                        f.status === "paid" ? "bg-brand-50 text-brand-700" : "bg-red-50 text-red-600"
                       }`}
                     >
                       {f.status === "paid" ? "Đã nộp" : "Chưa nộp"}

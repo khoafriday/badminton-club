@@ -14,9 +14,9 @@ import { ArchiveClubButton, ClubInfoForm, PricesForm } from "./settings-forms";
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <section className="flex flex-col gap-3 border-b border-zinc-100 px-5 py-5">
-      <h2 className="font-bold">{title}</h2>
-      {children}
+    <section className="flex flex-col gap-2 px-5 pt-2 pb-4">
+      <h2 className="section-title">{title}</h2>
+      <div className="card flex flex-col gap-3 p-4">{children}</div>
     </section>
   );
 }
@@ -46,25 +46,25 @@ async function SettingsContent() {
       </Section>
 
       <Section title="Sân cầu">
-        <p className="-mt-2 text-xs text-zinc-500">Dùng chung cho mọi CLB của bạn.</p>
+        <p className="text-xs text-muted">Dùng chung cho mọi CLB của bạn.</p>
         {courts.length > 0 && (
           <ul className="flex flex-col gap-2">
             {courts.map((c) => (
               <li key={c.id}>
                 <Link
                   href={`/settings/courts/${c.id}`}
-                  className="flex items-center justify-between gap-3 rounded-lg border border-zinc-300 px-3 py-2"
+                  className="flex items-center justify-between gap-3 rounded-2xl bg-surface-2 px-4 py-3"
                 >
                   <span className="min-w-0">
-                    <span className="block font-medium">
+                    <span className="block font-semibold">
                       {c.name}
                       {c.id === club.court_id && (
-                        <span className="ml-2 text-xs font-semibold text-brand-700">CLB này</span>
+                        <span className="ml-2 rounded-full bg-brand-50 px-2 py-0.5 text-[11px] font-bold text-brand-700">CLB này</span>
                       )}
                     </span>
-                    <span className="block truncate text-xs text-zinc-500">{c.address ?? "Chưa có địa chỉ"}</span>
+                    <span className="block truncate text-xs text-muted">{c.address ?? "Chưa có địa chỉ"}</span>
                   </span>
-                  <span className="shrink-0 text-sm text-zinc-700">
+                  <span className="shrink-0 text-sm font-bold">
                     {c.price > 0 ? `${formatVnd(c.price)}/giờ` : "Chưa có giá"}
                   </span>
                 </Link>
@@ -74,7 +74,7 @@ async function SettingsContent() {
         )}
         <Link
           href="/settings/courts/new"
-          className="flex h-11 items-center justify-center rounded-lg border-2 border-brand-600 text-sm font-semibold text-brand-700"
+          className="flex h-11 items-center justify-center rounded-full border border-line-strong bg-surface text-sm font-bold text-ink"
         >
           + Thêm sân
         </Link>
@@ -85,15 +85,15 @@ async function SettingsContent() {
           {clubs.map((c) => (
             <li key={c.id}>
               {c.id === club.id ? (
-                <div className="flex h-12 items-center justify-between rounded-lg border-2 border-brand-600 bg-brand-50 px-3">
-                  <span className="font-medium">{c.name}</span>
-                  <span className="text-xs font-semibold text-brand-700">Đang dùng</span>
+                <div className="flex h-12 items-center justify-between rounded-2xl border-2 border-brand-600 px-4">
+                  <span className="font-semibold">{c.name}</span>
+                  <span className="rounded-full bg-brand-50 px-2.5 py-1 text-xs font-bold text-brand-700">Đang dùng</span>
                 </div>
               ) : (
                 <form action={switchClub.bind(null, c.id)}>
-                  <button className="flex h-12 w-full items-center justify-between rounded-lg border border-zinc-300 px-3 text-left">
-                    <span className="font-medium">{c.name}</span>
-                    <span className="text-xs text-zinc-500">Chuyển sang</span>
+                  <button className="flex h-12 w-full items-center justify-between rounded-2xl bg-surface-2 px-4 text-left">
+                    <span className="font-semibold">{c.name}</span>
+                    <span className="text-xs text-muted">Chuyển sang ›</span>
                   </button>
                 </form>
               )}
@@ -102,7 +102,7 @@ async function SettingsContent() {
         </ul>
         <Link
           href="/settings/clubs/new"
-          className="flex h-11 items-center justify-center rounded-lg border-2 border-brand-600 text-sm font-semibold text-brand-700"
+          className="flex h-11 items-center justify-center rounded-full border border-line-strong bg-surface text-sm font-bold text-ink"
         >
           + Tạo CLB mới
         </Link>
@@ -121,9 +121,9 @@ export default function SettingsPage() {
           <SettingsContent />
         </RequireDatabase>
       </Suspense>
-      <div className="px-5 py-6">
+      <div className="px-5 pt-2 pb-6">
         <form action={logout}>
-          <button className="h-11 w-full rounded-lg bg-zinc-100 text-sm font-semibold text-zinc-700">Đăng xuất</button>
+          <button className="card h-12 w-full text-sm font-bold text-red-600">Đăng xuất</button>
         </form>
       </div>
     </main>

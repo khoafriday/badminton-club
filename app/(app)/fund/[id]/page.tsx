@@ -45,7 +45,7 @@ async function EditTx({ params }: { params: Promise<{ id: string }> }) {
       <form action={deleteTransaction.bind(null, tx.id)}>
         <ConfirmButton
           message="Xóa khoản này khỏi sổ thu chi?"
-          className="h-11 w-full rounded-lg border border-red-200 text-sm font-semibold text-red-600"
+          className="h-11 w-full rounded-full border border-red-200 text-sm font-semibold text-red-600"
         >
           Xóa khoản này
         </ConfirmButton>

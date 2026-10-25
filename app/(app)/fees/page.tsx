@@ -22,7 +22,7 @@ async function FeesContent({ searchParams }: { searchParams: PageProps<"/fees">[
 
   return (
     <>
-      <div className="flex items-center justify-between border-b border-zinc-100 px-5 py-2">
+      <div className="card mx-5 flex items-center justify-between px-2 py-1">
         <Link
           href={`/fees?month=${addMonths(month, -1)}`}
           aria-label="Tháng trước"
@@ -30,7 +30,7 @@ async function FeesContent({ searchParams }: { searchParams: PageProps<"/fees">[
         >
           ‹
         </Link>
-        <p className="font-semibold">{formatMonthLabel(month)}</p>
+        <p className="font-bold">{formatMonthLabel(month)}</p>
         <Link
           href={`/fees?month=${addMonths(month, 1)}`}
           aria-label="Tháng sau"
@@ -40,7 +40,7 @@ async function FeesContent({ searchParams }: { searchParams: PageProps<"/fees">[
         </Link>
       </div>
       {month > today.slice(0, 7) && (
-        <p className="px-5 pt-3 text-sm text-zinc-500">Phiếu của tháng này sẽ được tạo khi tháng bắt đầu.</p>
+        <p className="px-5 pt-3 text-sm text-muted">Phiếu của tháng này sẽ được tạo khi tháng bắt đầu.</p>
       )}
       <FeeList
         key={month}
@@ -54,7 +54,7 @@ async function FeesContent({ searchParams }: { searchParams: PageProps<"/fees">[
           waiveReason: s.waive_reason,
         }))}
       />
-      <p className="px-5 pt-4 text-xs text-zinc-500">
+      <p className="px-5 pt-4 text-xs text-muted">
         Hết tháng mà người cố định không đi buổi nào, phiếu chưa nộp tự chuyển sang Miễn.
       </p>
     </>

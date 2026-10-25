@@ -23,7 +23,7 @@ export function CourtSelect({ courts, value, emptyLabel, emptyHint }: Props) {
           </option>
         ))}
       </select>
-      {courts.length === 0 && <span className="text-xs font-normal text-zinc-500">{emptyHint}</span>}
+      {courts.length === 0 && <span className="text-xs font-normal text-muted">{emptyHint}</span>}
     </label>
   );
 }

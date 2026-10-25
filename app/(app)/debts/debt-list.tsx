@@ -34,33 +34,37 @@ export function DebtList({ debtors }: { debtors: Debtor[] }) {
 
   return (
     <>
-      <section className="mx-5 mt-4 rounded-xl bg-amber-50 p-4 text-amber-900">
-        <p className="text-sm">Tổng còn nợ · {visible.length} người</p>
-        <p className="text-2xl font-bold">{formatVnd(grandTotal)}</p>
+      <section className="hero mx-5 mt-1 p-5">
+        <p className="text-xs opacity-80">Tổng còn nợ</p>
+        <p className="mt-1 text-[32px] leading-tight font-extrabold tracking-tight">{formatVnd(grandTotal)}</p>
+        <p className="mt-1 text-xs opacity-85">{visible.length} người</p>
       </section>
       {error && (
-        <p role="alert" className="mx-5 mt-3 rounded-lg bg-red-50 p-3 text-sm text-red-700">
+        <p role="alert" className="mx-5 mt-3 rounded-2xl bg-red-50 p-3 text-sm text-red-700">
           {error}
         </p>
       )}
       {visible.length === 0 ? (
-        <p className="px-5 py-10 text-center text-sm text-zinc-500">Không ai còn nợ.</p>
+        <p className="px-5 py-10 text-center text-sm text-muted">Không ai còn nợ.</p>
       ) : (
-        <ul className="mt-2">
+        <ul className="mt-3 flex flex-col gap-3 px-5">
           {visible.map((d) => (
-            <li key={d.memberId} className="border-b border-zinc-100 px-5 py-3">
+            <li key={d.memberId} className="card px-4 py-3">
               <div className="flex items-center justify-between">
-                <Link href={`/members/${d.memberId}`} className="font-semibold">
+                <Link href={`/members/${d.memberId}`} className="flex items-center gap-3 font-bold">
+                  <span className="flex size-10 items-center justify-center rounded-full bg-brand-50 text-brand-700">
+                    {d.name.trim().charAt(0).toUpperCase()}
+                  </span>
                   {d.name}
                 </Link>
-                <span className="font-bold text-amber-600">{formatVnd(d.total)}</span>
+                <span className="font-bold text-red-600">{formatVnd(d.total)}</span>
               </div>
-              <ul className="mt-1">
+              <ul className="mt-2 divide-y divide-line">
                 {d.items.map((i) => (
-                  <li key={i.id} className="flex items-center gap-2 py-1 text-sm">
+                  <li key={i.id} className="flex items-center gap-2 py-2 text-sm">
                     <Link
                       href={i.kind === "fee" ? `/fees?month=${i.month}` : `/sessions/${i.sessionId}`}
-                      className="flex-1 text-zinc-600"
+                      className="flex-1 text-muted"
                     >
                       {i.kind === "fee"
                         ? `Phí ${formatMonthLabel(i.month).toLowerCase()}`
@@ -69,7 +73,7 @@ export function DebtList({ debtors }: { debtors: Debtor[] }) {
                     <span>{formatVnd(i.amount)}</span>
                     <button
                       onClick={() => pay(i)}
-                      className="h-8 rounded-full border border-zinc-300 px-3 text-xs font-semibold text-zinc-700"
+                      className="h-8 rounded-full border border-line-strong bg-surface px-3 text-xs font-bold text-ink"
                     >
                       Đã nộp
                     </button>

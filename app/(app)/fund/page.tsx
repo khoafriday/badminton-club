@@ -46,24 +46,51 @@ async function FundContent({ searchParams }: { searchParams: PageProps<"/fund">[
 
   return (
     <>
-      <section className="mx-5 mt-4 rounded-xl bg-brand-600 p-4 text-white">
-        <p className="text-sm opacity-90">Quỹ tồn hiện tại</p>
-        <p className="text-3xl font-bold">{formatVnd(allTime.balance)}</p>
+      <section className="hero mx-5 mt-1 p-5">
+        <p className="text-xs opacity-80">Quỹ tồn hiện tại</p>
+        <p className="mt-1 text-[34px] leading-tight font-extrabold tracking-tight">{formatVnd(allTime.balance)}</p>
+        <p className="mt-1 flex gap-4 text-xs opacity-85">
+          <span>↑ Thu {formatVnd(allTime.income)}</span>
+          <span>↓ Chi {formatVnd(allTime.expense)}</span>
+        </p>
       </section>
 
-      <div className="mt-4 flex flex-col gap-3 px-5">
-        <div className="flex rounded-lg bg-zinc-100 p-1 text-sm font-medium">
+      <div className="mt-3 grid grid-cols-2 gap-2 px-5">
+        <Link
+          href="/fund/new?type=income"
+          className="flex h-12 items-center justify-center rounded-full bg-brand-600 text-sm font-bold text-white"
+        >
+          + Ghi thu
+        </Link>
+        <Link
+          href="/fund/new?type=expense"
+          className="flex h-12 items-center justify-center rounded-full bg-cta text-sm font-bold text-on-cta"
+        >
+          − Ghi chi
+        </Link>
+      </div>
+      <div className="mt-3 flex gap-2 px-5">
+        <Link href="/fees" className="rounded-full border border-line-strong bg-surface px-4 py-2 text-sm font-semibold">
+          Phí tháng ›
+        </Link>
+        <Link href="/debts" className="rounded-full border border-line-strong bg-surface px-4 py-2 text-sm font-semibold">
+          Người còn nợ ›
+        </Link>
+      </div>
+
+      <div className="mt-5 flex flex-col gap-3 px-5">
+        <div className="flex rounded-full bg-surface-2 p-1 text-sm font-semibold">
           {PERIODS.map((p) => (
             <Link
               key={p.key}
               href={fundHref(p.key, date)}
-              className={`flex-1 rounded-md py-1.5 text-center ${p.key === period ? "bg-white shadow-sm" : "text-zinc-500"}`}
+              className={`flex-1 rounded-full py-2 text-center ${p.key === period ? "bg-surface text-ink shadow-card" : "text-muted"}`}
             >
               {p.label}
             </Link>
           ))}
         </div>
-        <div className="flex items-center justify-between">
+        <div className="card flex items-center justify-between px-2 py-1">
           {period === "all" ? (
             <span className="size-10" />
           ) : (
@@ -75,7 +102,7 @@ async function FundContent({ searchParams }: { searchParams: PageProps<"/fund">[
               ‹
             </Link>
           )}
-          <p className="font-semibold">{periodLabel(period, date)}</p>
+          <p className="font-bold">{periodLabel(period, date)}</p>
           {period === "all" ? (
             <span className="size-10" />
           ) : (
@@ -88,40 +115,26 @@ async function FundContent({ searchParams }: { searchParams: PageProps<"/fund">[
             </Link>
           )}
         </div>
-        <div className="grid grid-cols-3 rounded-xl border border-zinc-200 p-3 text-center">
-          <div>
-            <p className="text-xs text-zinc-500">Tổng thu</p>
-            <p className="font-bold text-brand-700">{formatVnd(sum.income)}</p>
+        <div className="card grid grid-cols-3 gap-2 p-2.5 text-center">
+          <div className="rounded-2xl bg-surface-2 px-1 py-2.5">
+            <p className="text-xs text-muted">Tổng thu</p>
+            <p className="text-sm font-bold tracking-tight text-brand-700">{formatVnd(sum.income)}</p>
           </div>
-          <div>
-            <p className="text-xs text-zinc-500">Tổng chi</p>
-            <p className="font-bold text-red-600">{formatVnd(sum.expense)}</p>
+          <div className="rounded-2xl bg-surface-2 px-1 py-2.5">
+            <p className="text-xs text-muted">Tổng chi</p>
+            <p className="text-sm font-bold tracking-tight text-red-600">{formatVnd(sum.expense)}</p>
           </div>
-          <div>
-            <p className="text-xs text-zinc-500">Chênh lệch</p>
-            <p className="font-bold">{formatVnd(sum.balance)}</p>
+          <div className="rounded-2xl bg-surface-2 px-1 py-2.5">
+            <p className="text-xs text-muted">Chênh lệch</p>
+            <p className="text-sm font-bold tracking-tight">{formatVnd(sum.balance)}</p>
           </div>
-        </div>
-        <div className="grid grid-cols-2 gap-2">
-          <Link
-            href="/fund/new?type=expense"
-            className="flex h-11 items-center justify-center rounded-lg border-2 border-red-200 text-sm font-semibold text-red-600"
-          >
-            − Ghi khoản chi
-          </Link>
-          <Link
-            href="/fund/new?type=income"
-            className="flex h-11 items-center justify-center rounded-lg border-2 border-brand-600 text-sm font-semibold text-brand-700"
-          >
-            + Ghi khoản thu
-          </Link>
         </div>
       </div>
 
       {inRange.length === 0 ? (
-        <p className="px-5 py-10 text-center text-sm text-zinc-500">Chưa có khoản thu chi nào trong kỳ này.</p>
+        <p className="px-5 py-10 text-center text-sm text-muted">Chưa có khoản thu chi nào trong kỳ này.</p>
       ) : (
-        <ul className="mt-4 divide-y divide-zinc-100 border-t border-zinc-100">
+        <ul className="mt-3 flex flex-col gap-2 px-5">
           {inRange.map((r) => (
             <li key={r.id}>
               <Link
@@ -132,15 +145,29 @@ async function FundContent({ searchParams }: { searchParams: PageProps<"/fund">[
                       ? `/sessions/${r.sessionId}`
                       : `/fees?month=${r.occurredOn.slice(0, 7)}`
                 }
-                className="flex items-center gap-3 px-5 py-3 active:bg-zinc-50"
+                className="card flex items-center gap-3 px-3 py-2.5 active:bg-surface-2"
               >
-                <span className="w-12 shrink-0 text-xs text-zinc-500">{formatShortDate(r.occurredOn)}</span>
-                <span className="min-w-0 flex-1">
-                  <span className="block truncate text-sm font-medium">{r.category}</span>
-                  {r.description && <span className="block truncate text-xs text-zinc-500">{r.description}</span>}
-                  {r.source !== "manual" && <span className="block text-xs text-zinc-400">Tự ghi khi bấm Đã nộp</span>}
+                <span
+                  className={`flex size-10 shrink-0 items-center justify-center rounded-full text-lg font-bold ${
+                    r.type === "income" ? "bg-brand-50 text-brand-700" : "bg-red-50 text-red-600"
+                  }`}
+                  aria-hidden
+                >
+                  {r.type === "income" ? "↑" : "↓"}
                 </span>
-                <span className={`text-sm font-semibold ${r.type === "income" ? "text-brand-700" : "text-red-600"}`}>
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-sm font-semibold">{r.description || r.category}</span>
+                  <span className="block truncate text-xs text-muted">
+                    {[
+                      formatShortDate(r.occurredOn),
+                      r.description ? r.category : null,
+                      r.source !== "manual" ? "Tự ghi khi bấm Đã nộp" : null,
+                    ]
+                      .filter(Boolean)
+                      .join(" · ")}
+                  </span>
+                </span>
+                <span className={`text-sm font-bold ${r.type === "income" ? "text-brand-700" : "text-red-600"}`}>
                   {r.type === "income" ? "+" : "−"}
                   {formatVnd(r.amount)}
                 </span>

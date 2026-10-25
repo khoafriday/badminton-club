@@ -59,10 +59,10 @@ async function MemberList({ searchParams }: { searchParams: PageProps<"/members"
 
   return (
     <>
-      <div className="flex flex-col gap-3 border-b border-zinc-100 px-5 py-3">
+      <div className="flex flex-col gap-3 px-5 pb-3">
         <div className="flex items-center justify-between">
-          <p className="text-sm text-zinc-500">{club.name}</p>
-          <Link href="/fees" className="text-sm font-semibold text-brand-700">
+          <p className="text-sm text-muted">{club.name}</p>
+          <Link href="/fees" className="rounded-full bg-brand-50 px-3 py-2 text-xs font-bold text-brand-700">
             Phí tháng ›
           </Link>
         </div>
@@ -73,7 +73,7 @@ async function MemberList({ searchParams }: { searchParams: PageProps<"/members"
             type="search"
             defaultValue={q}
             placeholder="Tìm theo tên hoặc số điện thoại"
-            className="h-11 flex-1 rounded-lg border border-zinc-300 px-3 text-base outline-none focus:border-brand-600"
+            className="h-12 flex-1 rounded-full border border-line-strong bg-surface px-5 text-base outline-none focus:border-2 focus:border-brand-600"
           />
         </form>
         <nav className="flex gap-2 overflow-x-auto">
@@ -81,8 +81,8 @@ async function MemberList({ searchParams }: { searchParams: PageProps<"/members"
             <Link
               key={f.key}
               href={filterHref(f.key, q)}
-              className={`shrink-0 rounded-full px-4 py-1.5 text-sm font-medium ${
-                f.key === filter ? "bg-brand-600 text-white" : "bg-zinc-100 text-zinc-700"
+              className={`shrink-0 rounded-full border px-4 py-2 text-sm font-semibold ${
+                f.key === filter ? "border-cta bg-cta text-on-cta" : "border-line-strong bg-surface text-muted"
               }`}
             >
               {f.label}
@@ -92,26 +92,26 @@ async function MemberList({ searchParams }: { searchParams: PageProps<"/members"
       </div>
 
       {members.length === 0 ? (
-        <p className="px-5 py-10 text-center text-sm text-zinc-500">
+        <p className="px-5 py-10 text-center text-sm text-muted">
           {q ? "Không tìm thấy ai." : filter === "all" ? "Chưa có thành viên. Bấm + để thêm." : "Không có ai trong mục này."}
         </p>
       ) : (
-        <ul className="divide-y divide-zinc-100">
+        <ul className="flex flex-col gap-2 px-5">
           {members.map((m) => (
             <li key={m.id}>
-              <Link href={`/members/${m.id}`} className="flex items-center gap-3 px-5 py-3 active:bg-zinc-50">
-                <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-brand-50 font-semibold text-brand-700">
+              <Link href={`/members/${m.id}`} className="card flex items-center gap-3 px-3 py-2.5 active:bg-surface-2">
+                <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-brand-50 font-bold text-brand-700">
                   {m.full_name.trim().charAt(0).toUpperCase()}
                 </span>
                 <span className="flex min-w-0 flex-1 flex-col">
-                  <span className="truncate font-medium">{m.full_name}</span>
-                  <span className="text-xs text-zinc-500">
+                  <span className="truncate font-semibold">{m.full_name}</span>
+                  <span className="text-xs text-muted">
                     {m.member_type === "fixed" ? "Cố định" : "Vãng lai"} · {m.gender === "male" ? "Nam" : "Nữ"}
                     {m.phone ? ` · ${m.phone}` : ""}
                   </span>
                 </span>
                 {m.status === "inactive" && (
-                  <span className="rounded bg-zinc-100 px-2 py-0.5 text-xs text-zinc-500">Nghỉ</span>
+                  <span className="rounded-full bg-surface-2 px-2.5 py-1 text-xs font-bold text-muted">Nghỉ</span>
                 )}
               </Link>
             </li>
@@ -126,7 +126,7 @@ async function MemberList({ searchParams }: { searchParams: PageProps<"/members"
 
 export default function MembersPage({ searchParams }: PageProps<"/members">) {
   return (
-    <main className="flex flex-1 flex-col pb-20">
+    <main className="flex flex-1 flex-col">
       <PageHeader title="Thành viên" />
       <Suspense fallback={<Loading />}>
         <RequireDatabase>

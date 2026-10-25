@@ -1,11 +1,147 @@
 @import "tailwindcss";
 
-@theme {
-  /* Brand green. Change these to restyle the whole app. */
-  --color-brand-50: #f0fdf4;
-  --color-brand-100: #dcfce7;
-  --color-brand-600: #16a34a;
-  --color-brand-700: #15803d;
+/*
+ * Colors are CSS variables so the whole app follows the phone's light or dark setting.
+ * Change the values in :root (light) and in the dark block below to restyle the app.
+ */
+:root {
+  --page: #f8faf9;
+  --surface: #ffffff;
+  --surface-2: #f4f7f5;
+  --line: #edf0ee;
+  --line-strong: #dfe5e1;
+  --ink: #0f1a14;
+  --muted: #6b7a72;
+  --faint: #9aa8a1;
+  /* Main button: near black on light, near white on dark. */
+  --cta: #0f1a14;
+  --on-cta: #ffffff;
+  --nav: rgb(15 26 20 / 0.94);
+  --nav-text: #9aa8a1;
+
+  --brand-50: #ecfdf5;
+  --brand-100: #d1fae5;
+  --brand-600: #059669;
+  --brand-700: #047857;
+  --brand-900: #064e3b;
+  --brand-glow: #34d399;
+
+  --red-50: #fef2f2;
+  --red-100: #fee2e2;
+  --red-200: #fecaca;
+  --red-600: #dc2626;
+  --red-700: #b91c1c;
+
+  --amber-50: #fffbeb;
+  --amber-200: #fde68a;
+  --amber-300: #fcd34d;
+  --amber-600: #d97706;
+  --amber-700: #b45309;
+  --amber-800: #92400e;
+  --amber-900: #78350f;
+
+  --shadow-card: 0 2px 10px rgb(15 40 25 / 0.04);
+  --shadow-hero: 0 14px 30px rgb(5 150 105 / 0.3);
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --page: #0c110f;
+    --surface: #151b18;
+    --surface-2: #1b2320;
+    --line: #1f2723;
+    --line-strong: #2e3934;
+    --ink: #eef3f0;
+    --muted: #8c9a93;
+    --faint: #5e6b65;
+    --cta: #f1f5f3;
+    --on-cta: #0c110f;
+    --nav: rgb(30 38 34 / 0.94);
+    --nav-text: #87958e;
+
+    --brand-50: rgb(16 185 129 / 0.14);
+    --brand-100: rgb(16 185 129 / 0.22);
+    --brand-600: #10b981;
+    --brand-700: #34d399;
+
+    --red-50: rgb(248 113 113 / 0.12);
+    --red-100: rgb(248 113 113 / 0.18);
+    --red-200: rgb(248 113 113 / 0.35);
+    --red-600: #f87171;
+    --red-700: #fca5a5;
+
+    --amber-50: rgb(251 191 36 / 0.1);
+    --amber-200: rgb(251 191 36 / 0.3);
+    --amber-300: rgb(251 191 36 / 0.45);
+    --amber-600: #fbbf24;
+    --amber-700: #fcd34d;
+    --amber-800: #fde68a;
+    --amber-900: #fef3c7;
+
+    --shadow-card: none;
+    --shadow-hero: 0 14px 30px rgb(5 150 105 / 0.2);
+    color-scheme: dark;
+  }
+}
+
+@theme inline {
+  --font-sans: var(--font-app), ui-sans-serif, system-ui, sans-serif;
+
+  --color-page: var(--page);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-faint: var(--faint);
+  --color-cta: var(--cta);
+  --color-on-cta: var(--on-cta);
+  --color-nav: var(--nav);
+  --color-nav-text: var(--nav-text);
+
+  --color-brand-50: var(--brand-50);
+  --color-brand-100: var(--brand-100);
+  --color-brand-600: var(--brand-600);
+  --color-brand-700: var(--brand-700);
+  --color-brand-900: var(--brand-900);
+  --color-brand-glow: var(--brand-glow);
+
+  --color-red-50: var(--red-50);
+  --color-red-100: var(--red-100);
+  --color-red-200: var(--red-200);
+  --color-red-600: var(--red-600);
+  --color-red-700: var(--red-700);
+
+  --color-amber-50: var(--amber-50);
+  --color-amber-200: var(--amber-200);
+  --color-amber-300: var(--amber-300);
+  --color-amber-600: var(--amber-600);
+  --color-amber-700: var(--amber-700);
+  --color-amber-800: var(--amber-800);
+  --color-amber-900: var(--amber-900);
+
+  --shadow-card: var(--shadow-card);
+  --shadow-hero: var(--shadow-hero);
+}
+
+@layer components {
+  /* White rounded card used on every screen. */
+  .card {
+    @apply rounded-3xl border border-line bg-surface shadow-card;
+  }
+  /* Green gradient card for the main number of a screen (fund balance, total owed). */
+  .hero {
+    @apply rounded-3xl text-white shadow-hero;
+    background:
+      radial-gradient(circle at 90% 10%, var(--brand-glow) 0, transparent 45%),
+      linear-gradient(135deg, #059669, var(--brand-900));
+  }
+  /* Small uppercase title above a group of cards. */
+  .section-title {
+    @apply px-1 text-[11px] font-bold tracking-wider text-muted uppercase;
+  }
 }
 
 html,

@@ -31,12 +31,12 @@ async function EditSchedule({ params }: { params: Promise<{ id: string }> }) {
           court_id: schedule.court_id ?? club.court_id ?? "",
         }}
       />
-      <p className="text-xs text-zinc-500">
+      <p className="text-xs text-muted">
         Sửa giờ sẽ cập nhật các buổi sắp tới chưa điểm danh. Buổi đã điểm danh hoặc đã hủy giữ nguyên.
       </p>
       <form action={setScheduleActive.bind(null, schedule.id, !schedule.is_active)}>
         <button
-          className={`h-11 w-full rounded-lg border text-sm font-semibold ${
+          className={`h-11 w-full rounded-2xl border text-sm font-semibold ${
             schedule.is_active ? "border-amber-300 text-amber-700" : "border-brand-600 text-brand-700"
           }`}
         >
