@@ -27,7 +27,7 @@ function SettingsDivider() {
   return (
     <div className="flex items-center gap-3 px-5 pt-4 pb-2">
       <hr className="flex-1 border-line-strong" />
-      <span className="text-[11px] font-bold tracking-wider text-faint uppercase">Dùng chung mọi CLB</span>
+      <span className="text-[11px] font-bold tracking-wider text-faint uppercase">Cấu hình chung</span>
       <hr className="flex-1 border-line-strong" />
     </div>
   );
