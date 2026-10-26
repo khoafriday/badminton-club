@@ -3,16 +3,19 @@ import { NoClub } from "@/app/clubs/no-club";
 import { RequireDatabase } from "@/app/ui/database-missing";
 import { Loading } from "@/app/ui/loading";
 import { PageHeader } from "@/app/ui/page-header";
-import { loadClub, todayInVietnam } from "@/lib/club";
+import { getPriceSettings, loadClub, todayInVietnam } from "@/lib/club";
 import { loadDebtors } from "@/lib/debts";
-import { waiveFullMonthAbsences } from "@/lib/fees";
+import { priceUnpricedSlips, waiveFullMonthAbsences } from "@/lib/fees";
 import { DebtList } from "./debt-list";
 
 async function DebtsContent() {
   const { club } = await loadClub();
   if (!club) return <NoClub />;
-  // Waiving has to finish first: a slip that becomes Miễn is no longer a debt.
-  await waiveFullMonthAbsences(club.id, todayInVietnam());
+  // Both have to finish first: a 0đ slip only shows as a debt once priced, and a Miễn slip is no debt.
+  await Promise.all([
+    getPriceSettings(club.id).then((s) => priceUnpricedSlips(club.id, s)),
+    waiveFullMonthAbsences(club.id, todayInVietnam()),
+  ]);
   return <DebtList debtors={await loadDebtors(club.id)} />;
 }
 

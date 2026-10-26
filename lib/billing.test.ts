@@ -7,6 +7,7 @@ import {
   fundSummary,
   monthEnd,
   periodRange,
+  priceForUnpricedSlip,
   sessionTotals,
   type MemberForBilling,
   type PriceSettings,
@@ -119,5 +120,25 @@ describe("formatVnd", () => {
     expect(formatVnd(12480000)).toBe("12.480.000đ");
     expect(formatVnd(-560000)).toBe("-560.000đ");
     expect(formatVnd(0)).toBe("0đ");
+  });
+});
+
+describe("priceForUnpricedSlip", () => {
+  const slip = { billingMode: "monthly", amountDue: 0, paymentStatus: "unpaid" } as const;
+
+  it("gives an unpaid 0đ monthly slip the fee for the member's gender", () => {
+    expect(priceForUnpricedSlip(slip, "male", prices)).toBe(300000);
+    expect(priceForUnpricedSlip(slip, "female", prices)).toBe(250000);
+  });
+
+  it("leaves the slip alone while the fee is still 0", () => {
+    expect(priceForUnpricedSlip(slip, "male", { ...prices, monthlyFeeMale: 0 })).toBeNull();
+  });
+
+  it("never touches priced, paid, Miễn or per-session slips", () => {
+    expect(priceForUnpricedSlip({ ...slip, amountDue: 280000 }, "male", prices)).toBeNull();
+    expect(priceForUnpricedSlip({ ...slip, paymentStatus: "paid" }, "male", prices)).toBeNull();
+    expect(priceForUnpricedSlip({ ...slip, paymentStatus: "waived" }, "male", prices)).toBeNull();
+    expect(priceForUnpricedSlip({ ...slip, billingMode: "per_session" }, "male", prices)).toBeNull();
   });
 });

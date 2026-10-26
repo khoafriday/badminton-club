@@ -117,6 +117,20 @@ export function buildFeeSlip(
   };
 }
 
+/**
+ * GIA-4 has one exception: an unpaid monthly slip made while the monthly fee was still 0
+ * takes the fee once one is set. Returns the new amount, or null when the slip stays as it is.
+ */
+export function priceForUnpricedSlip(
+  slip: Pick<FeeSlip, "billingMode" | "amountDue" | "paymentStatus">,
+  gender: Gender,
+  settings: PriceSettings,
+): number | null {
+  if (slip.billingMode !== "monthly" || slip.paymentStatus !== "unpaid" || slip.amountDue !== 0) return null;
+  const fee = monthlyFee(settings, gender);
+  return fee > 0 ? fee : null;
+}
+
 /** PHI-1: an unpaid monthly slip is waived when the member came to no session that month. */
 export function applyFullMonthAbsence(slip: FeeSlip, sessionsAttended: number): FeeSlip {
   if (slip.billingMode !== "monthly" || slip.paymentStatus !== "unpaid" || sessionsAttended > 0) {

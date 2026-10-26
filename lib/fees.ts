@@ -4,6 +4,7 @@ import {
   buildFeeSlip,
   monthEnd,
   monthStart,
+  priceForUnpricedSlip,
   type FeeStatus,
   type MemberForBilling,
   type PriceSettings,
@@ -38,6 +39,7 @@ function toBilling(m: MemberRow): MemberForBilling {
  * Existing slips are never recalculated (GIA-4). Only runs for months that have started.
  */
 export async function ensureFeeSlips(clubId: string, month: string, today: string, settings: PriceSettings) {
+  await priceUnpricedSlips(clubId, settings);
   const period = monthStart(month);
   if (period > monthStart(today)) return;
 
@@ -69,6 +71,44 @@ export async function ensureFeeSlips(clubId: string, month: string, today: strin
     .from("membership_fees")
     .upsert(rows, { onConflict: "member_id,period_month", ignoreDuplicates: true });
   if (insertError) throw insertError;
+}
+
+/** Gives the monthly fee to unpaid 0đ slips of any month, made before the fee was set in Cài đặt. */
+export async function priceUnpricedSlips(clubId: string, settings: PriceSettings) {
+  const { data: slips, error } = await db()
+    .from("membership_fees")
+    .select("id, billing_mode, amount_due, payment_status, members!inner(gender)")
+    .eq("club_id", clubId)
+    .eq("billing_mode", "monthly")
+    .eq("payment_status", "unpaid")
+    .eq("amount_due", 0);
+  if (error) throw error;
+
+  await Promise.all(
+    (
+      slips as unknown as {
+        id: string;
+        billing_mode: "monthly" | "per_session";
+        amount_due: number;
+        payment_status: FeeStatus;
+        members: { gender: "male" | "female" };
+      }[]
+    ).map(async (s) => {
+      const amount = priceForUnpricedSlip(
+        { billingMode: s.billing_mode, amountDue: Number(s.amount_due), paymentStatus: s.payment_status },
+        s.members.gender,
+        settings,
+      );
+      if (amount === null) return;
+      const { error: updateError } = await db()
+        .from("membership_fees")
+        .update({ amount_due: amount, updated_at: new Date().toISOString() })
+        .eq("id", s.id)
+        .eq("payment_status", "unpaid")
+        .eq("amount_due", 0);
+      if (updateError) throw updateError;
+    }),
+  );
 }
 
 /** PHI-1: once a month is over, an unpaid monthly slip of someone who came to no session becomes Miễn. */
