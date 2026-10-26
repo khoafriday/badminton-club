@@ -129,3 +129,34 @@ export async function listFeeSlips(clubId: string, month: string): Promise<FeeSl
     .map((s) => ({ ...s, amount_due: Number(s.amount_due) }))
     .sort((a, b) => a.members.full_name.localeCompare(b.members.full_name, "vi"));
 }
+
+export type UnpaidFee = { id: string; memberId: string; memberName: string; month: string; amount: number };
+
+/** Unpaid monthly slips of the club, by member then month, for "Thu tiền sân" in the fund form. */
+export async function listUnpaidFees(clubId: string): Promise<UnpaidFee[]> {
+  const { data, error } = await db()
+    .from("membership_fees")
+    .select("id, member_id, period_month, amount_due, members!inner(full_name)")
+    .eq("club_id", clubId)
+    .eq("billing_mode", "monthly")
+    .eq("payment_status", "unpaid")
+    .gt("amount_due", 0);
+  if (error) throw error;
+  return (
+    data as unknown as {
+      id: string;
+      member_id: string;
+      period_month: string;
+      amount_due: number;
+      members: { full_name: string };
+    }[]
+  )
+    .map((s) => ({
+      id: s.id,
+      memberId: s.member_id,
+      memberName: s.members.full_name,
+      month: s.period_month.slice(0, 7),
+      amount: Number(s.amount_due),
+    }))
+    .sort((a, b) => a.memberName.localeCompare(b.memberName, "vi") || a.month.localeCompare(b.month));
+}

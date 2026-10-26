@@ -5,6 +5,7 @@ import { RequireDatabase } from "@/app/ui/database-missing";
 import { Loading } from "@/app/ui/loading";
 import { PageHeader } from "@/app/ui/page-header";
 import { loadClub, todayInVietnam } from "@/lib/club";
+import { listUnpaidFees } from "@/lib/fees";
 import { listCategories } from "@/lib/fund";
 import { TxForm } from "../tx-form";
 
@@ -12,7 +13,7 @@ async function NewTx({ searchParams }: { searchParams: PageProps<"/fund/new">["s
   const sp = await searchParams;
   const { club } = await loadClub();
   if (!club) return <NoClub />;
-  const categories = await listCategories(club.id);
+  const [categories, unpaidFees] = await Promise.all([listCategories(club.id), listUnpaidFees(club.id)]);
   const type = sp.type === "income" ? "income" : "expense";
   return (
     <div className="px-5 py-6">
@@ -21,6 +22,7 @@ async function NewTx({ searchParams }: { searchParams: PageProps<"/fund/new">["s
         key={type}
         action={createTransaction}
         categories={categories}
+        unpaidFees={unpaidFees}
         submitLabel="Lưu"
         initialValues={{
           type,
