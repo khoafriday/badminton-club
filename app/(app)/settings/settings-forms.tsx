@@ -10,6 +10,7 @@ import {
 } from "@/app/actions/settings";
 import { CourtSelect, type CourtOption } from "@/app/ui/court-select";
 import { inputClass, labelClass, primaryButtonClass } from "@/app/ui/form";
+import { MoneyInput } from "@/app/ui/money-input";
 
 function FormStatus({ error, saved }: { error: string | null; saved: boolean }) {
   return (
@@ -58,12 +59,7 @@ export function PriceInput({
     <label className={labelClass}>
       {label}
       <div className="relative">
-        <input
-          name={name}
-          defaultValue={value}
-          inputMode="numeric"
-          className={`${inputClass} ${unit.length > 1 ? "pr-16" : "pr-8"}`}
-        />
+        <MoneyInput name={name} initialValue={value} className={`${inputClass} ${unit.length > 1 ? "pr-16" : "pr-8"}`} />
         <span className="pointer-events-none absolute top-1/2 right-4 -translate-y-1/2 text-faint">{unit}</span>
       </div>
     </label>

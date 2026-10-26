@@ -1,4 +1,4 @@
-import { inputClass, labelClass } from "./form";
+import { labelClass, selectClass } from "./form";
 
 export type CourtOption = { id: string; name: string };
 
@@ -15,7 +15,7 @@ export function CourtSelect({ courts, value, emptyLabel, emptyHint }: Props) {
   return (
     <label className={labelClass}>
       Sân
-      <select name="court_id" defaultValue={value} className={inputClass}>
+      <select name="court_id" defaultValue={value} className={selectClass}>
         {(emptyLabel !== null || courts.length === 0) && <option value="">{emptyLabel ?? "Chưa có sân"}</option>}
         {courts.map((c) => (
           <option key={c.id} value={c.id}>

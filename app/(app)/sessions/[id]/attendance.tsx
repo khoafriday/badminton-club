@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useOptimistic, useState, useTransition } from "react";
 import { addNewGuest, setLinePaid, setLinePrice, setPresence, type AttendanceResult } from "@/app/actions/attendance";
 import { formatVnd, sessionTotals, type FeeStatus, type Gender } from "@/lib/billing";
+import { MoneyInput } from "@/app/ui/money-input";
 import type { AttendanceView, GuestOption } from "@/lib/attendance";
 
 type Lists = { fixed: AttendanceView[]; guests: AttendanceView[] };
@@ -288,11 +289,10 @@ function ChargeControls({
           onSavePrice(draft, amount);
         }}
       >
-        <input
+        <MoneyInput
           autoFocus
-          inputMode="numeric"
-          value={draft}
-          onChange={(e) => setDraft(e.target.value)}
+          initialValue={draft}
+          onValueChange={setDraft}
           aria-label="Giá buổi này"
           className="h-10 w-24 rounded-2xl border border-line-strong bg-surface px-2 text-right"
         />

@@ -15,7 +15,7 @@ Bản mẫu. Đã có:
 - Tổng quan: buổi 7 ngày tới, tiền đã thu và còn nợ trong tháng, quỹ tồn. Người còn nợ `/debts`, bấm Đã nộp ngay tại chỗ.
 - Quỹ: quỹ tồn, tổng thu chi theo tháng, quý, toàn bộ. Ghi, sửa, xóa khoản thu chi tay.
 - Cài đặt: giá phí tháng và giá vãng lai Nam/Nữ, thông tin CLB, danh sách sân cầu (tên, địa chỉ, giá thuê mỗi giờ, dùng chung cho mọi CLB; mỗi CLB chọn 1 sân), nhiều CLB (tạo, chuyển, xóa), đăng xuất.
-- Lịch: xem theo tuần hoặc tháng, lịch tuần (app tự tạo buổi cho 4 tuần tới), thêm buổi lẻ, sửa, hủy, khôi phục, xóa buổi chưa có dữ liệu. Sân của buổi và lịch tuần chọn từ danh sách sân cầu.
+- Lịch: xem theo tuần hoặc tháng, lịch cố định (app tự tạo buổi cho 4 tuần tới), thêm buổi lẻ, sửa, hủy, khôi phục, xóa buổi chưa có dữ liệu. Sân của buổi và lịch cố định chọn từ danh sách sân cầu.
 - Điểm danh từng buổi: có mặt, thêm nhanh khách (người cũ hoặc người mới), giá tự điền theo giới tính, sửa giá riêng, Đã nộp ghi vào sổ thu chi.
 - Phí tháng `/fees`: phiếu tự tạo đầu tháng cho người cố định, Đã nộp, Miễn, hết tháng không đi buổi nào tự chuyển Miễn.
 - Chi tiết thành viên có tiền còn nợ, phiếu phí tháng và các buổi đã đi.

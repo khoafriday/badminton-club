@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Suspense } from "react";
 import { NoClub } from "@/app/clubs/no-club";
+import { ClubPicker } from "@/app/ui/club-picker";
 import { RequireDatabase } from "@/app/ui/database-missing";
 import { Fab } from "@/app/ui/fab";
 import { Loading } from "@/app/ui/loading";
@@ -71,7 +72,7 @@ async function ScheduleContent({ searchParams }: { searchParams: PageProps<"/sch
             ))}
           </div>
           <Link href="/schedule/weekly" className="rounded-full bg-brand-50 px-3 py-2 text-xs font-bold text-brand-700">
-            Lịch tuần ›
+            Lịch cố định ›
           </Link>
         </div>
         <div className="card flex items-center justify-between px-2 py-1">
@@ -97,7 +98,7 @@ async function ScheduleContent({ searchParams }: { searchParams: PageProps<"/sch
           <p>Không có buổi nào {view === "week" ? "trong tuần này" : "trong tháng này"}.</p>
           {scheduleCount === 0 && (
             <p className="mt-1">
-              Tạo <Link href="/schedule/weekly" className="font-semibold text-brand-700">lịch tuần</Link> để app tự
+              Tạo <Link href="/schedule/weekly" className="font-semibold text-brand-700">lịch cố định</Link> để app tự
               tạo buổi, hoặc bấm + để thêm buổi lẻ.
             </p>
           )}
@@ -154,7 +155,14 @@ async function ScheduleContent({ searchParams }: { searchParams: PageProps<"/sch
 export default function SchedulePage({ searchParams }: PageProps<"/schedule">) {
   return (
     <main className="flex flex-1 flex-col">
-      <PageHeader title="Lịch" />
+      <PageHeader
+        title="Lịch"
+        right={
+          <Suspense>
+            <ClubPicker />
+          </Suspense>
+        }
+      />
       <Suspense fallback={<Loading />}>
         <RequireDatabase>
           <ScheduleContent searchParams={searchParams} />

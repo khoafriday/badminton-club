@@ -19,6 +19,18 @@ export async function listCourts(userId: string): Promise<Court[]> {
   return data.map(toCourt);
 }
 
+/** The courts a club has registered (club_courts), oldest link first. The MVP gives a club at most one. */
+export async function listClubCourts(clubId: string): Promise<Court[]> {
+  const { data, error } = await db()
+    .from("club_courts")
+    .select("courts(id, name, address, price)")
+    .eq("club_id", clubId)
+    .order("created_at")
+    .overrideTypes<{ courts: CourtRow | null }[], { merge: false }>();
+  if (error) throw error;
+  return data.flatMap((r) => (r.courts ? [toCourt(r.courts)] : []));
+}
+
 export async function getCourt(userId: string, courtId: string): Promise<Court | null> {
   const { data, error } = await db()
     .from("courts")

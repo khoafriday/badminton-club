@@ -3,7 +3,8 @@
 import { useActionState, useState } from "react";
 import type { TxFormState, TxFormValues } from "@/app/actions/fund";
 import { Choice } from "@/app/ui/choice";
-import { inputClass, labelClass, primaryButtonClass } from "@/app/ui/form";
+import { inputClass, labelClass, primaryButtonClass, selectClass } from "@/app/ui/form";
+import { MoneyInput } from "@/app/ui/money-input";
 import type { CategoryOption } from "@/lib/fund";
 
 type Props = {
@@ -33,7 +34,7 @@ export function TxForm({ action, initialValues, categories, submitLabel }: Props
           name="category_id"
           defaultValue={options.some((o) => o.id === v.category_id) ? v.category_id : ""}
           required
-          className={inputClass}
+          className={selectClass}
         >
           <option value="" disabled>
             Chọn loại
@@ -48,7 +49,7 @@ export function TxForm({ action, initialValues, categories, submitLabel }: Props
       <label className={labelClass}>
         Số tiền
         <div className="relative">
-          <input name="amount" defaultValue={v.amount} inputMode="numeric" required className={`${inputClass} pr-8`} />
+          <MoneyInput name="amount" initialValue={v.amount} required className={`${inputClass} pr-8`} />
           <span className="pointer-events-none absolute top-1/2 right-4 -translate-y-1/2 text-faint">đ</span>
         </div>
       </label>

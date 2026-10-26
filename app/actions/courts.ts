@@ -69,7 +69,7 @@ export async function deleteCourt(courtId: string): Promise<DeleteCourtState> {
   ]);
   if (sessions.error || schedules.error) return { error: "Không xóa được. Thử lại sau." };
   if ((sessions.count ?? 0) + (schedules.count ?? 0) > 0) {
-    return { error: "Sân đã có buổi tập hoặc lịch tuần dùng, không xóa được." };
+    return { error: "Sân đã có buổi tập hoặc lịch cố định dùng, không xóa được." };
   }
   // A deleted (archived) club keeps its money history, not its court.
   if (uses.length > 0) {

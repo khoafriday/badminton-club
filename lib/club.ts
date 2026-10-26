@@ -66,8 +66,8 @@ export function todayInVietnam(): string {
   return new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Ho_Chi_Minh" }).format(new Date());
 }
 
-/** All clubs the user owns that are not archived, oldest first. */
-export async function listClubs(userId: string): Promise<Club[]> {
+/** All clubs the user owns that are not archived, oldest first. Cached per request like getCurrentClub. */
+export const listClubs = cache(async (userId: string): Promise<Club[]> => {
   const { data, error } = await db()
     .from("clubs")
     .select(CLUB_COLUMNS)
@@ -77,7 +77,7 @@ export async function listClubs(userId: string): Promise<Club[]> {
     .overrideTypes<ClubRow[], { merge: false }>();
   if (error) throw error;
   return data.map(toClub);
-}
+});
 
 /** Club prices (GIA-1, GIA-2, PHI-3). A club created without a settings row gets one with zero prices. */
 export async function getPriceSettings(clubId: string): Promise<PriceSettings> {
