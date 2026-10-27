@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseMember, type MemberFormValues } from "./members";
+import { fixedSinceAfterEdit, parseMember, type MemberFormValues } from "./members";
 
 const base: MemberFormValues = {
   full_name: "  Anh Tuấn ",
@@ -37,5 +37,24 @@ describe("parseMember", () => {
 
   it("rejects an unknown gender", () => {
     expect(parseMember({ ...base, gender: "" })).toEqual({ error: "Chọn Nam hoặc Nữ." });
+  });
+});
+
+describe("fixedSinceAfterEdit", () => {
+  const next = { member_type: "fixed", status: "active", fixed_since: "2026-01-01" } as const;
+  const resting = { status: "inactive", fixed_since: "2026-01-01" };
+
+  it("starts a fixed member over from today when switched from Nghỉ back to Đang chơi", () => {
+    expect(fixedSinceAfterEdit(resting, next, "2026-11-15")).toBe("2026-11-15");
+  });
+
+  it("keeps a date the user changed in the same edit", () => {
+    expect(fixedSinceAfterEdit(resting, { ...next, fixed_since: "2026-12-01" }, "2026-11-15")).toBe("2026-12-01");
+  });
+
+  it("leaves the date alone for other edits", () => {
+    expect(fixedSinceAfterEdit({ ...resting, status: "active" }, next, "2026-11-15")).toBe("2026-01-01");
+    expect(fixedSinceAfterEdit(resting, { ...next, status: "inactive" }, "2026-11-15")).toBe("2026-01-01");
+    expect(fixedSinceAfterEdit(resting, { ...next, member_type: "guest", fixed_since: null }, "2026-11-15")).toBeNull();
   });
 });

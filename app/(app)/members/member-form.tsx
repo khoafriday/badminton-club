@@ -60,6 +60,9 @@ export function MemberForm({ action, initialValues, submitLabel, showStatus }: P
             <Choice name="status" value="active" label="Đang chơi" checked={v.status === "active"} />
             <Choice name="status" value="inactive" label="Nghỉ" checked={v.status === "inactive"} />
           </div>
+          {v.status === "inactive" && memberType === "fixed" && (
+            <p className="mt-1 text-xs text-muted">Chuyển lại Đang chơi thì ngày cố định tự đổi thành hôm nay.</p>
+          )}
         </fieldset>
       )}
 
