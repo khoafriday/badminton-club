@@ -54,6 +54,7 @@ async function MemberDetail({ params }: { params: Promise<{ id: string }> }) {
             action={updateMember.bind(null, m.id)}
             submitLabel="Lưu"
             showStatus
+            today={todayInVietnam()}
             initialValues={{
               full_name: m.full_name,
               gender: m.gender,
