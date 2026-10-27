@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseMember, type MemberFormValues } from "./members";
+import { parseMember, rejoinedOnAfterEdit, type MemberFormValues } from "./members";
 
 const base: MemberFormValues = {
   full_name: "  Anh Tuấn ",
@@ -37,5 +37,26 @@ describe("parseMember", () => {
 
   it("rejects an unknown gender", () => {
     expect(parseMember({ ...base, gender: "" })).toEqual({ error: "Chọn Nam hoặc Nữ." });
+  });
+});
+
+describe("rejoinedOnAfterEdit", () => {
+  const next = { member_type: "fixed", status: "active" } as const;
+  const resting = { status: "inactive", rejoined_on: null };
+
+  it("records today as the return day when a fixed member goes from Nghỉ back to Đang chơi", () => {
+    expect(rejoinedOnAfterEdit(resting, next, "2026-11-15")).toBe("2026-11-15");
+  });
+
+  it("keeps the last return day for other edits", () => {
+    const back = { status: "active", rejoined_on: "2026-11-15" };
+    expect(rejoinedOnAfterEdit(back, next, "2026-12-03")).toBe("2026-11-15");
+    expect(rejoinedOnAfterEdit({ ...back, status: "inactive" }, { ...next, status: "inactive" }, "2026-12-03")).toBe(
+      "2026-11-15",
+    );
+  });
+
+  it("clears it for a guest", () => {
+    expect(rejoinedOnAfterEdit(resting, { ...next, member_type: "guest" }, "2026-11-15")).toBeNull();
   });
 });

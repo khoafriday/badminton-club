@@ -21,3 +21,6 @@ export function categoryLabel(c: { code: string | null; name: string | null }): 
 
 /** Categories the app writes by itself when a payment is marked; never picked by hand. */
 export const AUTO_CATEGORY_CODES = ["guest_fee", "membership_fee"];
+
+/** Pseudo category in the income list: collects a member's unpaid monthly fees and marks them Đã nộp. */
+export const MEMBER_FEE_OPTION = "member_fee";

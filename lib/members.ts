@@ -59,3 +59,16 @@ export function parseMember(values: MemberFormValues): { data: MemberInput } | {
   if (!parsed.success) return { error: parsed.error.issues[0].message };
   return { data: parsed.data };
 }
+
+/**
+ * A fixed member switched from Nghỉ back to Đang chơi is billed from today, like a new member:
+ * returning mid-month is charged per session that month. fixed_since keeps their first day for history.
+ */
+export function rejoinedOnAfterEdit(
+  before: { status: string; rejoined_on: string | null },
+  next: Pick<MemberInput, "member_type" | "status">,
+  today: string,
+): string | null {
+  if (next.member_type !== "fixed") return null;
+  return before.status === "inactive" && next.status === "active" ? today : before.rejoined_on;
+}

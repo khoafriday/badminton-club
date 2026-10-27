@@ -2,8 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { requireClub } from "@/lib/club";
-import { parseMember, readMemberForm, type MemberFormValues } from "@/lib/members";
+import { requireClub, todayInVietnam } from "@/lib/club";
+import { parseMember, rejoinedOnAfterEdit, readMemberForm, type MemberFormValues } from "@/lib/members";
 import { db } from "@/lib/supabase";
 
 export type MemberFormState = { error: string | null; values: MemberFormValues };
@@ -32,9 +32,18 @@ export async function updateMember(
   if ("error" in parsed) return { error: parsed.error, values };
 
   // club_id in the filter stops an edit from reaching another club's member.
+  const { data: before } = await db()
+    .from("members")
+    .select("status, rejoined_on")
+    .eq("id", memberId)
+    .eq("club_id", club.id)
+    .maybeSingle();
+  if (!before) return { error: "Không tìm thấy thành viên.", values };
+  const rejoined_on = rejoinedOnAfterEdit(before, parsed.data, todayInVietnam());
+
   const { error } = await db()
     .from("members")
-    .update({ ...parsed.data, updated_at: new Date().toISOString() })
+    .update({ ...parsed.data, rejoined_on, updated_at: new Date().toISOString() })
     .eq("id", memberId)
     .eq("club_id", club.id);
   if (error) return { error: "Không lưu được. Thử lại sau.", values };

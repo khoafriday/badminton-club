@@ -1,5 +1,5 @@
 import "server-only";
-import { defaultSessionCharge, monthStart, type FeeStatus, type PriceSettings } from "./billing";
+import { billingStart, defaultSessionCharge, monthStart, type FeeStatus, type PriceSettings } from "./billing";
 import { db } from "./supabase";
 
 export type AttendanceView = {
@@ -40,6 +40,7 @@ type MemberRow = {
   member_type: "fixed" | "guest";
   status: "active" | "inactive";
   fixed_since: string | null;
+  rejoined_on: string | null;
 };
 
 /** Everything the attendance screen shows for one session (TT-1 to TT-4). */
@@ -57,7 +58,7 @@ export async function loadAttendance(
       .eq("session_id", session.id),
     db()
       .from("members")
-      .select("id, full_name, gender, member_type, status, fixed_since")
+      .select("id, full_name, gender, member_type, status, fixed_since, rejoined_on")
       .eq("club_id", clubId)
       .eq("status", "active")
       .order("full_name"),
@@ -93,14 +94,15 @@ export async function loadAttendance(
   // Fixed list: every active fixed member who had started by that day, plus anyone already marked as fixed.
   const fixed: AttendanceView[] = [];
   for (const m of members) {
-    if (m.member_type !== "fixed" || !m.fixed_since || m.fixed_since > session.session_date) continue;
+    const start = billingStart(m.fixed_since, m.rejoined_on);
+    if (m.member_type !== "fixed" || !start || start > session.session_date) continue;
     const row = byMember.get(m.id);
     if (row) {
       fixed.push(fromRow(row));
       continue;
     }
     const charge = defaultSessionCharge(
-      { gender: m.gender, memberType: m.member_type, status: m.status, fixedSince: m.fixed_since },
+      { gender: m.gender, memberType: m.member_type, status: m.status, fixedSince: start },
       session.session_date,
       settings,
     );

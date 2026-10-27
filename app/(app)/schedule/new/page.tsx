@@ -3,6 +3,7 @@ import { createSession } from "@/app/actions/schedule";
 import { NoClub } from "@/app/clubs/no-club";
 import { RequireDatabase } from "@/app/ui/database-missing";
 import { Loading } from "@/app/ui/loading";
+import { Fresh } from "@/app/ui/fresh";
 import { PageHeader } from "@/app/ui/page-header";
 import { loadClub, todayInVietnam } from "@/lib/club";
 import { listCourts } from "@/lib/courts";
@@ -17,19 +18,21 @@ async function NewSession({ searchParams }: { searchParams: PageProps<"/schedule
   return (
     <div className="px-5 py-6">
       {/* key: the page is reused when opened again for another date, so the form must start over. */}
-      <SessionForm
-        key={date}
-        action={createSession}
-        submitLabel="Thêm buổi"
-        courts={courts}
-        initialValues={{
-          session_date: date,
-          start_time: "19:00",
-          end_time: "21:00",
-          court_id: club.court_id ?? "",
-          note: "",
-        }}
-      />
+      <Fresh>
+        <SessionForm
+          key={date}
+          action={createSession}
+          submitLabel="Thêm buổi"
+          courts={courts}
+          initialValues={{
+            session_date: date,
+            start_time: "19:00",
+            end_time: "21:00",
+            court_id: club.court_id ?? "",
+            note: "",
+          }}
+        />
+      </Fresh>
     </div>
   );
 }

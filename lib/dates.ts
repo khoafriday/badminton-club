@@ -62,6 +62,11 @@ export function formatShortDate(date: string): string {
   return `${date.slice(8, 10)}/${date.slice(5, 7)}`;
 }
 
+/** "2026-10-27" -> "27/10/2026" */
+export function formatFullDate(date: string): string {
+  return `${formatShortDate(date)}/${date.slice(0, 4)}`;
+}
+
 /** "19:00:00" -> "19:00" */
 export function formatTime(time: string): string {
   return time.slice(0, 5);

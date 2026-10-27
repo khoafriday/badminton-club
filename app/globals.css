@@ -32,6 +32,11 @@
   --red-600: #dc2626;
   --red-700: #b91c1c;
 
+  --blue-50: #eff6ff;
+  --blue-700: #1d4ed8;
+  --pink-50: #fdf2f8;
+  --pink-700: #be185d;
+
   --amber-50: #fffbeb;
   --amber-200: #fde68a;
   --amber-300: #fcd34d;
@@ -69,6 +74,11 @@
   --red-200: rgb(248 113 113 / 0.35);
   --red-600: #f87171;
   --red-700: #fca5a5;
+
+  --blue-50: rgb(96 165 250 / 0.14);
+  --blue-700: #93c5fd;
+  --pink-50: rgb(244 114 182 / 0.14);
+  --pink-700: #f9a8d4;
 
   --amber-50: rgb(251 191 36 / 0.1);
   --amber-200: rgb(251 191 36 / 0.3);
@@ -111,6 +121,11 @@
   --color-red-200: var(--red-200);
   --color-red-600: var(--red-600);
   --color-red-700: var(--red-700);
+
+  --color-blue-50: var(--blue-50);
+  --color-blue-700: var(--blue-700);
+  --color-pink-50: var(--pink-50);
+  --color-pink-700: var(--pink-700);
 
   --color-amber-50: var(--amber-50);
   --color-amber-200: var(--amber-200);

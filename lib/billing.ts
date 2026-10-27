@@ -52,6 +52,11 @@ export function monthlyFee(settings: PriceSettings, gender: Gender): number {
   return gender === "male" ? settings.monthlyFeeMale : settings.monthlyFeeFemale;
 }
 
+/** The day billing counts from: the return day for a member back from Nghỉ, else the first fixed day. */
+export function billingStart(fixedSince: string | null, rejoinedOn: string | null): string | null {
+  return fixedSince && rejoinedOn && rejoinedOn > fixedSince ? rejoinedOn : fixedSince;
+}
+
 /** "2026-10-27" -> "2026-10-01" */
 export function monthStart(date: string): string {
   return `${date.slice(0, 7)}-01`;
@@ -115,6 +120,20 @@ export function buildFeeSlip(
     paymentStatus: "unpaid",
     waiveReason: null,
   };
+}
+
+/**
+ * GIA-4 has one exception: an unpaid monthly slip made while the monthly fee was still 0
+ * takes the fee once one is set. Returns the new amount, or null when the slip stays as it is.
+ */
+export function priceForUnpricedSlip(
+  slip: Pick<FeeSlip, "billingMode" | "amountDue" | "paymentStatus">,
+  gender: Gender,
+  settings: PriceSettings,
+): number | null {
+  if (slip.billingMode !== "monthly" || slip.paymentStatus !== "unpaid" || slip.amountDue !== 0) return null;
+  const fee = monthlyFee(settings, gender);
+  return fee > 0 ? fee : null;
 }
 
 /** PHI-1: an unpaid monthly slip is waived when the member came to no session that month. */

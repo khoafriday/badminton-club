@@ -5,6 +5,7 @@ import type { MemberFormState } from "@/app/actions/members";
 import type { MemberFormValues } from "@/lib/members";
 import { Choice } from "@/app/ui/choice";
 import { inputClass, labelClass, primaryButtonClass } from "@/app/ui/form";
+import { formatFullDate } from "@/lib/dates";
 
 type Props = {
   action: (prev: MemberFormState, formData: FormData) => Promise<MemberFormState>;
@@ -12,12 +13,23 @@ type Props = {
   submitLabel: string;
   /** The Đang chơi / Nghỉ choice only makes sense for an existing member. */
   showStatus?: boolean;
+  /** Today in Vietnam: the return day when a member on Nghỉ is switched back to Đang chơi. */
+  today?: string;
+  /** The last return day after a Nghỉ, shown under the status. */
+  rejoinedOn?: string | null;
 };
 
-export function MemberForm({ action, initialValues, submitLabel, showStatus }: Props) {
+export function MemberForm({ action, initialValues, submitLabel, showStatus, today, rejoinedOn }: Props) {
   const [state, formAction, pending] = useActionState(action, { error: null, values: initialValues });
   const v = state.values;
   const [memberType, setMemberType] = useState(v.member_type);
+  // Back from Nghỉ: billed from today, as the server also records (rejoinedOnAfterEdit).
+  const [returnDate, setReturnDate] = useState<string | null>(null);
+
+  function pickStatus(status: string) {
+    const back = initialValues.status === "inactive" && status === "active" && memberType === "fixed";
+    setReturnDate(back && today ? today : null);
+  }
 
   // key makes React rebuild the fields from the returned values after a failed save.
   return (
@@ -57,9 +69,21 @@ export function MemberForm({ action, initialValues, submitLabel, showStatus }: P
         <fieldset className="flex flex-col gap-1">
           <legend className="mb-1.5 text-sm font-semibold text-muted">Trạng thái</legend>
           <div className="flex gap-2">
-            <Choice name="status" value="active" label="Đang chơi" checked={v.status === "active"} />
-            <Choice name="status" value="inactive" label="Nghỉ" checked={v.status === "inactive"} />
+            <Choice name="status" value="active" label="Đang chơi" checked={v.status === "active"} onChange={pickStatus} />
+            <Choice name="status" value="inactive" label="Nghỉ" checked={v.status === "inactive"} onChange={pickStatus} />
           </div>
+          {returnDate ? (
+            <p className="mt-1 rounded-2xl border border-amber-200 bg-amber-50 px-3 py-2.5 text-xs font-medium text-amber-800">
+              Ngày chơi lại trong tháng là ngày {formatFullDate(returnDate)}. Phí tính lại từ ngày này, ô &quot;Cố định
+              từ ngày&quot; giữ nguyên.
+            </p>
+          ) : (
+            rejoinedOn &&
+            memberType === "fixed" &&
+            initialValues.status === "active" && (
+              <p className="mt-1 text-xs text-muted">Chơi lại từ ngày {formatFullDate(rejoinedOn)}.</p>
+            )
+          )}
         </fieldset>
       )}
 

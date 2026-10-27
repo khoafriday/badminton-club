@@ -1,12 +1,14 @@
 import { describe, expect, it } from "vitest";
 import {
   applyFullMonthAbsence,
+  billingStart,
   buildFeeSlip,
   defaultSessionCharge,
   formatVnd,
   fundSummary,
   monthEnd,
   periodRange,
+  priceForUnpricedSlip,
   sessionTotals,
   type MemberForBilling,
   type PriceSettings,
@@ -119,5 +121,40 @@ describe("formatVnd", () => {
     expect(formatVnd(12480000)).toBe("12.480.000đ");
     expect(formatVnd(-560000)).toBe("-560.000đ");
     expect(formatVnd(0)).toBe("0đ");
+  });
+});
+
+describe("priceForUnpricedSlip", () => {
+  const slip = { billingMode: "monthly", amountDue: 0, paymentStatus: "unpaid" } as const;
+
+  it("gives an unpaid 0đ monthly slip the fee for the member's gender", () => {
+    expect(priceForUnpricedSlip(slip, "male", prices)).toBe(300000);
+    expect(priceForUnpricedSlip(slip, "female", prices)).toBe(250000);
+  });
+
+  it("leaves the slip alone while the fee is still 0", () => {
+    expect(priceForUnpricedSlip(slip, "male", { ...prices, monthlyFeeMale: 0 })).toBeNull();
+  });
+
+  it("never touches priced, paid, Miễn or per-session slips", () => {
+    expect(priceForUnpricedSlip({ ...slip, amountDue: 280000 }, "male", prices)).toBeNull();
+    expect(priceForUnpricedSlip({ ...slip, paymentStatus: "paid" }, "male", prices)).toBeNull();
+    expect(priceForUnpricedSlip({ ...slip, paymentStatus: "waived" }, "male", prices)).toBeNull();
+    expect(priceForUnpricedSlip({ ...slip, billingMode: "per_session" }, "male", prices)).toBeNull();
+  });
+});
+
+describe("billingStart", () => {
+  it("counts from the return day for a member back from Nghỉ, keeping the first fixed day apart", () => {
+    expect(billingStart("2026-01-01", "2026-10-15")).toBe("2026-10-15");
+    expect(billingStart("2026-01-01", null)).toBe("2026-01-01");
+    expect(billingStart(null, null)).toBeNull();
+  });
+
+  it("charges a mid-month return per session that month, then the monthly fee", () => {
+    const back = { ...fixedMale, fixedSince: billingStart("2026-01-01", "2026-10-15") };
+    expect(buildFeeSlip(back, "2026-10-01", prices)?.billingMode).toBe("per_session");
+    expect(buildFeeSlip(back, "2026-11-01", prices)?.billingMode).toBe("monthly");
+    expect(defaultSessionCharge(back, "2026-10-20", prices)).toEqual({ chargeMode: "per_session", amountDue: 50000 });
   });
 });

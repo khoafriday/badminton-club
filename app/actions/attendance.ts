@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { defaultSessionCharge } from "@/lib/billing";
+import { billingStart, defaultSessionCharge } from "@/lib/billing";
 import { getPriceSettings, requireClub } from "@/lib/club";
 import { parseVnd } from "@/lib/money";
 import { getSession } from "@/lib/schedule";
@@ -58,14 +58,19 @@ export async function setPresence(sessionId: string, memberId: string, present: 
 
   const { data: member } = await db()
     .from("members")
-    .select("id, gender, member_type, status, fixed_since")
+    .select("id, gender, member_type, status, fixed_since, rejoined_on")
     .eq("id", memberId)
     .eq("club_id", club.id)
     .maybeSingle();
   if (!member) return { error: "Không tìm thấy thành viên." };
 
   const charge = defaultSessionCharge(
-    { gender: member.gender, memberType: member.member_type, status: member.status, fixedSince: member.fixed_since },
+    {
+      gender: member.gender,
+      memberType: member.member_type,
+      status: member.status,
+      fixedSince: billingStart(member.fixed_since, member.rejoined_on),
+    },
     session.session_date,
     await getPriceSettings(club.id),
   );

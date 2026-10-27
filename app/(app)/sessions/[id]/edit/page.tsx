@@ -3,6 +3,7 @@ import { Suspense } from "react";
 import { updateSession } from "@/app/actions/schedule";
 import { RequireDatabase } from "@/app/ui/database-missing";
 import { Loading } from "@/app/ui/loading";
+import { Fresh } from "@/app/ui/fresh";
 import { PageHeader } from "@/app/ui/page-header";
 import { loadClub } from "@/lib/club";
 import { listCourts } from "@/lib/courts";
@@ -22,18 +23,20 @@ async function EditSession({ params }: { params: Promise<{ id: string }> }) {
 
   return (
     <div className="px-5 py-6">
-      <SessionForm
-        action={updateSession.bind(null, session.id)}
-        submitLabel="Lưu"
-        courts={courts}
-        initialValues={{
-          session_date: session.session_date,
-          start_time: formatTime(session.start_time),
-          end_time: formatTime(session.end_time),
-          court_id: session.court_id ?? club.court_id ?? "",
-          note: session.note ?? "",
-        }}
-      />
+      <Fresh>
+        <SessionForm
+          action={updateSession.bind(null, session.id)}
+          submitLabel="Lưu"
+          courts={courts}
+          initialValues={{
+            session_date: session.session_date,
+            start_time: formatTime(session.start_time),
+            end_time: formatTime(session.end_time),
+            court_id: session.court_id ?? club.court_id ?? "",
+            note: session.note ?? "",
+          }}
+        />
+      </Fresh>
     </div>
   );
 }
