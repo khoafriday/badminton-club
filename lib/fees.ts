@@ -1,6 +1,7 @@
 import "server-only";
 import {
   applyFullMonthAbsence,
+  billingStart,
   buildFeeSlip,
   monthEnd,
   monthStart,
@@ -28,10 +29,11 @@ type MemberRow = {
   member_type: "fixed" | "guest";
   status: "active" | "inactive";
   fixed_since: string | null;
+  rejoined_on: string | null;
 };
 
 function toBilling(m: MemberRow): MemberForBilling {
-  return { gender: m.gender, memberType: m.member_type, status: m.status, fixedSince: m.fixed_since };
+  return { gender: m.gender, memberType: m.member_type, status: m.status, fixedSince: billingStart(m.fixed_since, m.rejoined_on) };
 }
 
 /**
@@ -45,7 +47,7 @@ export async function ensureFeeSlips(clubId: string, month: string, today: strin
 
   const { data: members, error } = await db()
     .from("members")
-    .select("id, gender, member_type, status, fixed_since")
+    .select("id, gender, member_type, status, fixed_since, rejoined_on")
     .eq("club_id", clubId)
     .eq("member_type", "fixed")
     .eq("status", "active")

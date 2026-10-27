@@ -22,7 +22,7 @@ async function MemberDetail({ params }: { params: Promise<{ id: string }> }) {
 
   const { data: m, error } = await db()
     .from("members")
-    .select("id, full_name, gender, phone, member_type, status, fixed_since, note")
+    .select("id, full_name, gender, phone, member_type, status, fixed_since, rejoined_on, note")
     .eq("id", id)
     .eq("club_id", club.id)
     .maybeSingle();
@@ -55,6 +55,7 @@ async function MemberDetail({ params }: { params: Promise<{ id: string }> }) {
             submitLabel="Lưu"
             showStatus
             today={todayInVietnam()}
+            rejoinedOn={m.rejoined_on}
             initialValues={{
               full_name: m.full_name,
               gender: m.gender,

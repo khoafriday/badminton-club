@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   applyFullMonthAbsence,
+  billingStart,
   buildFeeSlip,
   defaultSessionCharge,
   formatVnd,
@@ -140,5 +141,20 @@ describe("priceForUnpricedSlip", () => {
     expect(priceForUnpricedSlip({ ...slip, paymentStatus: "paid" }, "male", prices)).toBeNull();
     expect(priceForUnpricedSlip({ ...slip, paymentStatus: "waived" }, "male", prices)).toBeNull();
     expect(priceForUnpricedSlip({ ...slip, billingMode: "per_session" }, "male", prices)).toBeNull();
+  });
+});
+
+describe("billingStart", () => {
+  it("counts from the return day for a member back from Nghỉ, keeping the first fixed day apart", () => {
+    expect(billingStart("2026-01-01", "2026-10-15")).toBe("2026-10-15");
+    expect(billingStart("2026-01-01", null)).toBe("2026-01-01");
+    expect(billingStart(null, null)).toBeNull();
+  });
+
+  it("charges a mid-month return per session that month, then the monthly fee", () => {
+    const back = { ...fixedMale, fixedSince: billingStart("2026-01-01", "2026-10-15") };
+    expect(buildFeeSlip(back, "2026-10-01", prices)?.billingMode).toBe("per_session");
+    expect(buildFeeSlip(back, "2026-11-01", prices)?.billingMode).toBe("monthly");
+    expect(defaultSessionCharge(back, "2026-10-20", prices)).toEqual({ chargeMode: "per_session", amountDue: 50000 });
   });
 });

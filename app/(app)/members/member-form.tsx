@@ -13,24 +13,22 @@ type Props = {
   submitLabel: string;
   /** The Đang chơi / Nghỉ choice only makes sense for an existing member. */
   showStatus?: boolean;
-  /** Today in Vietnam: the new fixed-since date when a member on Nghỉ is switched back to Đang chơi. */
+  /** Today in Vietnam: the return day when a member on Nghỉ is switched back to Đang chơi. */
   today?: string;
+  /** The last return day after a Nghỉ, shown under the status. */
+  rejoinedOn?: string | null;
 };
 
-export function MemberForm({ action, initialValues, submitLabel, showStatus, today }: Props) {
+export function MemberForm({ action, initialValues, submitLabel, showStatus, today, rejoinedOn }: Props) {
   const [state, formAction, pending] = useActionState(action, { error: null, values: initialValues });
   const v = state.values;
   const [memberType, setMemberType] = useState(v.member_type);
-  const [fixedSince, setFixedSince] = useState(v.fixed_since);
-  // Back from Nghỉ: the member starts over today, as the server also does (fixedSinceAfterEdit).
-  const comingBack = (status: string) =>
-    initialValues.status === "inactive" && status === "active" && memberType === "fixed" && today;
+  // Back from Nghỉ: billed from today, as the server also records (rejoinedOnAfterEdit).
   const [returnDate, setReturnDate] = useState<string | null>(null);
 
   function pickStatus(status: string) {
-    const back = comingBack(status);
-    setReturnDate(back || null);
-    setFixedSince(back || initialValues.fixed_since);
+    const back = initialValues.status === "inactive" && status === "active" && memberType === "fixed";
+    setReturnDate(back && today ? today : null);
   }
 
   // key makes React rebuild the fields from the returned values after a failed save.
@@ -60,14 +58,7 @@ export function MemberForm({ action, initialValues, submitLabel, showStatus, tod
       {memberType === "fixed" && (
         <label className={labelClass}>
           Cố định từ ngày
-          <input
-            type="date"
-            name="fixed_since"
-            value={fixedSince}
-            onChange={(e) => setFixedSince(e.target.value)}
-            required
-            className={inputClass}
-          />
+          <input type="date" name="fixed_since" defaultValue={v.fixed_since} required className={inputClass} />
           <span className="mt-1 rounded-2xl border border-amber-200 bg-amber-50 px-3 py-2.5 text-xs font-medium text-amber-800">
             Vào giữa tháng thì tháng đó tính theo buổi, giá vãng lai. Từ tháng sau đóng phí tháng.
           </span>
@@ -83,12 +74,14 @@ export function MemberForm({ action, initialValues, submitLabel, showStatus, tod
           </div>
           {returnDate ? (
             <p className="mt-1 rounded-2xl border border-amber-200 bg-amber-50 px-3 py-2.5 text-xs font-medium text-amber-800">
-              Ngày chơi lại trong tháng là ngày {formatFullDate(returnDate)}. Ô &quot;Cố định từ ngày&quot; đã đổi theo.
+              Ngày chơi lại trong tháng là ngày {formatFullDate(returnDate)}. Phí tính lại từ ngày này, ô &quot;Cố định
+              từ ngày&quot; giữ nguyên.
             </p>
           ) : (
-            initialValues.status === "inactive" &&
-            memberType === "fixed" && (
-              <p className="mt-1 text-xs text-muted">Chuyển lại Đang chơi thì ngày cố định tự đổi thành hôm nay.</p>
+            rejoinedOn &&
+            memberType === "fixed" &&
+            initialValues.status === "active" && (
+              <p className="mt-1 text-xs text-muted">Chơi lại từ ngày {formatFullDate(rejoinedOn)}.</p>
             )
           )}
         </fieldset>

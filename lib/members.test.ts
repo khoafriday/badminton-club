@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { fixedSinceAfterEdit, parseMember, type MemberFormValues } from "./members";
+import { parseMember, rejoinedOnAfterEdit, type MemberFormValues } from "./members";
 
 const base: MemberFormValues = {
   full_name: "  Anh Tuấn ",
@@ -40,21 +40,23 @@ describe("parseMember", () => {
   });
 });
 
-describe("fixedSinceAfterEdit", () => {
-  const next = { member_type: "fixed", status: "active", fixed_since: "2026-01-01" } as const;
-  const resting = { status: "inactive", fixed_since: "2026-01-01" };
+describe("rejoinedOnAfterEdit", () => {
+  const next = { member_type: "fixed", status: "active" } as const;
+  const resting = { status: "inactive", rejoined_on: null };
 
-  it("starts a fixed member over from today when switched from Nghỉ back to Đang chơi", () => {
-    expect(fixedSinceAfterEdit(resting, next, "2026-11-15")).toBe("2026-11-15");
+  it("records today as the return day when a fixed member goes from Nghỉ back to Đang chơi", () => {
+    expect(rejoinedOnAfterEdit(resting, next, "2026-11-15")).toBe("2026-11-15");
   });
 
-  it("keeps a date the user changed in the same edit", () => {
-    expect(fixedSinceAfterEdit(resting, { ...next, fixed_since: "2026-12-01" }, "2026-11-15")).toBe("2026-12-01");
+  it("keeps the last return day for other edits", () => {
+    const back = { status: "active", rejoined_on: "2026-11-15" };
+    expect(rejoinedOnAfterEdit(back, next, "2026-12-03")).toBe("2026-11-15");
+    expect(rejoinedOnAfterEdit({ ...back, status: "inactive" }, { ...next, status: "inactive" }, "2026-12-03")).toBe(
+      "2026-11-15",
+    );
   });
 
-  it("leaves the date alone for other edits", () => {
-    expect(fixedSinceAfterEdit({ ...resting, status: "active" }, next, "2026-11-15")).toBe("2026-01-01");
-    expect(fixedSinceAfterEdit(resting, { ...next, status: "inactive" }, "2026-11-15")).toBe("2026-01-01");
-    expect(fixedSinceAfterEdit(resting, { ...next, member_type: "guest", fixed_since: null }, "2026-11-15")).toBeNull();
+  it("clears it for a guest", () => {
+    expect(rejoinedOnAfterEdit(resting, { ...next, member_type: "guest" }, "2026-11-15")).toBeNull();
   });
 });

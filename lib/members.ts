@@ -61,14 +61,14 @@ export function parseMember(values: MemberFormValues): { data: MemberInput } | {
 }
 
 /**
- * A fixed member switched from Nghỉ back to Đang chơi starts over from today, like a new member:
- * joining mid-month is charged per session that month. A date the user changed in the same edit wins.
+ * A fixed member switched from Nghỉ back to Đang chơi is billed from today, like a new member:
+ * returning mid-month is charged per session that month. fixed_since keeps their first day for history.
  */
-export function fixedSinceAfterEdit(
-  before: { status: string; fixed_since: string | null },
-  next: Pick<MemberInput, "member_type" | "status" | "fixed_since">,
+export function rejoinedOnAfterEdit(
+  before: { status: string; rejoined_on: string | null },
+  next: Pick<MemberInput, "member_type" | "status">,
   today: string,
 ): string | null {
-  const reactivated = before.status === "inactive" && next.status === "active" && next.member_type === "fixed";
-  return reactivated && next.fixed_since === before.fixed_since ? today : next.fixed_since;
+  if (next.member_type !== "fixed") return null;
+  return before.status === "inactive" && next.status === "active" ? today : before.rejoined_on;
 }

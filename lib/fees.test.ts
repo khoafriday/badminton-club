@@ -82,3 +82,24 @@ describe("monthly fee slips made before the fee was set", () => {
     expect(tables.membership_fees.find((s) => s.id === "waived-0")?.amount_due).toBe(0);
   });
 });
+
+describe("a fixed member back from Nghỉ", () => {
+  it("keeps their first fixed day and pays per session in the month they return", async () => {
+    tables.members.push({
+      id: "chi",
+      club_id: CLUB,
+      full_name: "Chi",
+      gender: "male",
+      member_type: "fixed",
+      status: "active",
+      fixed_since: "2026-01-01",
+      rejoined_on: "2026-10-15",
+    });
+    await ensureFeeSlips(CLUB, TODAY, TODAY, priced);
+    await ensureFeeSlips(CLUB, "2026-11-01", "2026-11-02", priced);
+    const chi = (month: string) => tables.membership_fees.find((s) => s.member_id === "chi" && s.period_month === month);
+    expect(chi("2026-10-01")).toMatchObject({ billing_mode: "per_session", amount_due: 0 });
+    expect(chi("2026-11-01")).toMatchObject({ billing_mode: "monthly", amount_due: 300000 });
+    expect(tables.members.find((m) => m.id === "chi")?.fixed_since).toBe("2026-01-01");
+  });
+});

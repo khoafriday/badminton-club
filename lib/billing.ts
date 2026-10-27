@@ -52,6 +52,11 @@ export function monthlyFee(settings: PriceSettings, gender: Gender): number {
   return gender === "male" ? settings.monthlyFeeMale : settings.monthlyFeeFemale;
 }
 
+/** The day billing counts from: the return day for a member back from Nghỉ, else the first fixed day. */
+export function billingStart(fixedSince: string | null, rejoinedOn: string | null): string | null {
+  return fixedSince && rejoinedOn && rejoinedOn > fixedSince ? rejoinedOn : fixedSince;
+}
+
 /** "2026-10-27" -> "2026-10-01" */
 export function monthStart(date: string): string {
   return `${date.slice(0, 7)}-01`;
