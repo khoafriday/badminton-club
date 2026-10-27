@@ -6,7 +6,7 @@ export default function LoginPage() {
       <div className="flex flex-col items-center gap-2">
         <div className="hero flex size-20 items-center justify-center text-4xl">🏸</div>
         <h1 className="mt-3 text-[28px] font-bold tracking-tight">Badminton Club</h1>
-        <p className="text-sm text-muted">Đăng nhập để quản lý CLB</p>
+        <p className="text-sm text-muted">Đăng nhập bằng ID của bạn</p>
       </div>
       <LoginForm />
     </main>

@@ -1,5 +1,5 @@
 import { connection } from "next/server";
-import { getCurrentClub, listClubs, requireUser } from "@/lib/club";
+import { getCurrentClub, listClubs, loadViewer } from "@/lib/club";
 import { missingDatabaseEnv } from "@/lib/supabase";
 import { ClubSelect } from "./club-select";
 
@@ -10,7 +10,10 @@ import { ClubSelect } from "./club-select";
 export async function ClubPicker({ variant = "pill" }: { variant?: "pill" | "title" }) {
   await connection();
   if (missingDatabaseEnv().length > 0) return null;
-  const userId = await requireUser();
+  // A member sees their own club only, so there is nothing to pick.
+  const viewer = await loadViewer();
+  if (viewer.kind !== "admin") return null;
+  const userId = viewer.userId;
   // getCurrentClub is cached per request and already lists the clubs, so this adds no extra query.
   const [club, clubs] = await Promise.all([getCurrentClub(userId), listClubs(userId)]);
   if (!club) return null;

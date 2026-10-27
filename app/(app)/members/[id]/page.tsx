@@ -10,9 +10,11 @@ import { formatVnd } from "@/lib/billing";
 import { loadClub, todayInVietnam } from "@/lib/club";
 import { formatDayLabel, formatMonthLabel } from "@/lib/dates";
 import { listRefundable } from "@/lib/fee-adjust";
+import { getMemberAccount } from "@/lib/member-accounts";
 import { loadMemberHistory } from "@/lib/member-history";
 import { db } from "@/lib/supabase";
 import { MemberForm } from "../member-form";
+import { MemberAccountPanel } from "./member-account";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -84,6 +86,14 @@ async function MemberDetail({ params }: { params: Promise<{ id: string }> }) {
           </Fresh>
         </div>
       </section>
+      {m.member_type === "fixed" && (
+        <section>
+          <h2 className="section-title mb-2">Tài khoản đăng nhập</h2>
+          <div className="card p-4">
+            <MemberAccountPanel memberId={m.id} account={await getMemberAccount(m.id)} />
+          </div>
+        </section>
+      )}
     </div>
   );
 }

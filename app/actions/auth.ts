@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { checkCredentials } from "@/lib/auth";
+import { findMemberLogin } from "@/lib/member-accounts";
 import { createSession, deleteSession } from "@/lib/session";
 
 const loginSchema = z.object({
@@ -18,11 +19,16 @@ export async function login(_prev: LoginState, formData: FormData): Promise<Logi
   if (!parsed.success) return { error: "Nhập ID và mật khẩu.", id };
 
   // React resets the form after an action, so the ID is sent back to refill the field.
-  if (!checkCredentials(parsed.data.id, parsed.data.password)) {
-    return { error: "Sai ID hoặc mật khẩu.", id };
+  if (checkCredentials(parsed.data.id, parsed.data.password)) {
+    await createSession({ kind: "admin", id: parsed.data.id });
+    redirect("/");
   }
-  await createSession(parsed.data.id);
-  redirect("/");
+  // Otherwise a member's own account (TK-2).
+  const member = await findMemberLogin(parsed.data.id, parsed.data.password);
+  if (!member) return { error: "Sai ID hoặc mật khẩu.", id };
+  await createSession({ kind: "member", memberId: member.memberId });
+  // Until the first password is changed, each login offers to change it.
+  redirect(member.passwordChanged ? "/" : "/account?welcome=1");
 }
 
 export async function logout() {

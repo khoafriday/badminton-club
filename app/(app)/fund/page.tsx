@@ -4,9 +4,10 @@ import { NoClub } from "@/app/clubs/no-club";
 import { ClubPicker } from "@/app/ui/club-picker";
 import { RequireDatabase } from "@/app/ui/database-missing";
 import { Loading } from "@/app/ui/loading";
+import { MaybeLink } from "@/app/ui/maybe-link";
 import { PageHeader } from "@/app/ui/page-header";
 import { formatVnd, periodRange, type FundPeriod } from "@/lib/billing";
-import { loadClub, todayInVietnam } from "@/lib/club";
+import { loadViewer, todayInVietnam } from "@/lib/club";
 import { addMonths, formatMonthLabel, formatShortDate } from "@/lib/dates";
 import { listTransactions, summarize } from "@/lib/fund";
 
@@ -28,8 +29,11 @@ function periodLabel(period: FundPeriod, date: string) {
 
 async function FundContent({ searchParams }: { searchParams: PageProps<"/fund">["searchParams"] }) {
   const sp = await searchParams;
-  const { club } = await loadClub();
+  const viewer = await loadViewer();
+  const { club } = viewer;
   if (!club) return <NoClub />;
+  // A member sees every line but changes nothing, and does not see who owes (TK-4).
+  const admin = viewer.kind === "admin";
 
   const today = todayInVietnam();
   const period: FundPeriod = sp.period === "quarter" || sp.period === "all" ? sp.period : "month";
@@ -56,28 +60,38 @@ async function FundContent({ searchParams }: { searchParams: PageProps<"/fund">[
         </p>
       </section>
 
-      <div className="mt-3 grid grid-cols-2 gap-2 px-5">
-        <Link
-          href="/fund/new?type=income"
-          className="flex h-12 items-center justify-center rounded-full bg-brand-600 text-sm font-bold text-white"
-        >
-          + Ghi thu
-        </Link>
-        <Link
-          href="/fund/new?type=expense"
-          className="flex h-12 items-center justify-center rounded-full bg-cta text-sm font-bold text-on-cta"
-        >
-          − Ghi chi
-        </Link>
-      </div>
-      <div className="mt-3 flex gap-2 px-5">
-        <Link href="/fees" className="rounded-full border border-line-strong bg-surface px-4 py-2 text-sm font-semibold">
-          Phí tháng ›
-        </Link>
-        <Link href="/debts" className="rounded-full border border-line-strong bg-surface px-4 py-2 text-sm font-semibold">
-          Người còn nợ ›
-        </Link>
-      </div>
+      {admin && (
+        <>
+          <div className="mt-3 grid grid-cols-2 gap-2 px-5">
+            <Link
+              href="/fund/new?type=income"
+              className="flex h-12 items-center justify-center rounded-full bg-brand-600 text-sm font-bold text-white"
+            >
+              + Ghi thu
+            </Link>
+            <Link
+              href="/fund/new?type=expense"
+              className="flex h-12 items-center justify-center rounded-full bg-cta text-sm font-bold text-on-cta"
+            >
+              − Ghi chi
+            </Link>
+          </div>
+          <div className="mt-3 flex gap-2 px-5">
+            <Link
+              href="/fees"
+              className="rounded-full border border-line-strong bg-surface px-4 py-2 text-sm font-semibold"
+            >
+              Phí tháng ›
+            </Link>
+            <Link
+              href="/debts"
+              className="rounded-full border border-line-strong bg-surface px-4 py-2 text-sm font-semibold"
+            >
+              Người còn nợ ›
+            </Link>
+          </div>
+        </>
+      )}
 
       <div className="mt-5 flex flex-col gap-3 px-5">
         <div className="flex rounded-full bg-surface-2 p-1 text-sm font-semibold">
@@ -138,15 +152,17 @@ async function FundContent({ searchParams }: { searchParams: PageProps<"/fund">[
         <ul className="mt-3 flex flex-col gap-2 px-5">
           {inRange.map((r) => (
             <li key={r.id}>
-              <Link
+              <MaybeLink
                 href={
-                  r.source === "manual" && !r.auto
-                    ? `/fund/${r.id}`
-                    : r.batchId
-                      ? `/fund/batch/${r.batchId}`
-                      : r.sessionId
-                      ? `/sessions/${r.sessionId}`
-                      : `/fees?month=${r.occurredOn.slice(0, 7)}`
+                  !admin
+                    ? null
+                    : r.source === "manual" && !r.auto
+                      ? `/fund/${r.id}`
+                      : r.batchId
+                        ? `/fund/batch/${r.batchId}`
+                        : r.sessionId
+                          ? `/sessions/${r.sessionId}`
+                          : `/fees?month=${r.occurredOn.slice(0, 7)}`
                 }
                 className="card flex items-center gap-3 px-3 py-2.5 active:bg-surface-2"
               >
@@ -174,7 +190,7 @@ async function FundContent({ searchParams }: { searchParams: PageProps<"/fund">[
                   {r.type === "income" ? "+" : "−"}
                   {formatVnd(r.amount)}
                 </span>
-              </Link>
+              </MaybeLink>
             </li>
           ))}
         </ul>
