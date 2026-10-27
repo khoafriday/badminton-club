@@ -3,6 +3,7 @@ import { createTransaction } from "@/app/actions/fund";
 import { NoClub } from "@/app/clubs/no-club";
 import { RequireDatabase } from "@/app/ui/database-missing";
 import { Loading } from "@/app/ui/loading";
+import { Fresh } from "@/app/ui/fresh";
 import { PageHeader } from "@/app/ui/page-header";
 import { getPriceSettings, loadClub, todayInVietnam } from "@/lib/club";
 import { listUnpaidFees, priceUnpricedSlips } from "@/lib/fees";
@@ -23,20 +24,22 @@ async function NewTx({ searchParams }: { searchParams: PageProps<"/fund/new">["s
   return (
     <div className="px-5 py-6">
       {/* key: opening "ghi thu" after "ghi chi" reuses this page, so the form must start over. */}
-      <TxForm
-        key={type}
-        action={createTransaction}
-        categories={categories}
-        unpaidFees={unpaidFees}
-        submitLabel="Lưu"
-        initialValues={{
-          type,
-          category_id: "",
-          amount: "",
-          occurred_on: todayInVietnam(),
-          description: "",
-        }}
-      />
+      <Fresh>
+        <TxForm
+          key={type}
+          action={createTransaction}
+          categories={categories}
+          unpaidFees={unpaidFees}
+          submitLabel="Lưu"
+          initialValues={{
+            type,
+            category_id: "",
+            amount: "",
+            occurred_on: todayInVietnam(),
+            description: "",
+          }}
+        />
+      </Fresh>
     </div>
   );
 }

@@ -3,6 +3,7 @@ import { createSchedule } from "@/app/actions/schedule";
 import { NoClub } from "@/app/clubs/no-club";
 import { RequireDatabase } from "@/app/ui/database-missing";
 import { Loading } from "@/app/ui/loading";
+import { Fresh } from "@/app/ui/fresh";
 import { PageHeader } from "@/app/ui/page-header";
 import { loadClub } from "@/lib/club";
 import { listCourts } from "@/lib/courts";
@@ -14,12 +15,14 @@ async function NewSchedule() {
   const courts = await listCourts(userId);
   return (
     <div className="px-5 py-6">
-      <ScheduleForm
-        action={createSchedule}
-        submitLabel="Thêm khung giờ"
-        courts={courts}
-        initialValues={{ weekday: "", start_time: "19:00", end_time: "21:00", court_id: club.court_id ?? "" }}
-      />
+      <Fresh>
+        <ScheduleForm
+          action={createSchedule}
+          submitLabel="Thêm khung giờ"
+          courts={courts}
+          initialValues={{ weekday: "", start_time: "19:00", end_time: "21:00", court_id: club.court_id ?? "" }}
+        />
+      </Fresh>
     </div>
   );
 }

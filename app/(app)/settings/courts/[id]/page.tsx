@@ -3,6 +3,7 @@ import { Suspense } from "react";
 import { updateCourt } from "@/app/actions/courts";
 import { RequireDatabase } from "@/app/ui/database-missing";
 import { Loading } from "@/app/ui/loading";
+import { Fresh } from "@/app/ui/fresh";
 import { PageHeader } from "@/app/ui/page-header";
 import { requireUser } from "@/lib/club";
 import { getCourt } from "@/lib/courts";
@@ -16,11 +17,13 @@ async function EditCourt({ params }: { params: Promise<{ id: string }> }) {
 
   return (
     <div className="flex flex-col gap-6 px-5 py-6">
-      <CourtForm
-        action={updateCourt.bind(null, court.id)}
-        submitLabel="Lưu"
-        initialValues={{ name: court.name, address: court.address ?? "", price: formatVndInput(court.price) }}
-      />
+      <Fresh>
+        <CourtForm
+          action={updateCourt.bind(null, court.id)}
+          submitLabel="Lưu"
+          initialValues={{ name: court.name, address: court.address ?? "", price: formatVndInput(court.price) }}
+        />
+      </Fresh>
       <DeleteCourtButton courtId={court.id} courtName={court.name} />
     </div>
   );

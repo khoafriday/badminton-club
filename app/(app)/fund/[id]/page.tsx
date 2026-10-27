@@ -4,6 +4,7 @@ import { deleteTransaction, updateTransaction } from "@/app/actions/fund";
 import { ConfirmButton } from "@/app/ui/confirm-button";
 import { RequireDatabase } from "@/app/ui/database-missing";
 import { Loading } from "@/app/ui/loading";
+import { Fresh } from "@/app/ui/fresh";
 import { PageHeader } from "@/app/ui/page-header";
 import { formatVnd } from "@/lib/billing";
 import { loadClub } from "@/lib/club";
@@ -30,18 +31,20 @@ async function EditTx({ params }: { params: Promise<{ id: string }> }) {
 
   return (
     <div className="flex flex-col gap-4 px-5 py-6">
-      <TxForm
-        action={updateTransaction.bind(null, tx.id)}
-        categories={categories}
-        submitLabel="Lưu"
-        initialValues={{
-          type: tx.type,
-          category_id: tx.category_id,
-          amount: formatVnd(Number(tx.amount)).replace("đ", ""),
-          occurred_on: tx.occurred_on,
-          description: tx.description ?? "",
-        }}
-      />
+      <Fresh>
+        <TxForm
+          action={updateTransaction.bind(null, tx.id)}
+          categories={categories}
+          submitLabel="Lưu"
+          initialValues={{
+            type: tx.type,
+            category_id: tx.category_id,
+            amount: formatVnd(Number(tx.amount)).replace("đ", ""),
+            occurred_on: tx.occurred_on,
+            description: tx.description ?? "",
+          }}
+        />
+      </Fresh>
       <form action={deleteTransaction.bind(null, tx.id)}>
         <ConfirmButton
           message="Xóa khoản này khỏi sổ thu chi?"
