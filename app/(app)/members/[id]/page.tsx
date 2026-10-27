@@ -4,6 +4,7 @@ import { Suspense } from "react";
 import { updateMember } from "@/app/actions/members";
 import { RequireDatabase } from "@/app/ui/database-missing";
 import { Loading } from "@/app/ui/loading";
+import { Fresh } from "@/app/ui/fresh";
 import { PageHeader } from "@/app/ui/page-header";
 import { formatVnd } from "@/lib/billing";
 import { loadClub, todayInVietnam } from "@/lib/club";
@@ -40,8 +41,14 @@ async function MemberDetail({ params }: { params: Promise<{ id: string }> }) {
           <span className="rounded-full bg-brand-50 px-3 py-1 text-brand-700">
             {m.member_type === "fixed" ? "Cố định" : "Vãng lai"}
           </span>
-          <span className="rounded-full bg-surface-2 px-3 py-1 text-muted">{m.gender === "male" ? "Nam" : "Nữ"}</span>
-          <span className="rounded-full bg-surface-2 px-3 py-1 text-muted">
+          <span
+            className={`rounded-full px-3 py-1 ${m.gender === "male" ? "bg-blue-50 text-blue-700" : "bg-pink-50 text-pink-700"}`}
+          >
+            {m.gender === "male" ? "Nam" : "Nữ"}
+          </span>
+          <span
+            className={`rounded-full px-3 py-1 ${m.status === "active" ? "bg-blue-50 text-blue-700" : "bg-surface-2 text-muted"}`}
+          >
             {m.status === "active" ? "Đang chơi" : "Nghỉ"}
           </span>
         </div>
@@ -50,23 +57,25 @@ async function MemberDetail({ params }: { params: Promise<{ id: string }> }) {
       <section>
         <h2 className="section-title mb-2">Thông tin</h2>
         <div className="card p-4">
-          <MemberForm
-            action={updateMember.bind(null, m.id)}
-            submitLabel="Lưu"
-            showStatus
-            today={todayInVietnam()}
-            rejoinedOn={m.rejoined_on}
-            initialValues={{
-              full_name: m.full_name,
-              gender: m.gender,
-              phone: m.phone ?? "",
-              member_type: m.member_type,
-              status: m.status,
-              // A guest switched to fixed starts today unless changed.
-              fixed_since: m.fixed_since ?? todayInVietnam(),
-              note: m.note ?? "",
-            }}
-          />
+          <Fresh>
+            <MemberForm
+              action={updateMember.bind(null, m.id)}
+              submitLabel="Lưu"
+              showStatus
+              today={todayInVietnam()}
+              rejoinedOn={m.rejoined_on}
+              initialValues={{
+                full_name: m.full_name,
+                gender: m.gender,
+                phone: m.phone ?? "",
+                member_type: m.member_type,
+                status: m.status,
+                // A guest switched to fixed starts today unless changed.
+                fixed_since: m.fixed_since ?? todayInVietnam(),
+                note: m.note ?? "",
+              }}
+            />
+          </Fresh>
         </div>
       </section>
     </div>
