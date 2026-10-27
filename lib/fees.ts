@@ -21,6 +21,8 @@ export type FeeSlipRow = {
   amount_due: number;
   payment_status: FeeStatus;
   waive_reason: string | null;
+  /** Paid earlier at a lower fee; amount_due is then the difference. */
+  prepaid_amount: number;
   members: { full_name: string; gender: "male" | "female" };
 };
 
@@ -163,13 +165,13 @@ export async function listFeeSlips(clubId: string, month: string): Promise<FeeSl
   const { data, error } = await db()
     .from("membership_fees")
     .select(
-      "id, member_id, period_month, billing_mode, amount_due, payment_status, waive_reason, members!inner(full_name, gender)",
+      "id, member_id, period_month, billing_mode, amount_due, payment_status, waive_reason, prepaid_amount, members!inner(full_name, gender)",
     )
     .eq("club_id", clubId)
     .eq("period_month", monthStart(month));
   if (error) throw error;
   return (data as unknown as FeeSlipRow[])
-    .map((s) => ({ ...s, amount_due: Number(s.amount_due) }))
+    .map((s) => ({ ...s, amount_due: Number(s.amount_due), prepaid_amount: Number(s.prepaid_amount ?? 0) }))
     .sort((a, b) => a.members.full_name.localeCompare(b.members.full_name, "vi"));
 }
 

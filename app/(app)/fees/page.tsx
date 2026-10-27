@@ -41,7 +41,7 @@ async function FeesContent({ searchParams }: { searchParams: PageProps<"/fees">[
           ›
         </Link>
       </div>
-      {month > today.slice(0, 7) && (
+      {month > today.slice(0, 7) && slips.length === 0 && (
         <p className="px-5 pt-3 text-sm text-muted">Phiếu của tháng này sẽ được tạo khi tháng bắt đầu.</p>
       )}
       <FeeList
@@ -54,6 +54,7 @@ async function FeesContent({ searchParams }: { searchParams: PageProps<"/fees">[
           amountDue: s.amount_due,
           status: s.payment_status,
           waiveReason: s.waive_reason,
+          prepaid: s.prepaid_amount,
         }))}
       />
       <p className="px-5 pt-4 text-xs text-muted">

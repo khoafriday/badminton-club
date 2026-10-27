@@ -14,6 +14,8 @@ export type TxRow = {
   sessionId: string | null;
   /** Lines from one "Thu tiền sân" payment share it; null for other lines. */
   batchId: string | null;
+  /** Written by the app (Phí tháng, tiền buổi, Hoàn phí tháng): never edited by hand, even once unlinked. */
+  auto: boolean;
 };
 
 export type CategoryOption = { id: string; type: "income" | "expense"; label: string };
@@ -49,6 +51,7 @@ export async function listTransactions(clubId: string): Promise<TxRow[]> {
     source: t.source_type,
     sessionId: t.session_id,
     batchId: t.batch_id,
+    auto: AUTO_CATEGORY_CODES.includes(t.transaction_categories.code ?? ""),
   }));
 }
 

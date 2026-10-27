@@ -140,7 +140,7 @@ async function FundContent({ searchParams }: { searchParams: PageProps<"/fund">[
             <li key={r.id}>
               <Link
                 href={
-                  r.source === "manual"
+                  r.source === "manual" && !r.auto
                     ? `/fund/${r.id}`
                     : r.batchId
                       ? `/fund/batch/${r.batchId}`
@@ -164,7 +164,7 @@ async function FundContent({ searchParams }: { searchParams: PageProps<"/fund">[
                     {[
                       formatShortDate(r.occurredOn),
                       r.description ? r.category : null,
-                      r.source !== "manual" ? "Tự ghi khi bấm Đã nộp" : null,
+                      r.source !== "manual" ? "Tự ghi khi bấm Đã nộp" : r.auto ? "App tự ghi" : null,
                     ]
                       .filter(Boolean)
                       .join(" · ")}
