@@ -10,7 +10,7 @@ import { formatVnd } from "@/lib/billing";
 import { loadClub } from "@/lib/club";
 import { listCategories } from "@/lib/fund";
 import { db } from "@/lib/supabase";
-import { TxForm } from "../tx-form";
+import { ClubBadge, TxForm } from "../tx-form";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -31,6 +31,7 @@ async function EditTx({ params }: { params: Promise<{ id: string }> }) {
 
   return (
     <div className="flex flex-col gap-4 px-5 py-6">
+      <ClubBadge name={club.name} />
       <Fresh>
         <TxForm
           action={updateTransaction.bind(null, tx.id)}

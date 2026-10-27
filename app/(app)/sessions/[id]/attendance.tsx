@@ -67,10 +67,17 @@ export function Attendance({ sessionId, readOnly, fixed, guests, guestOptions, g
     });
   }
 
-  const togglePresence = (r: AttendanceView) =>
+  const togglePresence = (r: AttendanceView) => {
+    // A paid line holds money in the fund: say why it stays instead of removing it and putting it back.
+    if (r.isPresent && r.paymentStatus === "paid") {
+      const who = r.memberType === "guest" ? "Khách" : "Người";
+      window.alert(`${who} "${r.name}" đã nộp tiền buổi này nên không xóa được.\nMuốn xóa thì bấm Đã nộp để chuyển về Chưa nộp trước.`);
+      return;
+    }
     run({ kind: "presence", memberId: r.memberId, present: !r.isPresent }, () =>
       setPresence(sessionId, r.memberId, !r.isPresent),
     );
+  };
 
   const totals = sessionTotals([...lists.fixed, ...lists.guests]);
   const presentFixed = lists.fixed.filter((r) => r.isPresent).length;

@@ -6,30 +6,33 @@ import { Loading } from "@/app/ui/loading";
 import { Fresh } from "@/app/ui/fresh";
 import { PageHeader } from "@/app/ui/page-header";
 import { getPriceSettings, loadClub, todayInVietnam } from "@/lib/club";
-import { listUnpaidFees, priceUnpricedSlips } from "@/lib/fees";
+import { listPrepayMembers, priceUnpricedSlips } from "@/lib/fees";
 import { listCategories } from "@/lib/fund";
-import { TxForm } from "../tx-form";
+import { ClubBadge, TxForm } from "../tx-form";
 
 async function NewTx({ searchParams }: { searchParams: PageProps<"/fund/new">["searchParams"] }) {
   const sp = await searchParams;
   const { club } = await loadClub();
   if (!club) return <NoClub />;
-  const [categories, unpaidFees] = await Promise.all([
+  const thisMonth = todayInVietnam().slice(0, 7);
+  const [categories, { settings, members }] = await Promise.all([
     listCategories(club.id),
-    getPriceSettings(club.id)
-      .then((s) => priceUnpricedSlips(club.id, s))
-      .then(() => listUnpaidFees(club.id)),
+    getPriceSettings(club.id).then(async (settings) => {
+      await priceUnpricedSlips(club.id, settings);
+      return { settings, members: await listPrepayMembers(club.id, thisMonth) };
+    }),
   ]);
   const type = sp.type === "income" ? "income" : "expense";
   return (
-    <div className="px-5 py-6">
+    <div className="flex flex-col gap-4 px-5 py-6">
+      <ClubBadge name={club.name} />
       {/* key: opening "ghi thu" after "ghi chi" reuses this page, so the form must start over. */}
       <Fresh>
         <TxForm
           key={type}
           action={createTransaction}
           categories={categories}
-          unpaidFees={unpaidFees}
+          memberFees={{ members, settings, fromMonth: thisMonth }}
           submitLabel="Lưu"
           initialValues={{
             type,

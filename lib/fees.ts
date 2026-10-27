@@ -10,6 +10,7 @@ import {
   type MemberForBilling,
   type PriceSettings,
 } from "./billing";
+import { oldDebts, type PrepayMember, type SlipState } from "./prepay";
 import { db } from "./supabase";
 
 export type FeeSlipRow = {
@@ -201,4 +202,44 @@ export async function listUnpaidFees(clubId: string): Promise<UnpaidFee[]> {
       amount: Number(s.amount_due),
     }))
     .sort((a, b) => a.memberName.localeCompare(b.memberName, "vi") || a.month.localeCompare(b.month));
+}
+
+/**
+ * "Thu tiền sân" (QUY-1): active fixed members, and anyone else still owing a month, with their slips.
+ * Slips are the unpaid ones and those from `fromMonth` on: enough for old debts and paying ahead.
+ */
+export async function listPrepayMembers(clubId: string, fromMonth: string): Promise<PrepayMember[]> {
+  const { data: members, error } = await db()
+    .from("members")
+    .select("id, full_name, gender, member_type, status, fixed_since, rejoined_on")
+    .eq("club_id", clubId)
+    .eq("member_type", "fixed");
+  if (error) throw error;
+  const ids = members.map((m) => m.id as string);
+  if (ids.length === 0) return [];
+  const { data: slips, error: slipError } = await db()
+    .from("membership_fees")
+    .select("id, member_id, period_month, billing_mode, amount_due, payment_status")
+    .in("member_id", ids);
+  if (slipError) throw slipError;
+
+  const slipsOf = new Map<string, SlipState[]>();
+  for (const s of slips) {
+    const month = (s.period_month as string).slice(0, 7);
+    if (s.payment_status !== "unpaid" && month < fromMonth) continue;
+    const list = slipsOf.get(s.member_id) ?? [];
+    list.push({ id: s.id, month, mode: s.billing_mode, status: s.payment_status, amount: Number(s.amount_due) });
+    slipsOf.set(s.member_id, list);
+  }
+  return (members as (MemberRow & { full_name: string })[])
+    .map((m) => ({
+      id: m.id,
+      name: m.full_name,
+      gender: m.gender,
+      canPayAhead: m.status === "active" && m.fixed_since !== null,
+      billingStart: billingStart(m.fixed_since, m.rejoined_on),
+      slips: slipsOf.get(m.id) ?? [],
+    }))
+    .filter((m) => m.canPayAhead || oldDebts(m, fromMonth).length > 0)
+    .sort((a, b) => a.name.localeCompare(b.name, "vi"));
 }

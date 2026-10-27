@@ -140,6 +140,24 @@ export async function listSessions(clubId: string, from: string, to: string): Pr
   return data.map(withCourtName);
 }
 
+/** LICH ALL: sessions from `from` on, of every club given, by date then time. Each row says its club. */
+export async function listUpcomingSessions(
+  clubIds: string[],
+  from: string,
+): Promise<(SessionRow & { club_id: string })[]> {
+  if (clubIds.length === 0) return [];
+  const { data, error } = await db()
+    .from("sessions")
+    .select(`club_id, ${SESSION_COLUMNS}`)
+    .in("club_id", clubIds)
+    .gte("session_date", from)
+    .order("session_date")
+    .order("start_time")
+    .overrideTypes<WithCourt<SessionRow & { club_id: string }>[], { merge: false }>();
+  if (error) throw error;
+  return data.map(withCourtName);
+}
+
 export async function getSession(clubId: string, sessionId: string): Promise<SessionRow | null> {
   const { data, error } = await db()
     .from("sessions")
