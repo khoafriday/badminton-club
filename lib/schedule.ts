@@ -3,8 +3,8 @@ import { addDays } from "./dates";
 import { planSessionDates, type SchedulePlanInput } from "./schedule-plan";
 import { db } from "./supabase";
 
-/** SAN-1: court_id null means the club's court; court_name is then null too. */
-type CourtFields = { court_id: string | null; court_name: string | null };
+/** SAN-1: court_id null means the club's court; court_name and court_max_players are then null too. */
+type CourtFields = { court_id: string | null; court_name: string | null; court_max_players: number | null };
 
 export type ScheduleRow = SchedulePlanInput &
   CourtFields & {
@@ -24,15 +24,16 @@ export type SessionRow = CourtFields & {
   note: string | null;
 };
 
-// courts(name) comes back as one object or null: court_id points at one row.
-type WithCourt<T> = Omit<T, "court_name"> & { courts: { name: string } | null };
+// courts(...) comes back as one object or null: court_id points at one row.
+type CourtJoin = { name: string; max_players?: number | null } | null;
+type WithCourt<T> = Omit<T, "court_name" | "court_max_players"> & { courts: CourtJoin };
 
-function withCourtName<R extends { courts: { name: string } | null }>({ courts, ...row }: R) {
-  return { ...row, court_name: courts?.name ?? null };
+function withCourtName<R extends { courts: CourtJoin }>({ courts, ...row }: R) {
+  return { ...row, court_name: courts?.name ?? null, court_max_players: courts?.max_players ?? null };
 }
 
 const SESSION_COLUMNS =
-  "id, schedule_id, session_date, start_time, end_time, court_id, courts(name), status, cancel_reason, note";
+  "id, schedule_id, session_date, start_time, end_time, court_id, courts(name, max_players), status, cancel_reason, note";
 const SCHEDULE_COLUMNS =
   "id, weekday, start_time, end_time, court_id, courts(name), is_active, effective_from, effective_to, generated_until";
 

@@ -6,18 +6,30 @@ import { currentUser } from "./session";
 import { db } from "./supabase";
 
 /** The club's court from Settings (SAN-1), null until one is picked. */
-export type Club = { id: string; name: string; court_id: string | null; court_name: string | null };
+export type Club = {
+  id: string;
+  name: string;
+  court_id: string | null;
+  court_name: string | null;
+  /** The court's Số người tối đa, for reference only. */
+  court_max_players: number | null;
+};
 
 // PostgREST returns the court as one object (club_courts.court_id points at one row).
-type ClubRow = { id: string; name: string; club_courts: { court_id: string; courts: { name: string } | null }[] };
+type ClubRow = {
+  id: string;
+  name: string;
+  club_courts: { court_id: string; courts: { name: string; max_players: number | null } | null }[];
+};
 
 // The MVP gives a club one court; when several are allowed, the first one is the default.
-const CLUB_COLUMNS = "id, name, club_courts(court_id, courts(name))";
+const CLUB_COLUMNS = "id, name, club_courts(court_id, courts(name, max_players))";
 const toClub = (row: ClubRow): Club => ({
   id: row.id,
   name: row.name,
   court_id: row.club_courts[0]?.court_id ?? null,
   court_name: row.club_courts[0]?.courts?.name ?? null,
+  court_max_players: row.club_courts[0]?.courts?.max_players ?? null,
 });
 
 export async function requireUser(): Promise<string> {

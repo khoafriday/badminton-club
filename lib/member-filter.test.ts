@@ -19,9 +19,8 @@ const members = [
 const names = (rows: MemberRow[]) => rows.map((m) => m.full_name);
 
 describe("filterMembers", () => {
-  it("keeps only people still playing under Cố định and Vãng lai", () => {
+  it("keeps only fixed members still playing under Đang chơi", () => {
     expect(names(filterMembers(members, "fixed", ""))).toEqual(["Nguyễn Văn An"]);
-    expect(names(filterMembers(members, "guest", ""))).toEqual(["Đỗ Thị Bình"]);
   });
 
   it("shows people who stopped under Nghỉ", () => {
@@ -37,5 +36,7 @@ describe("filterMembers", () => {
   it("falls back to Tất cả for an unknown filter", () => {
     expect(parseMemberFilter("nope")).toBe("all");
     expect(parseMemberFilter("inactive")).toBe("inactive");
+    // Guests are no longer listed, so an old ?filter=guest link opens Tất cả.
+    expect(parseMemberFilter("guest")).toBe("all");
   });
 });

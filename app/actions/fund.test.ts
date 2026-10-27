@@ -12,10 +12,14 @@ vi.mock("next/navigation", () => ({
 }));
 let tables: Tables;
 // set_fee_payment, as in 0001_init.sql: the slip becomes Đã nộp and writes one Phí tháng line.
-const rpc = async (_name: string, args: { p_fee_id: string }) => {
+const rpc = async (_name: string, args: { p_fee_id: string; p_paid: boolean }) => {
   const slip = tables.membership_fees.find((s) => s.id === args.p_fee_id)!;
-  slip.payment_status = "paid";
-  tables.transactions.push({ source_type: "membership_fee", source_id: slip.id, club_id: slip.club_id, amount: slip.amount_due });
+  slip.payment_status = args.p_paid ? "paid" : "unpaid";
+  if (args.p_paid) {
+    tables.transactions.push({ source_type: "membership_fee", source_id: slip.id, club_id: slip.club_id, amount: slip.amount_due });
+  } else {
+    tables.transactions = tables.transactions.filter((t) => t.source_id !== slip.id);
+  }
   return { error: null };
 };
 vi.mock("@/lib/supabase", () => ({ db: () => ({ ...fakeDb(tables), rpc }) }));
@@ -26,7 +30,7 @@ vi.mock("@/lib/club", () => ({
   todayInVietnam: () => "2026-10-27",
 }));
 
-const { createTransaction } = await import("./fund");
+const { createTransaction, undoMemberFees } = await import("./fund");
 
 function form(fields: Record<string, string | string[]>) {
   const fd = new FormData();
@@ -70,5 +74,21 @@ describe("Thu tiền sân, paying several months", () => {
     expect(await save({ member_id: "an", fee_ids: "nov", months: "0" })).toMatchObject({
       error: "Có tháng đã thu hoặc đã Miễn. Tải lại trang rồi chọn lại.",
     });
+  });
+
+  it("undoes the whole payment: months back to Chưa nộp, months ahead removed", async () => {
+    await save({ member_id: "an", fee_ids: "sep", months: "3" });
+    const batch = tables.transactions[0].batch_id as string;
+    expect(tables.transactions.every((t) => t.batch_id === batch)).toBe(true);
+
+    await expect(undoMemberFees(batch)).rejects.toThrow("REDIRECT");
+    expect(tables.transactions).toEqual([]);
+    const left = tables.membership_fees.map((s) => [s.period_month, s.payment_status]).sort();
+    // Tháng 9 is owed again, Tháng 10 (this month) stays as a debt, Tháng 11 was paid before.
+    expect(left).toEqual([
+      ["2026-09-01", "unpaid"],
+      ["2026-10-01", "unpaid"],
+      ["2026-11-01", "paid"],
+    ]);
   });
 });

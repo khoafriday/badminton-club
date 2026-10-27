@@ -1,5 +1,5 @@
 // A tiny in-memory stand-in for the supabase-js query builder, enough for lib/fees.ts and lib/debts.ts.
-// It knows eq/lt/lte/gt/in filters, "members!inner(...)" joins, insert/upsert/update and count heads.
+// It knows eq/lt/lte/gt/in filters, "members!inner(...)" joins, insert/upsert/update/delete and count heads.
 
 type Row = Record<string, unknown>;
 export type Tables = Record<string, Row[]>;
@@ -8,7 +8,7 @@ let nextId = 1;
 
 class Query {
   private filters: ((r: Row) => boolean)[] = [];
-  private mode: "select" | "update" | "upsert" = "select";
+  private mode: "select" | "update" | "upsert" | "delete" = "select";
   private patch: Row = {};
   private joins: string[] = [];
   private head = false;
@@ -26,6 +26,10 @@ class Query {
   update(patch: Row) {
     this.mode = "update";
     this.patch = patch;
+    return this;
+  }
+  delete() {
+    this.mode = "delete";
     return this;
   }
   upsert(rows: Row[], opts: { onConflict: string; ignoreDuplicates?: boolean }) {
@@ -59,8 +63,8 @@ class Query {
   gte(c: string, v: string) {
     return this.where(c, (x) => String(x) >= v);
   }
-  gt(c: string, v: number) {
-    return this.where(c, (x) => Number(x) > v);
+  gt(c: string, v: number | string) {
+    return this.where(c, (x) => (typeof v === "number" ? Number(x) > v : String(x) > v));
   }
   in(c: string, vs: unknown[]) {
     return this.where(c, (x) => vs.includes(x));
@@ -77,6 +81,10 @@ class Query {
   private run() {
     if (this.mode === "upsert") return { data: null, error: null };
     const hits = this.rows().filter((r) => this.joins.every((j) => this.link(j, r)) && this.filters.every((f) => f(r)));
+    if (this.mode === "delete") {
+      this.tables[this.table] = this.rows().filter((r) => !hits.includes(r));
+      return { data: null, error: null };
+    }
     if (this.mode === "update") {
       hits.forEach((r) => Object.assign(r, this.patch));
       return { data: null, error: null };

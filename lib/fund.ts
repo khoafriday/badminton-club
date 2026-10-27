@@ -12,6 +12,8 @@ export type TxRow = {
   category: string;
   source: "manual" | "attendance" | "membership_fee";
   sessionId: string | null;
+  /** Lines from one "Thu tiền sân" payment share it; null for other lines. */
+  batchId: string | null;
 };
 
 export type CategoryOption = { id: string; type: "income" | "expense"; label: string };
@@ -20,7 +22,7 @@ export type CategoryOption = { id: string; type: "income" | "expense"; label: st
 export async function listTransactions(clubId: string): Promise<TxRow[]> {
   const { data, error } = await db()
     .from("transactions")
-    .select("id, type, amount, occurred_on, description, source_type, session_id, transaction_categories(code, name)")
+    .select("id, type, amount, occurred_on, description, source_type, session_id, batch_id, transaction_categories(code, name)")
     .eq("club_id", clubId)
     .order("occurred_on", { ascending: false })
     .order("created_at", { ascending: false });
@@ -34,6 +36,7 @@ export async function listTransactions(clubId: string): Promise<TxRow[]> {
       description: string | null;
       source_type: TxRow["source"];
       session_id: string | null;
+      batch_id: string | null;
       transaction_categories: { code: string | null; name: string | null };
     }[]
   ).map((t) => ({
@@ -45,6 +48,7 @@ export async function listTransactions(clubId: string): Promise<TxRow[]> {
     category: categoryLabel(t.transaction_categories),
     source: t.source_type,
     sessionId: t.session_id,
+    batchId: t.batch_id,
   }));
 }
 
@@ -64,4 +68,41 @@ export async function listCategories(clubId: string): Promise<CategoryOption[]> 
   return data
     .filter((c) => !AUTO_CATEGORY_CODES.includes(c.code ?? ""))
     .map((c) => ({ id: c.id, type: c.type, label: categoryLabel(c) }));
+}
+
+export type FeeBatch = {
+  occurredOn: string;
+  description: string | null;
+  memberName: string;
+  months: { month: string; amount: number }[];
+};
+
+/** One "Thu tiền sân" payment: who paid and for which months. Null when no line of it is left. */
+export async function getFeeBatch(clubId: string, batchId: string): Promise<FeeBatch | null> {
+  const { data: lines, error } = await db()
+    .from("transactions")
+    .select("amount, occurred_on, description, source_id")
+    .eq("club_id", clubId)
+    .eq("source_type", "membership_fee")
+    .eq("batch_id", batchId);
+  if (error) throw error;
+  if (lines.length === 0) return null;
+  const { data: slips, error: slipError } = await db()
+    .from("membership_fees")
+    .select("id, period_month, members!inner(full_name)")
+    .in(
+      "id",
+      lines.map((l) => l.source_id),
+    );
+  if (slipError) throw slipError;
+  const typed = slips as unknown as { id: string; period_month: string; members: { full_name: string } }[];
+  const monthOf = new Map(typed.map((s) => [s.id, s.period_month.slice(0, 7)]));
+  return {
+    occurredOn: lines[0].occurred_on,
+    description: lines[0].description,
+    memberName: typed[0]?.members.full_name ?? "",
+    months: lines
+      .map((l) => ({ month: monthOf.get(l.source_id) ?? "", amount: Number(l.amount) }))
+      .sort((a, b) => a.month.localeCompare(b.month)),
+  };
 }

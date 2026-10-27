@@ -126,6 +126,7 @@ async function collectMemberFees(userId: string, clubId: string, values: TxFormV
     return "Có tháng vừa được thu ở chỗ khác. Tải lại trang rồi chọn lại.";
   }
   const ids = [...feeIds, ...slips.map((s) => s.id as string)];
+  const batchId = crypto.randomUUID();
 
   for (const id of ids) {
     const { error: payError } = await db().rpc("set_fee_payment", {
@@ -138,12 +139,43 @@ async function collectMemberFees(userId: string, clubId: string, values: TxFormV
   }
   const { error: txError } = await db()
     .from("transactions")
-    .update({ occurred_on: values.occurred_on, description: values.description.trim() || null })
+    .update({ occurred_on: values.occurred_on, description: values.description.trim() || null, batch_id: batchId })
     .eq("club_id", clubId)
     .eq("source_type", "membership_fee")
     .in("source_id", ids);
   if (txError) return "Đã ghi nộp, nhưng chưa sửa được ngày và ghi chú.";
   return null;
+}
+
+/**
+ * Undoes one "Thu tiền sân": every month it paid goes back to Chưa nộp and its Phí tháng line is removed.
+ * Slips it made for months that have not started are deleted, so they do not show as debts.
+ */
+export async function undoMemberFees(batchId: string) {
+  const { club } = await requireClub();
+  const { data: lines, error } = await db()
+    .from("transactions")
+    .select("source_id")
+    .eq("club_id", club.id)
+    .eq("source_type", "membership_fee")
+    .eq("batch_id", batchId);
+  if (error) throw error;
+  const slipIds = lines.map((l) => l.source_id as string);
+  for (const id of slipIds) {
+    const { error: payError } = await db().rpc("set_fee_payment", { p_fee_id: id, p_paid: false });
+    if (payError) throw payError;
+  }
+  if (slipIds.length > 0) {
+    const thisMonth = `${todayInVietnam().slice(0, 7)}-01`;
+    const { error: deleteError } = await db()
+      .from("membership_fees")
+      .delete()
+      .in("id", slipIds)
+      .eq("payment_status", "unpaid")
+      .gt("period_month", thisMonth);
+    if (deleteError) throw deleteError;
+  }
+  done();
 }
 
 /** Only hand-written lines can be edited; lines from payments follow the payment. */

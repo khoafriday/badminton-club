@@ -142,7 +142,9 @@ async function FundContent({ searchParams }: { searchParams: PageProps<"/fund">[
                 href={
                   r.source === "manual"
                     ? `/fund/${r.id}`
-                    : r.sessionId
+                    : r.batchId
+                      ? `/fund/batch/${r.batchId}`
+                      : r.sessionId
                       ? `/sessions/${r.sessionId}`
                       : `/fees?month=${r.occurredOn.slice(0, 7)}`
                 }

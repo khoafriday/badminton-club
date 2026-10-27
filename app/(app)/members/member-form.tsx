@@ -47,13 +47,18 @@ export function MemberForm({ action, initialValues, submitLabel, showStatus, tod
         </div>
       </fieldset>
 
-      <fieldset className="flex flex-col gap-1">
-        <legend className="mb-1.5 text-sm font-semibold text-muted">Loại</legend>
-        <div className="flex gap-2">
-          <Choice name="member_type" value="fixed" label="Cố định" checked={v.member_type === "fixed"} onChange={setMemberType} />
-          <Choice name="member_type" value="guest" label="Vãng lai" checked={v.member_type === "guest"} onChange={setMemberType} />
-        </div>
-      </fieldset>
+      {/* A new member is always fixed: guests are added in a session. An existing guest can become fixed here. */}
+      {showStatus ? (
+        <fieldset className="flex flex-col gap-1">
+          <legend className="mb-1.5 text-sm font-semibold text-muted">Loại</legend>
+          <div className="flex gap-2">
+            <Choice name="member_type" value="fixed" label="Cố định" checked={v.member_type === "fixed"} onChange={setMemberType} />
+            <Choice name="member_type" value="guest" label="Vãng lai" checked={v.member_type === "guest"} onChange={setMemberType} />
+          </div>
+        </fieldset>
+      ) : (
+        <input type="hidden" name="member_type" value="fixed" />
+      )}
 
       {memberType === "fixed" && (
         <label className={labelClass}>

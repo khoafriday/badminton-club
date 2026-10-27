@@ -49,9 +49,20 @@ type Props = Lists & {
   guestOptions: GuestOption[];
   guestPrices: Record<Gender, number>;
   feesHref: string;
+  /** The court's Số người tối đa; only a quiet note when more come. */
+  maxPlayers: number | null;
 };
 
-export function Attendance({ sessionId, readOnly, fixed, guests, guestOptions, guestPrices, feesHref }: Props) {
+export function Attendance({
+  sessionId,
+  readOnly,
+  fixed,
+  guests,
+  guestOptions,
+  guestPrices,
+  feesHref,
+  maxPlayers,
+}: Props) {
   const [lists, applyOptimistic] = useOptimistic<Lists, Change>({ fixed, guests }, applyChange);
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -81,6 +92,7 @@ export function Attendance({ sessionId, readOnly, fixed, guests, guestOptions, g
 
   const totals = sessionTotals([...lists.fixed, ...lists.guests]);
   const presentFixed = lists.fixed.filter((r) => r.isPresent).length;
+  const present = presentFixed + lists.guests.length;
 
   return (
     <>
@@ -89,6 +101,12 @@ export function Attendance({ sessionId, readOnly, fixed, guests, guestOptions, g
         <Total label="Đã thu" value={totals.paid} />
         <Total label="Còn nợ" value={totals.outstanding} warn={totals.outstanding > 0} />
       </section>
+
+      {maxPlayers !== null && present > maxPlayers && (
+        <p className="mx-5 mt-2 text-xs text-muted">
+          ⚠ {present} người có mặt, sân chỉ tối đa {maxPlayers} người.
+        </p>
+      )}
 
       {error && (
         <p role="alert" className="mx-5 mt-3 rounded-2xl bg-red-50 p-3 text-sm text-red-700">
