@@ -9,7 +9,7 @@ import { listClubCourts } from "@/lib/courts";
 import { WEEKDAY_LABEL, addDays, formatDayLabel, formatMonthLabel, formatTime } from "@/lib/dates";
 import { ensureFeeSlips, waiveFullMonthAbsences } from "@/lib/fees";
 import { loadMemberHistory } from "@/lib/member-history";
-import { getBankAccount, latestPaymentRequest } from "@/lib/payments";
+import { getBankAccount } from "@/lib/payments";
 import { ensureSessions, listSchedules, listSessions } from "@/lib/schedule";
 
 const FEE_LABEL = { paid: "Đã nộp", unpaid: "Chưa nộp", waived: "Miễn" } as const;
@@ -23,14 +23,7 @@ function Card({ children, className = "" }: { children: React.ReactNode; classNa
  * months paid, total paid),
  * the coming sessions, its courts and its weekly times. Read only; the fund is on the Quỹ tab.
  */
-export async function MemberHome({
-  viewer,
-  paidCode,
-}: {
-  viewer: Extract<Viewer, { kind: "member" }>;
-  /** The QR just paid, when /pay sent the member back here. */
-  paidCode: string | null;
-}) {
+export async function MemberHome({ viewer }: { viewer: Extract<Viewer, { kind: "member" }> }) {
   const { club, clubs, memberId, name } = viewer;
   const today = todayInVietnam();
   // The same jobs as the admin's Tổng quan, so this month's slip and the coming sessions exist.
@@ -39,16 +32,13 @@ export async function MemberHome({
     ensureSessions(club.id, today),
     waiveFullMonthAbsences(club.id, today),
   ]);
-  const [history, schedules, courts, sessions, bank, lastRequest] = await Promise.all([
+  const [history, schedules, courts, sessions, bank] = await Promise.all([
     loadMemberHistory(memberId),
     listSchedules(club.id),
     listClubCourts(club.id),
     listSessions(club.id, today, addDays(today, 6)),
     getBankAccount(club.id),
-    paidCode ? latestPaymentRequest(club.id, memberId) : null,
   ]);
-  const justPaid = lastRequest?.status === "paid" && lastRequest.code === paidCode ? lastRequest : null;
-  const overpaid = justPaid ? (justPaid.receivedAmount ?? justPaid.amount) - justPaid.amount : 0;
   const weekly = schedules.filter((s) => s.is_active);
   const month = today.slice(0, 7);
   const visitsThisMonth = history.visits.filter((v) => v.date.startsWith(month)).length;
@@ -97,21 +87,6 @@ export async function MemberHome({
         <ThemeToggle />
       </div>
 
-      {justPaid && (
-        <Card className="border-brand-100 bg-brand-50">
-          <p className="font-bold text-brand-700">
-            {history.owed === 0
-              ? `Đã thanh toán hết các khoản nợ của CLB ${club.name},`
-              : `Đã thanh toán ${formatVnd(justPaid.amount)} cho CLB ${club.name},`}
-          </p>
-          <p className="text-sm">Chúc bạn tiếp tục chơi cầu vui vẻ!</p>
-          {overpaid > 0 && (
-            <p className="mt-2 text-sm text-amber-900">
-              Bạn đã chuyển thừa {formatVnd(overpaid)}. Liên hệ admin để được xử lý phần tiền thừa.
-            </p>
-          )}
-        </Card>
-      )}
       <div className="mx-5 mt-1">
         <h2 className="section-title">Của bạn · {name}</h2>
       </div>

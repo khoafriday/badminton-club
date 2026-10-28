@@ -10,7 +10,7 @@ import { loadViewer } from "@/lib/club";
 import { loadMemberHistory } from "@/lib/member-history";
 import { getBankAccount, isCurrent, latestPaymentRequest } from "@/lib/payments";
 import { TPBANK_BIN, vietQrPayload } from "@/lib/vietqr";
-import { BackHomePaid, CopyButton, WaitForPayment } from "./pay-parts";
+import { BackHomeCountdown, CopyButton, WaitForPayment } from "./pay-parts";
 
 const BANK_NAME: Record<string, string> = { [TPBANK_BIN]: "TPBank" };
 
@@ -51,8 +51,25 @@ async function PayContent() {
   ]);
   if (!bank) return <Note>CLB chưa cài tài khoản nhận tiền. Liên hệ admin để đóng tiền.</Note>;
 
-  // Paid: Tổng quan shows the thanks and any money over, so the member lands back where they started.
-  if (request?.status === "paid") return <BackHomePaid code={request.code} />;
+  if (request?.status === "paid") {
+    const extra = (request.receivedAmount ?? request.amount) - request.amount;
+    return (
+      <>
+        <Note tone="ok">
+          <p className="text-lg font-bold text-brand-700">
+            {history.owed === 0
+              ? `Đã thanh toán hết các khoản nợ của CLB ${club.name},`
+              : `Đã thanh toán ${formatVnd(request.amount)} cho CLB ${club.name},`}
+          </p>
+          <p>Chúc bạn tiếp tục chơi cầu vui vẻ!</p>
+        </Note>
+        {extra > 0 && (
+          <Note tone="warn">Bạn đã chuyển thừa {formatVnd(extra)}. Liên hệ admin để được xử lý phần tiền thừa.</Note>
+        )}
+        <BackHomeCountdown />
+      </>
+    );
+  }
   if (request?.status === "needs_review") {
     return (
       <>

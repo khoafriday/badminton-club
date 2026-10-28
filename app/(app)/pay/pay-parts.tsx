@@ -39,11 +39,17 @@ export function CopyButton({ text }: { text: string }) {
   );
 }
 
-/** The money came: back to Tổng quan, which thanks the member for this code. */
-export function BackHomePaid({ code }: { code: string }) {
+/** The money came: counts down, then goes back to Tổng quan unless the member already left with ‹. */
+export function BackHomeCountdown({ seconds = 5 }: { seconds?: number }) {
   const router = useRouter();
+  const [left, setLeft] = useState(seconds);
   useEffect(() => {
-    router.replace(`/?paid=${encodeURIComponent(code)}`);
-  }, [router, code]);
-  return <p className="text-center text-sm text-muted">Đang quay về Tổng quan...</p>;
+    if (left <= 0) {
+      router.replace("/");
+      return;
+    }
+    const timer = setTimeout(() => setLeft(left - 1), 1000);
+    return () => clearTimeout(timer);
+  }, [left, router]);
+  return <p className="text-center text-sm text-muted">Tự quay về Tổng quan sau {Math.max(left, 0)} giây...</p>;
 }

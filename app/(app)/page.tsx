@@ -19,12 +19,10 @@ function Card({ children, className = "" }: { children: React.ReactNode; classNa
   return <section className={`card mx-5 p-4 ${className}`}>{children}</section>;
 }
 
-async function Dashboard({ searchParams }: { searchParams: PageProps<"/">["searchParams"] }) {
-  const [viewer, sp] = await Promise.all([loadViewer(), searchParams]);
-  // A member gets their own Tổng quan; this one is the admin's. ?paid=<code>: back from a QR that was just paid.
-  if (viewer.kind === "member") {
-    return <MemberHome viewer={viewer} paidCode={typeof sp.paid === "string" ? sp.paid : null} />;
-  }
+async function Dashboard() {
+  const viewer = await loadViewer();
+  // A member gets their own Tổng quan; this one is the admin's.
+  if (viewer.kind === "member") return <MemberHome viewer={viewer} />;
   const { userId, club } = viewer;
   if (!club) return <NoClub />;
 
@@ -203,12 +201,12 @@ async function Dashboard({ searchParams }: { searchParams: PageProps<"/">["searc
   );
 }
 
-export default function Home({ searchParams }: PageProps<"/">) {
+export default function Home() {
   return (
     <main className="flex flex-1 flex-col">
       <Suspense fallback={<Loading />}>
         <RequireDatabase>
-          <Dashboard searchParams={searchParams} />
+          <Dashboard />
         </RequireDatabase>
       </Suspense>
     </main>
