@@ -50,7 +50,7 @@ export async function requireUser(): Promise<string> {
  */
 export type Viewer =
   | { kind: "admin"; userId: string; club: Club | null }
-  | { kind: "member"; accountId: string; name: string; club: Club; clubs: Club[] };
+  | { kind: "member"; accountId: string; memberId: string; name: string; club: Club; clubs: Club[] };
 
 export const loadViewer = cache(async (): Promise<Viewer> => {
   const user = await currentUser();
@@ -72,8 +72,9 @@ export const loadViewer = cache(async (): Promise<Viewer> => {
   const clubs = data.map(toClub);
   const club = clubs.find((c) => c.id === account.last_club_id) ?? clubs[0];
   if (!club) redirect("/logout");
-  const name = memberships.find((m) => m.clubId === club.id)?.name ?? memberships[0].name;
-  return { kind: "member", accountId: user.accountId, name, club, clubs };
+  // The person's member row in the club shown: their own debts and payments there.
+  const me = memberships.find((m) => m.clubId === club.id) ?? memberships[0];
+  return { kind: "member", accountId: user.accountId, memberId: me.memberId, name: me.name, club, clubs };
 });
 
 // The login ID doubles as the profile id. The row is created on first use.

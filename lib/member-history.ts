@@ -16,6 +16,8 @@ export type SlipRow = {
   month: string;
   billingMode: "monthly" | "per_session";
   amountDue: number;
+  /** Paid earlier at a lower fee (amountDue is then the difference). */
+  prepaid: number;
   status: FeeStatus;
 };
 
@@ -30,7 +32,7 @@ export async function loadMemberHistory(memberId: string) {
       .eq("sessions.status", "active"),
     db()
       .from("membership_fees")
-      .select("id, period_month, billing_mode, amount_due, payment_status")
+      .select("id, period_month, billing_mode, amount_due, prepaid_amount, payment_status")
       .eq("member_id", memberId)
       .order("period_month", { ascending: false }),
   ]);
@@ -62,6 +64,7 @@ export async function loadMemberHistory(memberId: string) {
     month: (s.period_month as string).slice(0, 7),
     billingMode: s.billing_mode,
     amountDue: Number(s.amount_due),
+    prepaid: Number(s.prepaid_amount ?? 0),
     status: s.payment_status,
   }));
 
@@ -72,5 +75,14 @@ export async function loadMemberHistory(memberId: string) {
     .filter((s) => s.billingMode === "monthly" && s.status === "unpaid")
     .reduce((sum, s) => sum + s.amountDue, 0);
 
-  return { visits, slips, owed: owedSessions + owedFees };
+  // What the member has paid the club: monthly fees (with amounts paid before a fee rise) and paid sessions.
+  const paidSessions = visits
+    .filter((v) => v.chargeMode === "per_session" && v.paymentStatus === "paid")
+    .reduce((sum, v) => sum + v.amountDue, 0);
+  const paidFees = slips
+    .filter((s) => s.billingMode === "monthly")
+    .reduce((sum, s) => sum + s.prepaid + (s.status === "paid" ? s.amountDue : 0), 0);
+  const paidMonths = slips.filter((s) => s.billingMode === "monthly" && s.status === "paid").length;
+
+  return { visits, slips, owed: owedSessions + owedFees, paid: paidSessions + paidFees, paidMonths };
 }
