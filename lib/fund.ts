@@ -16,6 +16,8 @@ export type TxRow = {
   batchId: string | null;
   /** Written by the app (Phí tháng, tiền buổi, Hoàn phí tháng): never edited by hand, even once unlinked. */
   auto: boolean;
+  /** Who paid, for a Phí tháng line; null for other lines. */
+  payer: string | null;
 };
 
 export type CategoryOption = { id: string; type: "income" | "expense"; label: string };
@@ -24,11 +26,16 @@ export type CategoryOption = { id: string; type: "income" | "expense"; label: st
 export async function listTransactions(clubId: string): Promise<TxRow[]> {
   const { data, error } = await db()
     .from("transactions")
-    .select("id, type, amount, occurred_on, description, source_type, session_id, batch_id, transaction_categories(code, name)")
+    .select(
+      "id, type, amount, occurred_on, description, source_type, source_id, session_id, batch_id, transaction_categories(code, name)",
+    )
     .eq("club_id", clubId)
     .order("occurred_on", { ascending: false })
     .order("created_at", { ascending: false });
   if (error) throw error;
+  const payerOf = await payerNames(
+    data.filter((t) => t.source_type === "membership_fee" && t.source_id).map((t) => t.source_id as string),
+  );
   return (
     data as unknown as {
       id: string;
@@ -37,6 +44,7 @@ export async function listTransactions(clubId: string): Promise<TxRow[]> {
       occurred_on: string;
       description: string | null;
       source_type: TxRow["source"];
+      source_id: string | null;
       session_id: string | null;
       batch_id: string | null;
       transaction_categories: { code: string | null; name: string | null };
@@ -52,7 +60,28 @@ export async function listTransactions(clubId: string): Promise<TxRow[]> {
     sessionId: t.session_id,
     batchId: t.batch_id,
     auto: AUTO_CATEGORY_CODES.includes(t.transaction_categories.code ?? ""),
+    payer: t.source_type === "membership_fee" && t.source_id ? (payerOf.get(t.source_id) ?? null) : null,
   }));
+}
+
+/**
+ * A Phí tháng line only points at its slip (source_id), so the payer's name comes from the slip's member.
+ * Asked in chunks so the id list stays short in the URL.
+ */
+async function payerNames(slipIds: string[]): Promise<Map<string, string>> {
+  const chunks: string[][] = [];
+  for (let i = 0; i < slipIds.length; i += 150) chunks.push(slipIds.slice(i, i + 150));
+  const results = await Promise.all(
+    chunks.map((ids) => db().from("membership_fees").select("id, members(full_name)").in("id", ids)),
+  );
+  const names = new Map<string, string>();
+  for (const { data, error } of results) {
+    if (error) throw error;
+    for (const s of data as unknown as { id: string; members: { full_name: string } | null }[]) {
+      if (s.members) names.set(s.id, s.members.full_name);
+    }
+  }
+  return names;
 }
 
 export function summarize(rows: TxRow[], range: { from: string | null; to: string | null }) {

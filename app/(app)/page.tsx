@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { NoClub } from "@/app/clubs/no-club";
 import { ClubSelect } from "@/app/ui/club-select";
+import { ThemeToggle } from "@/app/ui/theme-toggle";
 import { MemberHome } from "./member-home";
 import { RequireDatabase } from "@/app/ui/database-missing";
 import { Loading } from "@/app/ui/loading";
@@ -69,6 +70,7 @@ async function Dashboard() {
           <h1 className="sr-only">{club.name}</h1>
           <ClubSelect clubs={clubs.map((c) => ({ id: c.id, name: c.name }))} currentId={club.id} variant="title" />
         </div>
+        <ThemeToggle />
       </div>
 
       <Link href="/fund" className="hero mx-5 block p-5">
