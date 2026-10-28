@@ -38,3 +38,12 @@ export function CopyButton({ text }: { text: string }) {
     </button>
   );
 }
+
+/** The money came: back to Tổng quan, which thanks the member for this code. */
+export function BackHomePaid({ code }: { code: string }) {
+  const router = useRouter();
+  useEffect(() => {
+    router.replace(`/?paid=${encodeURIComponent(code)}`);
+  }, [router, code]);
+  return <p className="text-center text-sm text-muted">Đang quay về Tổng quan...</p>;
+}
