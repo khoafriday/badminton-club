@@ -103,7 +103,10 @@ async function SettingsContent() {
                         <span className="ml-2 rounded-full bg-brand-50 px-2 py-0.5 text-[11px] font-bold text-brand-700">CLB này</span>
                       )}
                     </span>
-                    <span className="block truncate text-xs text-muted">{c.address ?? "Chưa có địa chỉ"}</span>
+                    <span className="block truncate text-xs text-muted">
+                      {c.address ?? "Chưa có địa chỉ"}
+                      {c.max_players && ` · Tối đa ${c.max_players} người`}
+                    </span>
                   </span>
                   <span className="shrink-0 text-sm font-bold">
                     {c.price > 0 ? `${formatVnd(c.price)}/giờ` : "Chưa có giá"}

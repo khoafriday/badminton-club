@@ -26,7 +26,20 @@ export function CourtForm({ action, initialValues, submitLabel }: Props) {
         <input name="address" defaultValue={v.address} className={inputClass} />
       </label>
       <PriceInput name="price" label="Giá thuê mỗi giờ" value={v.price} unit="đ/giờ" />
-      <p className="text-xs text-muted">Giá chỉ để xem. Tiền sân vẫn ghi tay trong Quỹ.</p>
+      <label className={labelClass}>
+        Số người tối đa
+        <input
+          name="max_players"
+          type="number"
+          inputMode="numeric"
+          min={1}
+          step={1}
+          defaultValue={v.max_players}
+          placeholder="Ví dụ: 16"
+          className={inputClass}
+        />
+      </label>
+      <p className="text-xs text-muted">Giá và số người tối đa chỉ để xem. Tiền sân vẫn ghi tay trong Quỹ.</p>
       <p aria-live="polite" className="min-h-5 text-sm text-red-600">
         {state.error}
       </p>

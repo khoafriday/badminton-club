@@ -21,7 +21,12 @@ async function EditCourt({ params }: { params: Promise<{ id: string }> }) {
         <CourtForm
           action={updateCourt.bind(null, court.id)}
           submitLabel="Lưu"
-          initialValues={{ name: court.name, address: court.address ?? "", price: formatVndInput(court.price) }}
+          initialValues={{
+            name: court.name,
+            address: court.address ?? "",
+            price: formatVndInput(court.price),
+            max_players: court.max_players?.toString() ?? "",
+          }}
         />
       </Fresh>
       <DeleteCourtButton courtId={court.id} courtName={court.name} />

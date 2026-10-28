@@ -16,10 +16,13 @@ async function Members({ searchParams }: { searchParams: PageProps<"/members">["
   if (!club) return <NoClub />;
 
   // One query for everyone; the list filters in the browser, so changing a filter does not reload.
+  // Guests belong to the sessions they came to, not to the club: they stay in the database and
+  // only come back as suggestions when adding a guest to a session.
   const { data, error } = await db()
     .from("members")
     .select("id, full_name, gender, phone, member_type, status")
     .eq("club_id", club.id)
+    .eq("member_type", "fixed")
     .order("full_name");
   if (error) throw error;
 

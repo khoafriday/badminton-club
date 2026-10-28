@@ -6,25 +6,83 @@ import { currentUser } from "./session";
 import { db } from "./supabase";
 
 /** The club's court from Settings (SAN-1), null until one is picked. */
-export type Club = { id: string; name: string; court_id: string | null; court_name: string | null };
+export type Club = {
+  id: string;
+  name: string;
+  court_id: string | null;
+  court_name: string | null;
+  /** The court's Số người tối đa, for reference only. */
+  court_max_players: number | null;
+};
 
 // PostgREST returns the court as one object (club_courts.court_id points at one row).
-type ClubRow = { id: string; name: string; club_courts: { court_id: string; courts: { name: string } | null }[] };
+type ClubRow = {
+  id: string;
+  name: string;
+  club_courts: {
+    court_id: string;
+    courts: { name: string; max_players: number | null } | null;
+  }[];
+};
 
 // The MVP gives a club one court; when several are allowed, the first one is the default.
-const CLUB_COLUMNS = "id, name, club_courts(court_id, courts(name))";
+const CLUB_COLUMNS = "id, name, club_courts(court_id, courts(name, max_players))";
 const toClub = (row: ClubRow): Club => ({
   id: row.id,
   name: row.name,
   court_id: row.club_courts[0]?.court_id ?? null,
   court_name: row.club_courts[0]?.courts?.name ?? null,
+  court_max_players: row.club_courts[0]?.courts?.max_players ?? null,
 });
 
+/** The admin's login ID. Members are sent to Tổng quan: every admin screen and action starts here. */
 export async function requireUser(): Promise<string> {
   const user = await currentUser();
   if (!user) redirect("/login");
-  return user;
+  if (user.kind !== "admin") redirect("/");
+  return user.id;
 }
+
+/**
+ * For the screens members can open too (Tổng quan, Lịch, Quỹ): the admin with their current club,
+ * or a member with their own club. A member who stopped, or whose club or account is gone, is signed out.
+ */
+export type Viewer =
+  | { kind: "admin"; userId: string; club: Club | null }
+  | { kind: "member"; memberId: string; name: string; club: Club };
+
+export const loadViewer = cache(async (): Promise<Viewer> => {
+  const user = await currentUser();
+  if (!user) redirect("/login");
+  if (user.kind === "admin")
+    return {
+      kind: "admin",
+      userId: user.id,
+      club: await getCurrentClub(user.id),
+    };
+
+  const { data, error } = await db()
+    .from("members")
+    .select(
+      `full_name, status, member_type, member_accounts!inner(member_id), clubs!inner(archived_at, ${CLUB_COLUMNS})`,
+    )
+    .eq("id", user.memberId)
+    .maybeSingle();
+  if (error) throw error;
+  const row = data as unknown as {
+    full_name: string;
+    status: string;
+    member_type: string;
+    clubs: ClubRow & { archived_at: string | null };
+  } | null;
+  if (!row || row.status !== "active" || row.member_type !== "fixed" || row.clubs.archived_at) redirect("/logout");
+  return {
+    kind: "member",
+    memberId: user.memberId,
+    name: row.full_name,
+    club: toClub(row.clubs),
+  };
+});
 
 // The login ID doubles as the profile id. The row is created on first use.
 async function ensureProfile(userId: string) {
@@ -49,7 +107,10 @@ export const getCurrentClub = cache(async (userId: string): Promise<Club | null>
 });
 
 /** Signed-in user and their current club, or null club when they have not created one yet. */
-export async function loadClub(): Promise<{ userId: string; club: Club | null }> {
+export async function loadClub(): Promise<{
+  userId: string;
+  club: Club | null;
+}> {
   const userId = await requireUser();
   return { userId, club: await getCurrentClub(userId) };
 }
@@ -63,7 +124,9 @@ export async function requireClub(): Promise<{ userId: string; club: Club }> {
 
 /** Today's date (YYYY-MM-DD) in Vietnam, whatever timezone the server runs in. */
 export function todayInVietnam(): string {
-  return new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Ho_Chi_Minh" }).format(new Date());
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Ho_Chi_Minh",
+  }).format(new Date());
 }
 
 /** All clubs the user owns that are not archived, oldest first. Cached per request like getCurrentClub. */
@@ -89,7 +152,12 @@ export async function getPriceSettings(clubId: string): Promise<PriceSettings> {
   if (error) throw error;
   if (!data) {
     await db().from("club_settings").upsert({ club_id: clubId }, { onConflict: "club_id", ignoreDuplicates: true });
-    return { monthlyFeeMale: 0, monthlyFeeFemale: 0, guestPriceMale: 0, guestPriceFemale: 0 };
+    return {
+      monthlyFeeMale: 0,
+      monthlyFeeFemale: 0,
+      guestPriceMale: 0,
+      guestPriceFemale: 0,
+    };
   }
   // bigint columns can arrive as strings; prices are whole VND well inside Number range.
   return {

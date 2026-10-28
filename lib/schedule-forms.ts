@@ -41,6 +41,8 @@ export type SessionFormValues = {
   end_time: string;
   court_id: string;
   note: string;
+  /** Only on the new-session form: which club the session is for. */
+  club_id?: string;
 };
 
 export function readForm<K extends string>(formData: FormData, keys: readonly K[]): Record<K, string> {

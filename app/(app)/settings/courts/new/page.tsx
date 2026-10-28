@@ -9,7 +9,11 @@ export default function NewCourtPage() {
       <PageHeader title="Thêm sân" backHref="/settings" />
       <div className="px-5 py-6">
         <Fresh>
-          <CourtForm action={createCourt} submitLabel="Thêm sân" initialValues={{ name: "", address: "", price: "" }} />
+          <CourtForm
+            action={createCourt}
+            submitLabel="Thêm sân"
+            initialValues={{ name: "", address: "", price: "", max_players: "" }}
+          />
         </Fresh>
       </div>
     </main>

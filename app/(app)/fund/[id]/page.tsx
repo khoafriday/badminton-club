@@ -7,10 +7,11 @@ import { Loading } from "@/app/ui/loading";
 import { Fresh } from "@/app/ui/fresh";
 import { PageHeader } from "@/app/ui/page-header";
 import { formatVnd } from "@/lib/billing";
+import { AUTO_CATEGORY_CODES } from "@/lib/categories";
 import { loadClub } from "@/lib/club";
 import { listCategories } from "@/lib/fund";
 import { db } from "@/lib/supabase";
-import { TxForm } from "../tx-form";
+import { ClubBadge, TxForm } from "../tx-form";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -21,16 +22,20 @@ async function EditTx({ params }: { params: Promise<{ id: string }> }) {
   if (!club) notFound();
   const { data: tx } = await db()
     .from("transactions")
-    .select("id, type, category_id, amount, occurred_on, description")
+    .select("id, type, category_id, amount, occurred_on, description, transaction_categories(code)")
     .eq("id", id)
     .eq("club_id", club.id)
     .eq("source_type", "manual")
     .maybeSingle();
   if (!tx) notFound();
+  // Lines the app wrote (a refund, a payment made before a fee rise) are kept as they are.
+  const code = (tx.transaction_categories as unknown as { code: string | null } | null)?.code ?? "";
+  if (AUTO_CATEGORY_CODES.includes(code)) notFound();
   const categories = await listCategories(club.id);
 
   return (
     <div className="flex flex-col gap-4 px-5 py-6">
+      <ClubBadge name={club.name} />
       <Fresh>
         <TxForm
           action={updateTransaction.bind(null, tx.id)}

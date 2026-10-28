@@ -4,8 +4,9 @@ import { NoClub } from "@/app/clubs/no-club";
 import { ClubSelect } from "@/app/ui/club-select";
 import { RequireDatabase } from "@/app/ui/database-missing";
 import { Loading } from "@/app/ui/loading";
+import { MaybeLink } from "@/app/ui/maybe-link";
 import { formatVnd, monthEnd, monthStart } from "@/lib/billing";
-import { getPriceSettings, listClubs, loadClub, todayInVietnam } from "@/lib/club";
+import { getPriceSettings, listClubs, loadViewer, todayInVietnam } from "@/lib/club";
 import { addDays, formatDayLabel, formatMonthLabel, formatTime } from "@/lib/dates";
 import { loadDebtors } from "@/lib/debts";
 import { ensureFeeSlips, waiveFullMonthAbsences } from "@/lib/fees";
@@ -18,8 +19,11 @@ function Card({ children, className = "" }: { children: React.ReactNode; classNa
 }
 
 async function Dashboard() {
-  const { userId, club } = await loadClub();
+  const viewer = await loadViewer();
+  const { club } = viewer;
   if (!club) return <NoClub />;
+  // A member only looks: no links into admin screens, and no one's debts (TK-4).
+  const admin = viewer.kind === "admin";
 
   const today = todayInVietnam();
   const month = { from: monthStart(today), to: monthEnd(today) };
@@ -37,8 +41,8 @@ async function Dashboard() {
   const [sessions, transactions, debtors, clubs, courts] = await Promise.all([
     listSessions(club.id, today, addDays(today, 6)),
     listTransactions(club.id),
-    loadDebtors(club.id),
-    listClubs(userId),
+    admin ? loadDebtors(club.id) : [],
+    admin ? listClubs(viewer.userId) : [club],
     listClubCourts(club.id),
   ]);
   // DB-2: money collected from members this month, and what is still owed for this month.
@@ -63,7 +67,11 @@ async function Dashboard() {
         <div className="min-w-0 flex-1">
           <p className="text-xs text-muted">{formatDayLabel(today)}</p>
           <h1 className="sr-only">{club.name}</h1>
-          <ClubSelect clubs={clubs.map((c) => ({ id: c.id, name: c.name }))} currentId={club.id} variant="title" />
+          {admin ? (
+            <ClubSelect clubs={clubs.map((c) => ({ id: c.id, name: c.name }))} currentId={club.id} variant="title" />
+          ) : (
+            <p className="truncate text-xl font-bold tracking-tight">{club.name}</p>
+          )}
         </div>
       </div>
 
@@ -73,7 +81,7 @@ async function Dashboard() {
         <span className="mt-1 block text-xs opacity-85">Xem thu chi ›</span>
       </Link>
 
-      {(noPrices || !club.court_name || scheduleCount === 0) && (
+      {admin && (noPrices || !club.court_name || scheduleCount === 0) && (
         <Card className="border-amber-200 bg-amber-50 text-sm text-amber-900">
           <p className="font-semibold">Bắt đầu</p>
           {noPrices && (
@@ -122,7 +130,7 @@ async function Dashboard() {
             const isToday = s.session_date === today;
             return (
               <li key={s.id}>
-                <Link href={`/sessions/${s.id}`} className="card flex items-center gap-3 px-4 py-3">
+                <MaybeLink href={admin ? `/sessions/${s.id}` : null} className="card flex items-center gap-3 px-4 py-3">
                   <span className="min-w-0 flex-1">
                     <span className="block font-bold tracking-tight">
                       {isToday ? "Hôm nay" : formatDayLabel(s.session_date)}
@@ -131,14 +139,16 @@ async function Dashboard() {
                       {formatTime(s.start_time)} đến {formatTime(s.end_time)} · {s.court_name ?? club.court_name ?? ""}
                     </span>
                   </span>
-                  <span
-                    className={`shrink-0 rounded-full px-3 py-1 text-xs font-bold ${
-                      isToday ? "bg-brand-600 text-white" : "bg-brand-50 text-brand-700"
-                    }`}
-                  >
-                    Điểm danh ›
-                  </span>
-                </Link>
+                  {admin && (
+                    <span
+                      className={`shrink-0 rounded-full px-3 py-1 text-xs font-bold ${
+                        isToday ? "bg-brand-600 text-white" : "bg-brand-50 text-brand-700"
+                      }`}
+                    >
+                      Điểm danh ›
+                    </span>
+                  )}
+                </MaybeLink>
               </li>
             );
           })}
@@ -153,7 +163,10 @@ async function Dashboard() {
           <ul className="mx-5 flex flex-col gap-2">
             {courts.map((c) => (
               <li key={c.id}>
-                <Link href={`/settings/courts/${c.id}`} className="card flex items-center gap-3 px-4 py-3">
+                <MaybeLink
+                  href={admin ? `/settings/courts/${c.id}` : null}
+                  className="card flex items-center gap-3 px-4 py-3"
+                >
                   <span className="min-w-0 flex-1">
                     <span className="block font-bold tracking-tight">{c.name}</span>
                     <span className="block truncate text-xs text-muted">{c.address ?? "Chưa có địa chỉ"}</span>
@@ -161,7 +174,7 @@ async function Dashboard() {
                   <span className="shrink-0 text-sm font-bold">
                     {c.price > 0 ? `${formatVnd(c.price)}/giờ` : "Chưa có giá"}
                   </span>
-                </Link>
+                </MaybeLink>
               </li>
             ))}
           </ul>
@@ -171,19 +184,21 @@ async function Dashboard() {
       <div className="mx-5 mt-2">
         <h2 className="section-title">{formatMonthLabel(today.slice(0, 7))}</h2>
       </div>
-      <div className="mx-5 grid grid-cols-2 gap-3">
+      <div className={`mx-5 grid gap-3 ${admin ? "grid-cols-2" : "grid-cols-1"}`}>
         <div className="card p-4">
           <p className="text-xs text-muted">Đã thu</p>
           <p className="mt-1 text-lg font-bold tracking-tight text-brand-700">{formatVnd(collected)}</p>
         </div>
-        <Link href="/debts" className="card p-4">
-          <p className="text-xs text-muted">Còn nợ ›</p>
-          <p className={`mt-1 text-lg font-bold tracking-tight ${owedThisMonth > 0 ? "text-red-600" : ""}`}>
-            {formatVnd(owedThisMonth)}
-          </p>
-        </Link>
+        {admin && (
+          <Link href="/debts" className="card p-4">
+            <p className="text-xs text-muted">Còn nợ ›</p>
+            <p className={`mt-1 text-lg font-bold tracking-tight ${owedThisMonth > 0 ? "text-red-600" : ""}`}>
+              {formatVnd(owedThisMonth)}
+            </p>
+          </Link>
+        )}
       </div>
-      {owedAll > owedThisMonth && (
+      {admin && owedAll > owedThisMonth && (
         <p className="mx-5 text-xs text-muted">
           Tính cả các tháng trước: còn nợ {formatVnd(owedAll)}.{" "}
           <Link href="/debts" className="font-semibold text-brand-700">

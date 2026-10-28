@@ -1,9 +1,12 @@
 import "server-only";
 import { db } from "./supabase";
 
-export type Court = { id: string; name: string; address: string | null; price: number };
+/** max_players: for reference only, like price. Null when not entered. */
+export type Court = { id: string; name: string; address: string | null; price: number; max_players: number | null };
 
-type CourtRow = { id: string; name: string; address: string | null; price: number | string };
+type CourtRow = { id: string; name: string; address: string | null; price: number | string; max_players: number | null };
+
+const COURT_COLUMNS = "id, name, address, price, max_players";
 
 // bigint columns can arrive as strings; prices are whole VND well inside Number range.
 const toCourt = (row: CourtRow): Court => ({ ...row, price: Number(row.price) });
@@ -12,7 +15,7 @@ const toCourt = (row: CourtRow): Court => ({ ...row, price: Number(row.price) })
 export async function listCourts(userId: string): Promise<Court[]> {
   const { data, error } = await db()
     .from("courts")
-    .select("id, name, address, price")
+    .select(COURT_COLUMNS)
     .eq("owner_id", userId)
     .order("created_at");
   if (error) throw error;
@@ -23,7 +26,7 @@ export async function listCourts(userId: string): Promise<Court[]> {
 export async function listClubCourts(clubId: string): Promise<Court[]> {
   const { data, error } = await db()
     .from("club_courts")
-    .select("courts(id, name, address, price)")
+    .select("courts(id, name, address, price, max_players)")
     .eq("club_id", clubId)
     .order("created_at")
     .overrideTypes<{ courts: CourtRow | null }[], { merge: false }>();
@@ -34,7 +37,7 @@ export async function listClubCourts(clubId: string): Promise<Court[]> {
 export async function getCourt(userId: string, courtId: string): Promise<Court | null> {
   const { data, error } = await db()
     .from("courts")
-    .select("id, name, address, price")
+    .select(COURT_COLUMNS)
     .eq("id", courtId)
     .eq("owner_id", userId)
     .maybeSingle();

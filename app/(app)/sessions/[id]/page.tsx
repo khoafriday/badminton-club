@@ -62,6 +62,7 @@ async function SessionDetail({ params }: { params: Promise<{ id: string }> }) {
         guestOptions={lists.guestOptions}
         guestPrices={{ male: settings.guestPriceMale, female: settings.guestPriceFemale }}
         feesHref={`/fees?month=${session.session_date.slice(0, 7)}`}
+        maxPlayers={session.court_id ? session.court_max_players : club.court_max_players}
       />
 
       <details className="card mx-5 mt-8">

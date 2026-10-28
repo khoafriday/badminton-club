@@ -5,7 +5,8 @@ import type { MemberFormState } from "@/app/actions/members";
 import type { MemberFormValues } from "@/lib/members";
 import { Choice } from "@/app/ui/choice";
 import { inputClass, labelClass, primaryButtonClass } from "@/app/ui/form";
-import { formatFullDate } from "@/lib/dates";
+import { formatVnd } from "@/lib/billing";
+import { formatFullDate, formatMonthLabel } from "@/lib/dates";
 
 type Props = {
   action: (prev: MemberFormState, formData: FormData) => Promise<MemberFormState>;
@@ -17,9 +18,11 @@ type Props = {
   today?: string;
   /** The last return day after a Nghỉ, shown under the status. */
   rejoinedOn?: string | null;
+  /** Months after this one already paid: paid back if the member stops paying monthly. */
+  refund?: { month: string; amount: number }[];
 };
 
-export function MemberForm({ action, initialValues, submitLabel, showStatus, today, rejoinedOn }: Props) {
+export function MemberForm({ action, initialValues, submitLabel, showStatus, today, rejoinedOn, refund = [] }: Props) {
   const [state, formAction, pending] = useActionState(action, { error: null, values: initialValues });
   const v = state.values;
   const [memberType, setMemberType] = useState(v.member_type);
@@ -33,7 +36,22 @@ export function MemberForm({ action, initialValues, submitLabel, showStatus, tod
 
   // key makes React rebuild the fields from the returned values after a failed save.
   return (
-    <form key={JSON.stringify(v)} action={formAction} className="flex flex-col gap-4">
+    <form
+      key={JSON.stringify(v)}
+      action={formAction}
+      onSubmit={(e) => {
+        if (refund.length === 0) return;
+        const form = new FormData(e.currentTarget);
+        if (form.get("status") === "active" && form.get("member_type") === "fixed") return;
+        const total = refund.reduce((sum, m) => sum + m.amount, 0);
+        const months = refund.map((m) => formatMonthLabel(m.month)).join(", ");
+        const ok = confirm(
+          `Hoàn ${formatVnd(total)} cho ${refund.length} tháng đã đóng trước (${months})?\nApp sẽ ghi 1 khoản chi "Hoàn phí tháng" vào Quỹ.`,
+        );
+        if (!ok) e.preventDefault();
+      }}
+      className="flex flex-col gap-4"
+    >
       <label className={labelClass}>
         Tên
         <input name="full_name" defaultValue={v.full_name} required className={inputClass} />
@@ -47,13 +65,18 @@ export function MemberForm({ action, initialValues, submitLabel, showStatus, tod
         </div>
       </fieldset>
 
-      <fieldset className="flex flex-col gap-1">
-        <legend className="mb-1.5 text-sm font-semibold text-muted">Loại</legend>
-        <div className="flex gap-2">
-          <Choice name="member_type" value="fixed" label="Cố định" checked={v.member_type === "fixed"} onChange={setMemberType} />
-          <Choice name="member_type" value="guest" label="Vãng lai" checked={v.member_type === "guest"} onChange={setMemberType} />
-        </div>
-      </fieldset>
+      {/* A new member is always fixed: guests are added in a session. An existing guest can become fixed here. */}
+      {showStatus ? (
+        <fieldset className="flex flex-col gap-1">
+          <legend className="mb-1.5 text-sm font-semibold text-muted">Loại</legend>
+          <div className="flex gap-2">
+            <Choice name="member_type" value="fixed" label="Cố định" checked={v.member_type === "fixed"} onChange={setMemberType} />
+            <Choice name="member_type" value="guest" label="Vãng lai" checked={v.member_type === "guest"} onChange={setMemberType} />
+          </div>
+        </fieldset>
+      ) : (
+        <input type="hidden" name="member_type" value="fixed" />
+      )}
 
       {memberType === "fixed" && (
         <label className={labelClass}>

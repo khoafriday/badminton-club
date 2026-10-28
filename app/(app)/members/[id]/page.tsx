@@ -9,9 +9,12 @@ import { PageHeader } from "@/app/ui/page-header";
 import { formatVnd } from "@/lib/billing";
 import { loadClub, todayInVietnam } from "@/lib/club";
 import { formatDayLabel, formatMonthLabel } from "@/lib/dates";
+import { listRefundable } from "@/lib/fee-adjust";
+import { getMemberAccount } from "@/lib/member-accounts";
 import { loadMemberHistory } from "@/lib/member-history";
 import { db } from "@/lib/supabase";
 import { MemberForm } from "../member-form";
+import { MemberAccountPanel } from "./member-account";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -29,6 +32,10 @@ async function MemberDetail({ params }: { params: Promise<{ id: string }> }) {
     .maybeSingle();
   if (error) throw error;
   if (!m) notFound();
+  const refund =
+    m.member_type === "fixed" && m.status === "active"
+      ? await listRefundable(club.id, m.id, todayInVietnam().slice(0, 7))
+      : [];
 
   return (
     <div className="flex flex-col gap-6 px-5 pt-1 pb-6">
@@ -64,6 +71,7 @@ async function MemberDetail({ params }: { params: Promise<{ id: string }> }) {
               showStatus
               today={todayInVietnam()}
               rejoinedOn={m.rejoined_on}
+              refund={refund}
               initialValues={{
                 full_name: m.full_name,
                 gender: m.gender,
@@ -78,6 +86,14 @@ async function MemberDetail({ params }: { params: Promise<{ id: string }> }) {
           </Fresh>
         </div>
       </section>
+      {m.member_type === "fixed" && (
+        <section>
+          <h2 className="section-title mb-2">Tài khoản đăng nhập</h2>
+          <div className="card p-4">
+            <MemberAccountPanel memberId={m.id} account={await getMemberAccount(m.id)} />
+          </div>
+        </section>
+      )}
     </div>
   );
 }

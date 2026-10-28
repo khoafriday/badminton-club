@@ -17,16 +17,28 @@ const courtSchema = z.object({
     }
     return amount;
   }),
+  // Also reference only: the app does not stop anyone from joining past it.
+  max_players: z
+    .string()
+    .trim()
+    .transform((v, ctx) => {
+      if (v === "") return null;
+      if (!/^\d+$/.test(v) || Number(v) < 1 || Number(v) > 1000) {
+        ctx.addIssue({ code: "custom", message: "Số người tối đa là số nguyên lớn hơn 0." });
+        return z.NEVER;
+      }
+      return Number(v);
+    }),
 });
 
 export type CourtInput = z.output<typeof courtSchema>;
 
 /** Raw form values, sent back to the form so React's reset does not wipe what was typed. */
-export type CourtFormValues = { name: string; address: string; price: string };
+export type CourtFormValues = { name: string; address: string; price: string; max_players: string };
 
 export function readCourtForm(formData: FormData): CourtFormValues {
   const get = (key: string) => String(formData.get(key) ?? "");
-  return { name: get("name"), address: get("address"), price: get("price") };
+  return { name: get("name"), address: get("address"), price: get("price"), max_players: get("max_players") };
 }
 
 export function parseCourt(values: CourtFormValues): { data: CourtInput } | { error: string } {

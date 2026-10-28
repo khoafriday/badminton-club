@@ -81,8 +81,11 @@ export function PricesForm({ initial }: { initial: PricesState["values"] }) {
         <PriceInput name="guest_price_male" label="Nam" value={v.guest_price_male} />
         <PriceInput name="guest_price_female" label="Nữ" value={v.guest_price_female} />
       </div>
-      <p className="text-xs text-muted">Đổi giá chỉ áp dụng cho buổi và tháng mới. Số tiền đã ghi không đổi.</p>
+      <p className="text-xs text-muted">
+        Đổi giá chỉ áp dụng cho buổi và tháng mới. Riêng tháng sau đã đóng trước: tăng phí thì thu thêm chênh lệch.
+      </p>
       <FormStatus error={state.error} saved={state.saved} />
+      {state.notice && <p className="text-sm text-amber-700">{state.notice}</p>}
       <button disabled={pending} className={primaryButtonClass}>
         {pending ? "Đang lưu..." : "Lưu giá"}
       </button>

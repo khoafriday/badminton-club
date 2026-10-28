@@ -49,9 +49,20 @@ type Props = Lists & {
   guestOptions: GuestOption[];
   guestPrices: Record<Gender, number>;
   feesHref: string;
+  /** The court's Số người tối đa; only a quiet note when more come. */
+  maxPlayers: number | null;
 };
 
-export function Attendance({ sessionId, readOnly, fixed, guests, guestOptions, guestPrices, feesHref }: Props) {
+export function Attendance({
+  sessionId,
+  readOnly,
+  fixed,
+  guests,
+  guestOptions,
+  guestPrices,
+  feesHref,
+  maxPlayers,
+}: Props) {
   const [lists, applyOptimistic] = useOptimistic<Lists, Change>({ fixed, guests }, applyChange);
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -67,13 +78,21 @@ export function Attendance({ sessionId, readOnly, fixed, guests, guestOptions, g
     });
   }
 
-  const togglePresence = (r: AttendanceView) =>
+  const togglePresence = (r: AttendanceView) => {
+    // A paid line holds money in the fund: say why it stays instead of removing it and putting it back.
+    if (r.isPresent && r.paymentStatus === "paid") {
+      const who = r.memberType === "guest" ? "Khách" : "Người";
+      window.alert(`${who} "${r.name}" đã nộp tiền buổi này nên không xóa được.\nMuốn xóa thì bấm Đã nộp để chuyển về Chưa nộp trước.`);
+      return;
+    }
     run({ kind: "presence", memberId: r.memberId, present: !r.isPresent }, () =>
       setPresence(sessionId, r.memberId, !r.isPresent),
     );
+  };
 
   const totals = sessionTotals([...lists.fixed, ...lists.guests]);
   const presentFixed = lists.fixed.filter((r) => r.isPresent).length;
+  const present = presentFixed + lists.guests.length;
 
   return (
     <>
@@ -82,6 +101,12 @@ export function Attendance({ sessionId, readOnly, fixed, guests, guestOptions, g
         <Total label="Đã thu" value={totals.paid} />
         <Total label="Còn nợ" value={totals.outstanding} warn={totals.outstanding > 0} />
       </section>
+
+      {maxPlayers !== null && present > maxPlayers && (
+        <p className="mx-5 mt-2 text-xs text-muted">
+          ⚠ {present} người có mặt, sân chỉ tối đa {maxPlayers} người.
+        </p>
+      )}
 
       {error && (
         <p role="alert" className="mx-5 mt-3 rounded-2xl bg-red-50 p-3 text-sm text-red-700">

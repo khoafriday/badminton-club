@@ -5,7 +5,7 @@ import { RequireDatabase } from "@/app/ui/database-missing";
 import { Loading } from "@/app/ui/loading";
 import { Fresh } from "@/app/ui/fresh";
 import { PageHeader } from "@/app/ui/page-header";
-import { loadClub, todayInVietnam } from "@/lib/club";
+import { listClubs, loadClub, todayInVietnam } from "@/lib/club";
 import { listCourts } from "@/lib/courts";
 import { SessionForm } from "../session-form";
 
@@ -13,7 +13,7 @@ async function NewSession({ searchParams }: { searchParams: PageProps<"/schedule
   const sp = await searchParams;
   const { userId, club } = await loadClub();
   if (!club) return <NoClub />;
-  const courts = await listCourts(userId);
+  const [courts, clubs] = await Promise.all([listCourts(userId), listClubs(userId)]);
   const date = typeof sp.date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(sp.date) ? sp.date : todayInVietnam();
   return (
     <div className="px-5 py-6">
@@ -24,7 +24,9 @@ async function NewSession({ searchParams }: { searchParams: PageProps<"/schedule
           action={createSession}
           submitLabel="Thêm buổi"
           courts={courts}
+          clubs={clubs.map((c) => ({ id: c.id, name: c.name, court_id: c.court_id }))}
           initialValues={{
+            club_id: club.id,
             session_date: date,
             start_time: "19:00",
             end_time: "21:00",

@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { requireClub, todayInVietnam } from "@/lib/club";
+import { listClubs, requireClub, todayInVietnam } from "@/lib/club";
 import { getCourt } from "@/lib/courts";
 import {
   firstError,
@@ -89,16 +89,23 @@ export async function setScheduleActive(scheduleId: string, active: boolean) {
 
 // LICH-5: a one-off session outside the weekly schedule.
 export async function createSession(_prev: SessionFormState, formData: FormData): Promise<SessionFormState> {
-  const { userId, club } = await requireClub();
-  const values = readForm(formData, SESSION_KEYS);
+  const { userId, club: current } = await requireClub();
+  const values: SessionFormValues = { ...readForm(formData, SESSION_KEYS), club_id: String(formData.get("club_id") ?? "") };
   const parsed = sessionSchema.safeParse(values);
   if (!parsed.success) return { error: firstError(parsed.error), values };
   if (!(await courtAllowed(userId, parsed.data.court_id))) return { error: COURT_GONE, values };
+  // From Lịch "Tất cả" the session can be for another club; only the user's own clubs are allowed.
+  const club = values.club_id ? (await listClubs(userId)).find((c) => c.id === values.club_id) : current;
+  if (!club) return { error: "CLB này không còn. Chọn CLB khác.", values };
 
   const { error } = await db()
     .from("sessions")
     .insert({ ...parsed.data, club_id: club.id });
   if (error) return { error: SAVE_FAILED, values };
+  // Lịch shows the current club, so it becomes the one the session was added to.
+  if (club.id !== current.id) {
+    await db().from("profiles").update({ last_club_id: club.id, updated_at: new Date().toISOString() }).eq("id", userId);
+  }
   refreshSchedulePages();
   redirect(`/schedule?date=${parsed.data.session_date}`);
 }

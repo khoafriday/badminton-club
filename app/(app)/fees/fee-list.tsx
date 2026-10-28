@@ -13,6 +13,8 @@ export type FeeItem = {
   amountDue: number;
   status: FeeStatus;
   waiveReason: string | null;
+  /** Paid earlier at the old fee; amountDue is what the fee rise added. */
+  prepaid: number;
 };
 
 const WAIVE_LABEL: Record<string, string> = { full_month_absence: "Nghỉ cả tháng", manual: "Miễn" };
@@ -82,7 +84,9 @@ export function FeeList({ items }: { items: FeeItem[] }) {
                     ? "Vào giữa tháng, tính theo buổi"
                     : f.status === "waived"
                       ? `${formatVnd(f.amountDue)} · ${WAIVE_LABEL[f.waiveReason ?? "manual"] ?? "Miễn"}`
-                      : formatVnd(f.amountDue)}
+                      : f.prepaid > 0
+                        ? `Đã đóng ${formatVnd(f.prepaid)}, ${f.status === "paid" ? "đã bù" : "bù thêm"} ${formatVnd(f.amountDue)}`
+                        : formatVnd(f.amountDue)}
                 </p>
               </Link>
               {f.billingMode === "monthly" && (

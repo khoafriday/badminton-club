@@ -13,6 +13,7 @@ export const CATEGORY_LABEL: Record<string, string> = {
   guest_fee: "Tiền buổi (vãng lai)",
   membership_fee: "Phí tháng",
   opening_balance: "Số dư ban đầu",
+  fee_refund: "Hoàn phí tháng",
 };
 
 export function categoryLabel(c: { code: string | null; name: string | null }): string {
@@ -20,7 +21,7 @@ export function categoryLabel(c: { code: string | null; name: string | null }): 
 }
 
 /** Categories the app writes by itself when a payment is marked; never picked by hand. */
-export const AUTO_CATEGORY_CODES = ["guest_fee", "membership_fee"];
+export const AUTO_CATEGORY_CODES = ["guest_fee", "membership_fee", "fee_refund"];
 
 /** Pseudo category in the income list: collects a member's unpaid monthly fees and marks them Đã nộp. */
 export const MEMBER_FEE_OPTION = "member_fee";
