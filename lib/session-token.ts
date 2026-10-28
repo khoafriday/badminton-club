@@ -11,7 +11,7 @@ export const SESSION_DAYS = 30;
 export type SessionUser = { kind: "admin"; id: string } | { kind: "member"; accountId: string };
 
 /** The only screens a member may open. */
-export const MEMBER_PATHS = ["/", "/schedule", "/fund", "/account", "/logout"];
+export const MEMBER_PATHS = ["/", "/schedule", "/fund", "/pay", "/account", "/logout"];
 
 function secretKey(): Uint8Array {
   const secret = process.env.SESSION_SECRET;

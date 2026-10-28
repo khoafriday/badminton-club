@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { openPaymentQr } from "@/app/actions/payments";
+import { primaryButtonClass } from "@/app/ui/form";
 import { ClubSelect } from "@/app/ui/club-select";
 import { ThemeToggle } from "@/app/ui/theme-toggle";
 import { formatVnd } from "@/lib/billing";
@@ -7,6 +9,7 @@ import { listClubCourts } from "@/lib/courts";
 import { WEEKDAY_LABEL, addDays, formatDayLabel, formatMonthLabel, formatTime } from "@/lib/dates";
 import { ensureFeeSlips, waiveFullMonthAbsences } from "@/lib/fees";
 import { loadMemberHistory } from "@/lib/member-history";
+import { getBankAccount } from "@/lib/payments";
 import { ensureSessions, listSchedules, listSessions } from "@/lib/schedule";
 
 const FEE_LABEL = { paid: "Đã nộp", unpaid: "Chưa nộp", waived: "Miễn" } as const;
@@ -29,11 +32,12 @@ export async function MemberHome({ viewer }: { viewer: Extract<Viewer, { kind: "
     ensureSessions(club.id, today),
     waiveFullMonthAbsences(club.id, today),
   ]);
-  const [history, schedules, courts, sessions] = await Promise.all([
+  const [history, schedules, courts, sessions, bank] = await Promise.all([
     loadMemberHistory(memberId),
     listSchedules(club.id),
     listClubCourts(club.id),
     listSessions(club.id, today, addDays(today, 6)),
+    getBankAccount(club.id),
   ]);
   const weekly = schedules.filter((s) => s.is_active);
   const month = today.slice(0, 7);
@@ -100,6 +104,12 @@ export async function MemberHome({ viewer }: { viewer: Extract<Viewer, { kind: "
               </li>
             ))}
           </ul>
+        )}
+        {/* QR chuyển khoản for the whole debt; shown once the club has an account to be paid into. */}
+        {history.owed > 0 && bank && (
+          <form action={openPaymentQr} className="mt-3">
+            <button className={`${primaryButtonClass} w-full`}>Đóng tiền nợ {formatVnd(history.owed)}</button>
+          </form>
         )}
       </Card>
       <div className="mx-5 grid grid-cols-2 gap-3">

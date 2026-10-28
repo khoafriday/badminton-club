@@ -10,7 +10,8 @@ import { formatVnd } from "@/lib/billing";
 import { getPriceSettings, listClubs, loadClub } from "@/lib/club";
 import { listCourts } from "@/lib/courts";
 import { formatVndInput } from "@/lib/money";
-import { ArchiveClubButton, ClubInfoForm, PricesForm } from "./settings-forms";
+import { getBankAccount } from "@/lib/payments";
+import { ArchiveClubButton, BankAccountForm, ClubInfoForm, PricesForm } from "./settings-forms";
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -35,7 +36,12 @@ function SettingsDivider() {
 async function SettingsContent() {
   const { userId, club } = await loadClub();
   if (!club) return <NoClub />;
-  const [prices, clubs, courts] = await Promise.all([getPriceSettings(club.id), listClubs(userId), listCourts(userId)]);
+  const [prices, clubs, courts, bank] = await Promise.all([
+    getPriceSettings(club.id),
+    listClubs(userId),
+    listCourts(userId),
+    getBankAccount(club.id),
+  ]);
 
   return (
     <>
@@ -82,6 +88,13 @@ async function SettingsContent() {
             guest_price_male: formatVndInput(prices.guestPriceMale),
             guest_price_female: formatVndInput(prices.guestPriceFemale),
           }}
+        />
+      </Section>
+
+      <Section title="Tài khoản nhận tiền">
+        <BankAccountForm
+          key={club.id}
+          initial={{ bank_account_no: bank?.accountNo ?? "", bank_account_name: bank?.accountName ?? "" }}
         />
       </Section>
 

@@ -8,6 +8,7 @@ import {
   type ClubInfoState,
   type PricesState,
 } from "@/app/actions/settings";
+import { updateBankAccount, type BankState } from "@/app/actions/payments";
 import { CourtSelect, type CourtOption } from "@/app/ui/court-select";
 import { inputClass, labelClass, primaryButtonClass } from "@/app/ui/form";
 import { MoneyInput } from "@/app/ui/money-input";
@@ -103,6 +104,34 @@ export function ArchiveClubButton({ clubName }: { clubName: string }) {
     >
       <button className="h-11 w-full rounded-full border border-red-200 text-sm font-semibold text-red-600">
         Xóa CLB này
+      </button>
+    </form>
+  );
+}
+
+export function BankAccountForm({ initial }: { initial: BankState["values"] }) {
+  const [state, formAction, pending] = useActionState(updateBankAccount, { error: null, saved: false, values: initial });
+  const v = state.values;
+  return (
+    <form key={JSON.stringify(v)} action={formAction} className="flex flex-col gap-3">
+      <p className="text-sm">
+        Ngân hàng: <span className="font-bold">TPBank</span>
+      </p>
+      <label className={labelClass}>
+        Số tài khoản
+        <input name="bank_account_no" defaultValue={v.bank_account_no} inputMode="numeric" className={inputClass} />
+      </label>
+      <label className={labelClass}>
+        Tên chủ tài khoản
+        <input name="bank_account_name" defaultValue={v.bank_account_name} className={inputClass} />
+      </label>
+      <p className="text-xs text-muted">
+        Thành viên bấm Đóng tiền nợ ở Tổng quan để lấy mã QR. Tiền về tài khoản này thì app tự đánh Đã nộp (cần nối SePay).
+        Để trống số tài khoản thì tắt QR.
+      </p>
+      <FormStatus error={state.error} saved={state.saved} />
+      <button disabled={pending} className={primaryButtonClass}>
+        {pending ? "Đang lưu..." : "Lưu tài khoản"}
       </button>
     </form>
   );

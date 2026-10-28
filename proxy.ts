@@ -4,6 +4,8 @@ import { MEMBER_PATHS, SESSION_COOKIE, verifySession } from "@/lib/session-token
 // Every page needs a valid login cookie, except the login page itself. A member only reaches MEMBER_PATHS.
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  // Bank webhooks come from SePay, not a browser; the route checks its own API key.
+  if (pathname.startsWith("/api/webhooks/")) return NextResponse.next();
   const user = await verifySession(request.cookies.get(SESSION_COOKIE)?.value);
 
   if (pathname === "/logout") return NextResponse.next();
