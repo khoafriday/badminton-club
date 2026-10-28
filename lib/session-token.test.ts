@@ -13,9 +13,9 @@ describe("login cookie", () => {
       kind: "admin",
       id: "khoatran",
     });
-    expect(await verifySession(await signSession({ kind: "member", memberId: "m-1" }))).toEqual({
+    expect(await verifySession(await signSession({ kind: "member", accountId: "acc-1" }))).toEqual({
       kind: "member",
-      memberId: "m-1",
+      accountId: "acc-1",
     });
   });
 

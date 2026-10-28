@@ -175,11 +175,11 @@ async function FundContent({ searchParams }: { searchParams: PageProps<"/fund">[
                   {r.type === "income" ? "↑" : "↓"}
                 </span>
                 <span className="min-w-0 flex-1">
-                  <span className="block truncate text-sm font-semibold">{r.description || r.category}</span>
+                  <span className="block truncate text-sm font-semibold">{r.category}</span>
+                  {r.description && <span className="block truncate text-xs text-ink">{r.description}</span>}
                   <span className="block truncate text-xs text-muted">
                     {[
                       formatShortDate(r.occurredOn),
-                      r.description ? r.category : null,
                       r.source !== "manual" ? "Tự ghi khi bấm Đã nộp" : r.auto ? "App tự ghi" : null,
                     ]
                       .filter(Boolean)

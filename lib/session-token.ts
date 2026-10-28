@@ -8,7 +8,7 @@ export const SESSION_DAYS = 30;
  * Who is signed in. The admin (club owner) manages everything; a member only looks at
  * Tổng quan, Lịch and Quỹ of their own club.
  */
-export type SessionUser = { kind: "admin"; id: string } | { kind: "member"; memberId: string };
+export type SessionUser = { kind: "admin"; id: string } | { kind: "member"; accountId: string };
 
 /** The only screens a member may open. */
 export const MEMBER_PATHS = ["/", "/schedule", "/fund", "/account", "/logout"];
@@ -22,7 +22,7 @@ function secretKey(): Uint8Array {
 }
 
 export async function signSession(user: SessionUser): Promise<string> {
-  const claims = user.kind === "admin" ? { sub: user.id } : { sub: user.memberId, role: "member" };
+  const claims = user.kind === "admin" ? { sub: user.id } : { sub: user.accountId, role: "account" };
   return new SignJWT(claims)
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
@@ -30,13 +30,17 @@ export async function signSession(user: SessionUser): Promise<string> {
     .sign(secretKey());
 }
 
-/** The signed-in user, or null when the token is missing, expired or forged. Tokens without a role are the admin's. */
+/**
+ * The signed-in user, or null when the token is missing, expired or forged. Tokens without a role are the admin's.
+ * Member tokens from before shared accounts (role "member") no longer count, so those members log in again.
+ */
 export async function verifySession(token: string | undefined): Promise<SessionUser | null> {
   if (!token) return null;
   try {
     const { payload } = await jwtVerify(token, secretKey(), { algorithms: ["HS256"] });
     if (typeof payload.sub !== "string") return null;
-    return payload.role === "member" ? { kind: "member", memberId: payload.sub } : { kind: "admin", id: payload.sub };
+    if (payload.role === "account") return { kind: "member", accountId: payload.sub };
+    return payload.role === undefined ? { kind: "admin", id: payload.sub } : null;
   } catch {
     return null;
   }

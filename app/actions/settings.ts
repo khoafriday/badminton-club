@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
-import { getPriceSettings, requireClub, requireUser, todayInVietnam } from "@/lib/club";
+import { getPriceSettings, loadViewer, requireClub, requireUser, todayInVietnam } from "@/lib/club";
 import { chargeFeeIncrease } from "@/lib/fee-adjust";
 import { getCourt, setClubCourt } from "@/lib/courts";
 import { parseVnd } from "@/lib/money";
@@ -76,6 +76,18 @@ export async function updatePrices(_prev: PricesState, formData: FormData): Prom
 }
 
 export async function switchClub(clubId: string) {
+  // A member picks among the clubs they play in; it only changes what Tổng quan and Quỹ show.
+  const viewer = await loadViewer();
+  if (viewer.kind === "member") {
+    if (viewer.clubs.some((c) => c.id === clubId)) {
+      await db()
+        .from("accounts")
+        .update({ last_club_id: clubId, updated_at: new Date().toISOString() })
+        .eq("id", viewer.accountId);
+    }
+    revalidatePath("/", "layout");
+    return;
+  }
   const userId = await requireUser();
   // owner_id check: only switch to a club this login owns.
   const { data } = await db().from("clubs").select("id").eq("id", clubId).eq("owner_id", userId).maybeSingle();
