@@ -38,3 +38,18 @@ export function CopyButton({ text }: { text: string }) {
     </button>
   );
 }
+
+/** The money came: counts down, then goes back to Tổng quan unless the member already left with ‹. */
+export function BackHomeCountdown({ seconds = 5 }: { seconds?: number }) {
+  const router = useRouter();
+  const [left, setLeft] = useState(seconds);
+  useEffect(() => {
+    if (left <= 0) {
+      router.replace("/");
+      return;
+    }
+    const timer = setTimeout(() => setLeft(left - 1), 1000);
+    return () => clearTimeout(timer);
+  }, [left, router]);
+  return <p className="text-center text-sm text-muted">Tự quay về Tổng quan sau {Math.max(left, 0)} giây...</p>;
+}
