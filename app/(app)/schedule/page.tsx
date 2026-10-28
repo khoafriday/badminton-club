@@ -39,7 +39,7 @@ async function ScheduleContent({ searchParams }: { searchParams: PageProps<"/sch
   const viewer = await loadViewer();
   const { club } = viewer;
   if (!club) return <NoClub />;
-  // A member sees their own club's sessions, without links into admin screens.
+  // A member sees the sessions of all their clubs, without links into admin screens.
   const admin = viewer.kind === "admin";
 
   const today = todayInVietnam();
@@ -87,8 +87,20 @@ async function ScheduleContent({ searchParams }: { searchParams: PageProps<"/sch
         next: `${addMonths(month, 1)}-01`,
       };
     }
-    ({ scheduleCount } = await ensureSessions(club.id, today));
-    sessions = (await listSessions(club.id, period.from, period.to)).map((s) => ({ ...s, club_id: club.id }));
+    if (viewer.kind === "member") {
+      // A member sees the sessions of every club they play in.
+      clubs = viewer.clubs;
+      const counts = await Promise.all(clubs.map((c) => ensureSessions(c.id, today)));
+      scheduleCount = counts.reduce((sum, c) => sum + c.scheduleCount, 0);
+      sessions = await listUpcomingSessions(
+        clubs.map((c) => c.id),
+        period.from,
+        period.to,
+      );
+    } else {
+      ({ scheduleCount } = await ensureSessions(club.id, today));
+      sessions = (await listSessions(club.id, period.from, period.to)).map((s) => ({ ...s, club_id: club.id }));
+    }
   }
   const clubById = new Map(clubs.map((c) => [c.id, c]));
   const byDate = new Map<string, ListedSession[]>();
@@ -259,7 +271,7 @@ export default function SchedulePage({ searchParams }: PageProps<"/schedule">) {
         title="Lịch"
         right={
           <Suspense>
-            <ClubPicker />
+            <ClubPicker adminOnly />
           </Suspense>
         }
       />

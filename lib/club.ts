@@ -2,6 +2,7 @@ import "server-only";
 import { redirect } from "next/navigation";
 import { cache } from "react";
 import type { PriceSettings } from "./billing";
+import { accountMemberships, getAccount } from "./member-accounts";
 import { currentUser } from "./session";
 import { db } from "./supabase";
 
@@ -45,43 +46,34 @@ export async function requireUser(): Promise<string> {
 
 /**
  * For the screens members can open too (Tổng quan, Lịch, Quỹ): the admin with their current club,
- * or a member with their own club. A member who stopped, or whose club or account is gone, is signed out.
+ * or a member with the clubs they play in and the one picked. A member with no club left is signed out.
  */
 export type Viewer =
   | { kind: "admin"; userId: string; club: Club | null }
-  | { kind: "member"; memberId: string; name: string; club: Club };
+  | { kind: "member"; accountId: string; name: string; club: Club; clubs: Club[] };
 
 export const loadViewer = cache(async (): Promise<Viewer> => {
   const user = await currentUser();
   if (!user) redirect("/login");
-  if (user.kind === "admin")
-    return {
-      kind: "admin",
-      userId: user.id,
-      club: await getCurrentClub(user.id),
-    };
+  if (user.kind === "admin") return { kind: "admin", userId: user.id, club: await getCurrentClub(user.id) };
 
+  const [account, memberships] = await Promise.all([getAccount(user.accountId), accountMemberships(user.accountId)]);
+  if (!account || memberships.length === 0) redirect("/logout");
   const { data, error } = await db()
-    .from("members")
-    .select(
-      `full_name, status, member_type, member_accounts!inner(member_id), clubs!inner(archived_at, ${CLUB_COLUMNS})`,
+    .from("clubs")
+    .select(CLUB_COLUMNS)
+    .in(
+      "id",
+      memberships.map((m) => m.clubId),
     )
-    .eq("id", user.memberId)
-    .maybeSingle();
+    .order("created_at")
+    .overrideTypes<ClubRow[], { merge: false }>();
   if (error) throw error;
-  const row = data as unknown as {
-    full_name: string;
-    status: string;
-    member_type: string;
-    clubs: ClubRow & { archived_at: string | null };
-  } | null;
-  if (!row || row.status !== "active" || row.member_type !== "fixed" || row.clubs.archived_at) redirect("/logout");
-  return {
-    kind: "member",
-    memberId: user.memberId,
-    name: row.full_name,
-    club: toClub(row.clubs),
-  };
+  const clubs = data.map(toClub);
+  const club = clubs.find((c) => c.id === account.last_club_id) ?? clubs[0];
+  if (!club) redirect("/logout");
+  const name = memberships.find((m) => m.clubId === club.id)?.name ?? memberships[0].name;
+  return { kind: "member", accountId: user.accountId, name, club, clubs };
 });
 
 // The login ID doubles as the profile id. The row is created on first use.

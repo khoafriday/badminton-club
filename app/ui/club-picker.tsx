@@ -7,12 +7,28 @@ import { ClubSelect } from "./club-select";
  * Dropdown of the user's clubs at the top of a screen. Picking one makes it the current club,
  * so every screen then shows only that club's data. Nothing shows before the first club exists.
  */
-export async function ClubPicker({ variant = "pill" }: { variant?: "pill" | "title" }) {
+export async function ClubPicker({
+  variant = "pill",
+  adminOnly = false,
+}: {
+  variant?: "pill" | "title";
+  /** Lịch shows a member every club at once, so it has no picker for them. */
+  adminOnly?: boolean;
+}) {
   await connection();
   if (missingDatabaseEnv().length > 0) return null;
-  // A member sees their own club only, so there is nothing to pick.
+  // A member picks among the clubs they play in; with one club there is nothing to pick.
   const viewer = await loadViewer();
-  if (viewer.kind !== "admin") return null;
+  if (viewer.kind === "member") {
+    if (adminOnly || viewer.clubs.length < 2) return null;
+    return (
+      <ClubSelect
+        clubs={viewer.clubs.map((c) => ({ id: c.id, name: c.name }))}
+        currentId={viewer.club.id}
+        variant={variant}
+      />
+    );
+  }
   const userId = viewer.userId;
   // getCurrentClub is cached per request and already lists the clubs, so this adds no extra query.
   const [club, clubs] = await Promise.all([getCurrentClub(userId), listClubs(userId)]);

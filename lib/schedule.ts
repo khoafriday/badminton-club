@@ -141,17 +141,23 @@ export async function listSessions(clubId: string, from: string, to: string): Pr
   return data.map(withCourtName);
 }
 
-/** LICH ALL: sessions from `from` on, of every club given, by date then time. Each row says its club. */
+/**
+ * Sessions of every club given, from `from` (to `to` when given), by date then time. Each row says its club.
+ * For Lịch "Tất cả", and for a member who plays in several clubs.
+ */
 export async function listUpcomingSessions(
   clubIds: string[],
   from: string,
+  to?: string,
 ): Promise<(SessionRow & { club_id: string })[]> {
   if (clubIds.length === 0) return [];
-  const { data, error } = await db()
+  let query = db()
     .from("sessions")
     .select(`club_id, ${SESSION_COLUMNS}`)
     .in("club_id", clubIds)
-    .gte("session_date", from)
+    .gte("session_date", from);
+  if (to) query = query.lte("session_date", to);
+  const { data, error } = await query
     .order("session_date")
     .order("start_time")
     .overrideTypes<WithCourt<SessionRow & { club_id: string }>[], { merge: false }>();

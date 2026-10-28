@@ -42,7 +42,7 @@ async function Dashboard() {
     listSessions(club.id, today, addDays(today, 6)),
     listTransactions(club.id),
     admin ? loadDebtors(club.id) : [],
-    admin ? listClubs(viewer.userId) : [club],
+    viewer.kind === "admin" ? listClubs(viewer.userId) : viewer.clubs,
     listClubCourts(club.id),
   ]);
   // DB-2: money collected from members this month, and what is still owed for this month.
@@ -67,7 +67,7 @@ async function Dashboard() {
         <div className="min-w-0 flex-1">
           <p className="text-xs text-muted">{formatDayLabel(today)}</p>
           <h1 className="sr-only">{club.name}</h1>
-          {admin ? (
+          {admin || clubs.length > 1 ? (
             <ClubSelect clubs={clubs.map((c) => ({ id: c.id, name: c.name }))} currentId={club.id} variant="title" />
           ) : (
             <p className="truncate text-xl font-bold tracking-tight">{club.name}</p>
