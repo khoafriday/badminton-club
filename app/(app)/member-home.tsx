@@ -17,7 +17,7 @@ function Card({ children, className = "" }: { children: React.ReactNode; classNa
 /**
  * TK-4 Tổng quan for a member: their own money in the club (debt and what it is, this month's fee and visits,
  * months paid, total paid),
- * its weekly times and courts, and the coming sessions. Read only; the fund is on the Quỹ tab.
+ * the coming sessions, its courts and its weekly times. Read only; the fund is on the Quỹ tab.
  */
 export async function MemberHome({ viewer }: { viewer: Extract<Viewer, { kind: "member" }> }) {
   const { club, clubs, memberId, name } = viewer;
@@ -121,45 +121,6 @@ export async function MemberHome({ viewer }: { viewer: Extract<Viewer, { kind: "
         </div>
       </div>
 
-      <div className="mx-5 mt-2">
-        <h2 className="section-title">Lịch tập cố định</h2>
-      </div>
-      {weekly.length === 0 ? (
-        <Card>
-          <p className="text-sm text-muted">CLB chưa có lịch cố định.</p>
-        </Card>
-      ) : (
-        <ul className="mx-5 flex flex-col gap-2">
-          {weekly.map((s) => (
-            <li key={s.id} className="card flex items-center gap-3 px-4 py-3">
-              <span className="min-w-0 flex-1">
-                <span className="block font-bold tracking-tight">{WEEKDAY_LABEL[s.weekday]} hằng tuần</span>
-                <span className="block truncate text-xs text-muted">
-                  {formatTime(s.start_time)} đến {formatTime(s.end_time)} · {s.court_name ?? club.court_name ?? ""}
-                </span>
-              </span>
-            </li>
-          ))}
-        </ul>
-      )}
-
-      {courts.length > 0 && (
-        <>
-          <div className="mx-5 mt-2">
-            <h2 className="section-title">Sân cầu</h2>
-          </div>
-          <ul className="mx-5 flex flex-col gap-2">
-            {courts.map((c) => (
-              <li key={c.id} className="card flex flex-col gap-0.5 px-4 py-3">
-                <span className="font-bold tracking-tight">{c.name}</span>
-                <span className="text-xs text-muted">{c.address ?? "Chưa có địa chỉ"}</span>
-                {c.max_players && <span className="text-xs text-muted">Tối đa {c.max_players} người</span>}
-              </li>
-            ))}
-          </ul>
-        </>
-      )}
-
       <div className="mx-5 mt-2 flex items-center justify-between">
         <h2 className="section-title">Buổi sắp tới</h2>
         <Link href="/schedule" className="text-xs font-bold text-brand-700">
@@ -179,6 +140,44 @@ export async function MemberHome({ viewer }: { viewer: Extract<Viewer, { kind: "
               </span>
               <span className="block text-xs text-muted">
                 {formatTime(s.start_time)} đến {formatTime(s.end_time)} · {s.court_name ?? club.court_name ?? ""}
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+      {courts.length > 0 && (
+        <>
+          <div className="mx-5 mt-2">
+            <h2 className="section-title">Sân cầu</h2>
+          </div>
+          <ul className="mx-5 flex flex-col gap-2">
+            {courts.map((c) => (
+              <li key={c.id} className="card flex flex-col gap-0.5 px-4 py-3">
+                <span className="font-bold tracking-tight">{c.name}</span>
+                <span className="text-xs text-muted">{c.address ?? "Chưa có địa chỉ"}</span>
+                {c.max_players && <span className="text-xs text-muted">Tối đa {c.max_players} người</span>}
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+
+      <div className="mx-5 mt-2">
+        <h2 className="section-title">Lịch tập cố định</h2>
+      </div>
+      {weekly.length === 0 ? (
+        <Card>
+          <p className="text-sm text-muted">CLB chưa có lịch cố định.</p>
+        </Card>
+      ) : (
+        <ul className="mx-5 flex flex-col gap-2">
+          {weekly.map((s) => (
+            <li key={s.id} className="card flex items-center gap-3 px-4 py-3">
+              <span className="min-w-0 flex-1">
+                <span className="block font-bold tracking-tight">{WEEKDAY_LABEL[s.weekday]} hằng tuần</span>
+                <span className="block truncate text-xs text-muted">
+                  {formatTime(s.start_time)} đến {formatTime(s.end_time)} · {s.court_name ?? club.court_name ?? ""}
+                </span>
               </span>
             </li>
           ))}
