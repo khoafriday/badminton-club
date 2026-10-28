@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ClubSelect } from "@/app/ui/club-select";
+import { ThemeToggle } from "@/app/ui/theme-toggle";
 import { formatVnd } from "@/lib/billing";
 import { getPriceSettings, todayInVietnam, type Viewer } from "@/lib/club";
 import { listClubCourts } from "@/lib/courts";
@@ -79,6 +80,7 @@ export async function MemberHome({ viewer }: { viewer: Extract<Viewer, { kind: "
             <p className="truncate text-xl font-bold tracking-tight">{club.name}</p>
           )}
         </div>
+        <ThemeToggle />
       </div>
 
       <div className="mx-5 mt-1">

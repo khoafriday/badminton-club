@@ -180,7 +180,7 @@ async function FundContent({ searchParams }: { searchParams: PageProps<"/fund">[
                   <span className="block truncate text-xs text-muted">
                     {[
                       formatShortDate(r.occurredOn),
-                      r.source !== "manual" ? "Tự ghi khi bấm Đã nộp" : r.auto ? "App tự ghi" : null,
+                      r.payer ?? (r.source !== "manual" ? "Tự ghi khi bấm Đã nộp" : r.auto ? "App tự ghi" : null),
                     ]
                       .filter(Boolean)
                       .join(" · ")}

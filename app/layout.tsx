@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Be_Vietnam_Pro } from "next/font/google";
-import { themeScript } from "./ui/theme";
+import { LIGHT_THEME_COLOR, themeScript } from "./ui/theme";
 import "./globals.css";
 
 const font = Be_Vietnam_Pro({
@@ -17,10 +17,8 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#f8faf9" },
-    { media: "(prefers-color-scheme: dark)", color: "#0c110f" },
-  ],
+  // The theme script switches it to the dark colour when Tối is picked.
+  themeColor: LIGHT_THEME_COLOR,
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
