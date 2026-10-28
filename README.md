@@ -66,3 +66,17 @@ Cài một lần:
 3. Chạy `supabase/setup/mark_existing_migrations.sql` một lần trong SQL Editor. File này ghi nhận 0001 đến 0004 đã chạy tay rồi.
 
 Khi viết file migration mới: bản app đang chạy phải vẫn chạy được sau khi file chạy xong (chỉ thêm bảng, thêm cột, không xóa hay đổi tên). SQL chỉ chạy sau khi merge, nên bản Preview của PR có file mới sẽ lỗi cho tới khi merge, trừ khi chạy tay trước trong SQL Editor.
+
+## QR chuyển khoản tự xác nhận (SePay)
+
+Thành viên bấm "Đóng tiền nợ" ở Tổng quan, app hiện mã VietQR cho toàn bộ số nợ với nội dung là mã riêng (ví dụ `BC7K2QX9`). Khi tiền vào tài khoản TPBank, SePay gọi webhook và app tự đánh Đã nộp.
+
+Cài một lần:
+
+1. Cài đặt, Tài khoản nhận tiền: nhập số tài khoản TPBank và tên chủ tài khoản.
+2. Tạo tài khoản trên sepay.vn, liên kết tài khoản TPBank đó.
+3. Trong SePay, thêm Webhook: URL `https://<domain app>/api/webhooks/sepay`, kiểu chứng thực API Key, tự đặt một key dài.
+4. Thêm key đó vào Vercel với tên `SEPAY_WEBHOOK_KEY` (Production), rồi Redeploy.
+5. Chuyển thử một khoản nhỏ từ tài khoản thành viên.
+
+Chuyển khoản không có mã của app thì không được lưu. Chuyển thiếu, chuyển thừa hoặc mã không khớp hiện ở Người còn nợ, mục "Chuyển khoản cần xem".
