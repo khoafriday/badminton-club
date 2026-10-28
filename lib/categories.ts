@@ -25,3 +25,6 @@ export const AUTO_CATEGORY_CODES = ["guest_fee", "membership_fee", "fee_refund"]
 
 /** Pseudo category in the income list: collects a member's unpaid monthly fees and marks them Đã nộp. */
 export const MEMBER_FEE_OPTION = "member_fee";
+
+/** Pseudo category in the income list: collects a person's unpaid session fees and marks them Đã nộp. */
+export const GUEST_FEE_OPTION = "guest_fee_collect";
