@@ -7,6 +7,7 @@ import { Fresh } from "@/app/ui/fresh";
 import { PageHeader } from "@/app/ui/page-header";
 import { getPriceSettings, loadClub, todayInVietnam } from "@/lib/club";
 import { listPrepayMembers, priceUnpricedSlips } from "@/lib/fees";
+import { guestDebtors, loadDebtors } from "@/lib/debts";
 import { listCategories } from "@/lib/fund";
 import { ClubBadge, TxForm } from "../tx-form";
 
@@ -15,8 +16,9 @@ async function NewTx({ searchParams }: { searchParams: PageProps<"/fund/new">["s
   const { club } = await loadClub();
   if (!club) return <NoClub />;
   const thisMonth = todayInVietnam().slice(0, 7);
-  const [categories, { settings, members }] = await Promise.all([
+  const [categories, debtors, { settings, members }] = await Promise.all([
     listCategories(club.id),
+    loadDebtors(club.id),
     getPriceSettings(club.id).then(async (settings) => {
       await priceUnpricedSlips(club.id, settings);
       return { settings, members: await listPrepayMembers(club.id, thisMonth) };
@@ -33,6 +35,7 @@ async function NewTx({ searchParams }: { searchParams: PageProps<"/fund/new">["s
           action={createTransaction}
           categories={categories}
           memberFees={{ members, settings, fromMonth: thisMonth }}
+          guestFees={guestDebtors(debtors)}
           submitLabel="Lưu"
           initialValues={{
             type,

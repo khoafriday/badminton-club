@@ -3,8 +3,9 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
-import { MEMBER_FEE_OPTION } from "@/lib/categories";
+import { GUEST_FEE_OPTION, MEMBER_FEE_OPTION } from "@/lib/categories";
 import { getPriceSettings, requireClub, todayInVietnam } from "@/lib/club";
+import { guestDebtors, loadDebtors } from "@/lib/debts";
 import { listPrepayMembers, priceUnpricedSlips } from "@/lib/fees";
 import { listCategories } from "@/lib/fund";
 import { parseVnd } from "@/lib/money";
@@ -18,6 +19,8 @@ export type TxFormValues = Record<(typeof KEYS)[number], string> & {
   member_id?: string;
   fee_ids?: string[];
   months?: string;
+  /** Only for "Thu phí vãng lai": the unpaid session lines paid now (who pays is member_id). */
+  attendance_ids?: string[];
 };
 export type TxFormState = { error: string | null; values: TxFormValues };
 
@@ -56,6 +59,13 @@ export async function createTransaction(_prev: TxFormState, formData: FormData):
     values.fee_ids = formData.getAll("fee_ids").map(String);
     values.months = String(formData.get("months") ?? "0");
     const error = await collectMemberFees(userId, club.id, values);
+    if (error) return { error, values };
+    done();
+  }
+  if (values.type === "income" && values.category_id === GUEST_FEE_OPTION) {
+    values.member_id = String(formData.get("member_id") ?? "");
+    values.attendance_ids = formData.getAll("attendance_ids").map(String);
+    const error = await collectGuestFees(userId, club.id, values);
     if (error) return { error, values };
     done();
   }
@@ -144,6 +154,39 @@ async function collectMemberFees(userId: string, clubId: string, values: TxFormV
     .eq("source_type", "membership_fee")
     .in("source_id", ids);
   if (txError) return "Đã ghi nộp, nhưng chưa sửa được ngày và ghi chú.";
+  return null;
+}
+
+/**
+ * "Thu phí vãng lai": marks the ticked session lines Đã nộp, the same as on the session screen, so each writes
+ * its own tiền buổi line through set_attendance_payment. The lines then take the form's date and note.
+ */
+async function collectGuestFees(userId: string, clubId: string, values: TxFormValues): Promise<string | null> {
+  if (!values.member_id) return "Chọn người nộp.";
+  const ids = values.attendance_ids ?? [];
+  if (ids.length === 0) return "Chọn buổi chưa nộp.";
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(values.occurred_on)) return "Chọn ngày.";
+
+  const debtor = guestDebtors(await loadDebtors(clubId)).find((d) => d.memberId === values.member_id);
+  const owed = new Set(debtor?.sessions.map((s) => s.id));
+  if (ids.some((id) => !owed.has(id))) return "Có buổi đã thu ở chỗ khác. Tải lại trang rồi chọn lại.";
+
+  for (const id of ids) {
+    const { error } = await db().rpc("set_attendance_payment", {
+      p_attendance_id: id,
+      p_paid: true,
+      p_method: "cash",
+      p_actor: userId,
+    });
+    if (error) return "Không lưu được. Thử lại sau.";
+  }
+  const { error } = await db()
+    .from("transactions")
+    .update({ occurred_on: values.occurred_on, description: values.description.trim() || null })
+    .eq("club_id", clubId)
+    .eq("source_type", "attendance")
+    .in("source_id", ids);
+  if (error) return "Đã ghi nộp, nhưng chưa sửa được ngày và ghi chú.";
   return null;
 }
 

@@ -10,7 +10,7 @@ export const CATEGORY_LABEL: Record<string, string> = {
   penalty: "Tiền phạt",
   extra_contribution: "Đóng thêm",
   other_income: "Thu khác",
-  guest_fee: "Tiền buổi (vãng lai)",
+  guest_fee: "Thu phí vãng lai",
   membership_fee: "Phí tháng",
   opening_balance: "Số dư ban đầu",
   fee_refund: "Hoàn phí tháng",
@@ -25,3 +25,6 @@ export const AUTO_CATEGORY_CODES = ["guest_fee", "membership_fee", "fee_refund"]
 
 /** Pseudo category in the income list: collects a member's unpaid monthly fees and marks them Đã nộp. */
 export const MEMBER_FEE_OPTION = "member_fee";
+
+/** Pseudo category in the income list: collects a person's unpaid session fees and marks them Đã nộp. */
+export const GUEST_FEE_OPTION = "guest_fee_collect";

@@ -6,8 +6,9 @@ import { Choice } from "@/app/ui/choice";
 import { inputClass, labelClass, primaryButtonClass, selectClass } from "@/app/ui/form";
 import { MoneyInput } from "@/app/ui/money-input";
 import { formatVnd, type PriceSettings } from "@/lib/billing";
-import { MEMBER_FEE_OPTION } from "@/lib/categories";
-import { formatMonthLabel } from "@/lib/dates";
+import { GUEST_FEE_OPTION, MEMBER_FEE_OPTION } from "@/lib/categories";
+import { formatMonthLabel, formatShortDate } from "@/lib/dates";
+import type { GuestDebtor } from "@/lib/debts";
 import type { CategoryOption } from "@/lib/fund";
 import { MAX_PREPAY_COUNT, oldDebts, planPrepay, type PrepayMember } from "@/lib/prepay";
 
@@ -18,6 +19,8 @@ type Props = {
   submitLabel: string;
   /** Given only on the new-line form: offers "Thu tiền sân" among the income kinds. */
   memberFees?: MemberFeeData;
+  /** Given only on the new-line form: offers "Thu phí vãng lai" among the income kinds. */
+  guestFees?: GuestDebtor[];
 };
 
 /** fromMonth: this month (YYYY-MM); paying ahead counts from it. */
@@ -33,13 +36,14 @@ export function ClubBadge({ name }: { name: string }) {
   );
 }
 
-export function TxForm({ action, initialValues, categories, submitLabel, memberFees }: Props) {
+export function TxForm({ action, initialValues, categories, submitLabel, memberFees, guestFees }: Props) {
   const [state, formAction, pending] = useActionState(action, { error: null, values: initialValues });
   const v = state.values;
   const [type, setType] = useState(v.type);
   const [categoryId, setCategoryId] = useState(v.category_id);
   const options = [
     ...(type === "income" && memberFees ? [{ id: MEMBER_FEE_OPTION, type, label: "Thu tiền sân" } as const] : []),
+    ...(type === "income" && guestFees ? [{ id: GUEST_FEE_OPTION, type, label: "Thu phí vãng lai" } as const] : []),
     ...categories.filter((c) => c.type === type),
   ];
   const pickType = (next: string) => {
@@ -47,6 +51,7 @@ export function TxForm({ action, initialValues, categories, submitLabel, memberF
     setCategoryId(v.category_id);
   };
   const collectingFees = type === "income" && memberFees !== undefined && categoryId === MEMBER_FEE_OPTION;
+  const collectingGuests = type === "income" && guestFees !== undefined && categoryId === GUEST_FEE_OPTION;
 
   return (
     <form key={JSON.stringify(v)} action={formAction} className="flex flex-col gap-4">
@@ -81,6 +86,12 @@ export function TxForm({ action, initialValues, categories, submitLabel, memberF
           initialMemberId={v.member_id ?? ""}
           initialFeeIds={v.fee_ids ?? []}
           initialMonths={Number(v.months ?? "1")}
+        />
+      ) : collectingGuests ? (
+        <GuestFeeFields
+          debtors={guestFees}
+          initialMemberId={v.member_id ?? ""}
+          initialIds={v.attendance_ids ?? []}
         />
       ) : (
         <label className={labelClass}>
@@ -231,6 +242,88 @@ function MemberFeeFields({
             <p className="text-xs text-muted">Tháng đã nộp hoặc tính theo buổi được bỏ qua.</p>
           )}
         </div>
+      )}
+      <div className={labelClass}>
+        Số tiền
+        <p className="flex h-12 items-center rounded-2xl border border-line bg-surface-2 px-4 text-base font-bold text-ink">
+          {formatVnd(total)}
+        </p>
+      </div>
+    </>
+  );
+}
+
+/** "Thu phí vãng lai": pick someone who owes for sessions and tick the sessions they pay for now. */
+function GuestFeeFields({
+  debtors,
+  initialMemberId,
+  initialIds,
+}: {
+  debtors: GuestDebtor[];
+  initialMemberId: string;
+  initialIds: string[];
+}) {
+  const [memberId, setMemberId] = useState(debtors.some((d) => d.memberId === initialMemberId) ? initialMemberId : "");
+  const [picked, setPicked] = useState(() => new Set(initialIds));
+  const debtor = debtors.find((d) => d.memberId === memberId);
+  const total = debtor ? debtor.sessions.filter((s) => picked.has(s.id)).reduce((sum, s) => sum + s.amount, 0) : 0;
+
+  if (debtors.length === 0) {
+    return <p className="text-sm text-muted">Không ai còn nợ tiền buổi.</p>;
+  }
+
+  return (
+    <>
+      <label className={labelClass}>
+        Người nộp
+        <select
+          name="member_id"
+          value={memberId}
+          onChange={(e) => {
+            const next = debtors.find((d) => d.memberId === e.target.value);
+            setMemberId(e.target.value);
+            // Most people pay for everything they owe, so every session starts ticked.
+            setPicked(new Set(next?.sessions.map((s) => s.id)));
+          }}
+          required
+          className={selectClass}
+        >
+          <option value="" disabled>
+            Chọn người còn nợ tiền buổi
+          </option>
+          {debtors.map((d) => (
+            <option key={d.memberId} value={d.memberId}>
+              {d.name}
+            </option>
+          ))}
+        </select>
+      </label>
+      {debtor && (
+        <fieldset className="flex flex-col gap-2">
+          <legend className="mb-1.5 text-sm font-semibold text-muted">Buổi chưa nộp</legend>
+          {debtor.sessions.map((s) => (
+            <label
+              key={s.id}
+              className="flex h-11 cursor-pointer items-center gap-3 rounded-2xl border border-line-strong bg-surface px-4 text-sm has-checked:border-cta"
+            >
+              <input
+                type="checkbox"
+                name="attendance_ids"
+                value={s.id}
+                checked={picked.has(s.id)}
+                onChange={(e) => {
+                  const next = new Set(picked);
+                  if (e.target.checked) next.add(s.id);
+                  else next.delete(s.id);
+                  setPicked(next);
+                }}
+                className="size-4 accent-brand-600"
+              />
+              <span className="flex-1 font-semibold text-ink">Buổi {formatShortDate(s.date)}</span>
+              <span className="text-muted">{formatVnd(s.amount)}</span>
+            </label>
+          ))}
+        </fieldset>
       )}
       <div className={labelClass}>
         Số tiền

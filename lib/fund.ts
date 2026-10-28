@@ -16,7 +16,7 @@ export type TxRow = {
   batchId: string | null;
   /** Written by the app (Phí tháng, tiền buổi, Hoàn phí tháng): never edited by hand, even once unlinked. */
   auto: boolean;
-  /** Who paid, for a Phí tháng line; null for other lines. */
+  /** Who paid, for a Phí tháng or tiền buổi line; null for other lines. */
   payer: string | null;
 };
 
@@ -33,9 +33,12 @@ export async function listTransactions(clubId: string): Promise<TxRow[]> {
     .order("occurred_on", { ascending: false })
     .order("created_at", { ascending: false });
   if (error) throw error;
-  const payerOf = await payerNames(
-    data.filter((t) => t.source_type === "membership_fee" && t.source_id).map((t) => t.source_id as string),
-  );
+  const idsOf = (source: TxRow["source"]) =>
+    data.filter((t) => t.source_type === source && t.source_id).map((t) => t.source_id as string);
+  const [feePayers, guestPayers] = await Promise.all([
+    payerNames("membership_fees", idsOf("membership_fee")),
+    payerNames("attendance", idsOf("attendance")),
+  ]);
   return (
     data as unknown as {
       id: string;
@@ -60,19 +63,25 @@ export async function listTransactions(clubId: string): Promise<TxRow[]> {
     sessionId: t.session_id,
     batchId: t.batch_id,
     auto: AUTO_CATEGORY_CODES.includes(t.transaction_categories.code ?? ""),
-    payer: t.source_type === "membership_fee" && t.source_id ? (payerOf.get(t.source_id) ?? null) : null,
+    payer: !t.source_id
+      ? null
+      : t.source_type === "membership_fee"
+        ? (feePayers.get(t.source_id) ?? null)
+        : t.source_type === "attendance"
+          ? (guestPayers.get(t.source_id) ?? null)
+          : null,
   }));
 }
 
 /**
- * A Phí tháng line only points at its slip (source_id), so the payer's name comes from the slip's member.
- * Asked in chunks so the id list stays short in the URL.
+ * A Phí tháng or tiền buổi line only points at its slip or attendance row (source_id), so the payer's name
+ * comes from that row's member. Asked in chunks so the id list stays short in the URL.
  */
-async function payerNames(slipIds: string[]): Promise<Map<string, string>> {
+async function payerNames(table: "membership_fees" | "attendance", sourceIds: string[]): Promise<Map<string, string>> {
   const chunks: string[][] = [];
-  for (let i = 0; i < slipIds.length; i += 150) chunks.push(slipIds.slice(i, i + 150));
+  for (let i = 0; i < sourceIds.length; i += 150) chunks.push(sourceIds.slice(i, i + 150));
   const results = await Promise.all(
-    chunks.map((ids) => db().from("membership_fees").select("id, members(full_name)").in("id", ids)),
+    chunks.map((ids) => db().from(table).select("id, members(full_name)").in("id", ids)),
   );
   const names = new Map<string, string>();
   for (const { data, error } of results) {

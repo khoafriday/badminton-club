@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { PriceSettings } from "@/lib/billing";
-import { MEMBER_FEE_OPTION } from "@/lib/categories";
+import { GUEST_FEE_OPTION, MEMBER_FEE_OPTION } from "@/lib/categories";
+import type { Debtor } from "@/lib/debts";
 import { fakeDb, type Tables } from "@/lib/testing/fake-db";
 
 vi.mock("server-only", () => ({}));
@@ -11,8 +12,14 @@ vi.mock("next/navigation", () => ({
   },
 }));
 let tables: Tables;
-// set_fee_payment, as in 0001_init.sql: the slip becomes Đã nộp and writes one Phí tháng line.
-const rpc = async (_name: string, args: { p_fee_id: string; p_paid: boolean }) => {
+// set_fee_payment and set_attendance_payment, as in 0001_init.sql: the row becomes Đã nộp and writes one line.
+const rpc = async (name: string, args: { p_fee_id?: string; p_attendance_id?: string; p_paid: boolean }) => {
+  if (name === "set_attendance_payment") {
+    const line = tables.attendance.find((a) => a.id === args.p_attendance_id)!;
+    line.payment_status = "paid";
+    tables.transactions.push({ source_type: "attendance", source_id: line.id, club_id: "club-1", amount: line.amount_due });
+    return { error: null };
+  }
   const slip = tables.membership_fees.find((s) => s.id === args.p_fee_id)!;
   slip.payment_status = args.p_paid ? "paid" : "unpaid";
   if (args.p_paid) {
@@ -28,6 +35,12 @@ vi.mock("@/lib/club", () => ({
   requireClub: async () => ({ userId: "khoa", club: { id: "club-1" } }),
   getPriceSettings: async () => prices,
   todayInVietnam: () => "2026-10-27",
+}));
+
+let debtors: Debtor[] = [];
+vi.mock("@/lib/debts", async (original) => ({
+  ...(await original<typeof import("@/lib/debts")>()),
+  loadDebtors: async () => debtors,
 }));
 
 const { createTransaction, undoMemberFees } = await import("./fund");
@@ -90,5 +103,46 @@ describe("Thu tiền sân, paying several months", () => {
       ["2026-10-01", "unpaid"],
       ["2026-11-01", "paid"],
     ]);
+  });
+});
+
+describe("Thu phí vãng lai", () => {
+  beforeEach(() => {
+    tables.attendance = [
+      { id: "a1", amount_due: 50000, payment_status: "unpaid" },
+      { id: "a2", amount_due: 60000, payment_status: "unpaid" },
+    ];
+    debtors = [
+      {
+        memberId: "binh",
+        name: "Bình",
+        total: 110000,
+        items: [
+          { kind: "session", id: "a1", sessionId: "s1", date: "2026-10-20", amount: 50000 },
+          { kind: "session", id: "a2", sessionId: "s2", date: "2026-10-22", amount: 60000 },
+        ],
+      },
+    ];
+  });
+  const collect = (fields: Record<string, string | string[]>) =>
+    save({ category_id: GUEST_FEE_OPTION, description: "Bình trả", ...fields });
+
+  it("marks the ticked sessions Đã nộp and moves their lines to the form's date and note", async () => {
+    expect(await collect({ member_id: "binh", attendance_ids: "a2" })).toBe("REDIRECT");
+    expect(tables.attendance.map((a) => a.payment_status)).toEqual(["unpaid", "paid"]);
+    expect(tables.transactions).toMatchObject([
+      { source_id: "a2", amount: 60000, occurred_on: "2026-10-27", description: "Bình trả" },
+    ]);
+  });
+
+  it("asks for a session when none is ticked", async () => {
+    expect(await collect({ member_id: "binh" })).toMatchObject({ error: "Chọn buổi chưa nộp." });
+  });
+
+  it("refuses a session that is not this person's debt", async () => {
+    debtors[0].items.pop();
+    expect(await collect({ member_id: "binh", attendance_ids: "a2" })).toMatchObject({
+      error: "Có buổi đã thu ở chỗ khác. Tải lại trang rồi chọn lại.",
+    });
   });
 });

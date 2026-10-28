@@ -7,6 +7,20 @@ export type DebtItem =
 
 export type Debtor = { memberId: string; name: string; total: number; items: DebtItem[] };
 
+/** "Thu phí vãng lai": a person with unpaid session lines, and those lines oldest first. */
+export type GuestDebtor = { memberId: string; name: string; sessions: { id: string; date: string; amount: number }[] };
+
+export function guestDebtors(debtors: Debtor[]): GuestDebtor[] {
+  return debtors
+    .map((d) => ({
+      memberId: d.memberId,
+      name: d.name,
+      sessions: d.items.flatMap((i) => (i.kind === "session" ? [{ id: i.id, date: i.date, amount: i.amount }] : [])),
+    }))
+    .filter((d) => d.sessions.length > 0)
+    .sort((a, b) => a.name.localeCompare(b.name, "vi"));
+}
+
 /** TT-5: who still owes money, for unpaid session lines and unpaid monthly slips. Cancelled sessions do not count. */
 export async function loadDebtors(clubId: string): Promise<Debtor[]> {
   const [lines, slips] = await Promise.all([
