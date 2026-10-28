@@ -10,7 +10,7 @@ export const CATEGORY_LABEL: Record<string, string> = {
   penalty: "Tiền phạt",
   extra_contribution: "Đóng thêm",
   other_income: "Thu khác",
-  guest_fee: "Tiền buổi (vãng lai)",
+  guest_fee: "Thu phí vãng lai",
   membership_fee: "Phí tháng",
   opening_balance: "Số dư ban đầu",
   fee_refund: "Hoàn phí tháng",
