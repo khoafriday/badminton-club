@@ -6,7 +6,7 @@ vi.mock("server-only", () => ({}));
 let tables: Tables;
 vi.mock("./supabase", () => ({ db: () => fakeDb(tables) }));
 
-const { ensureFeeSlips, listFeeSlips, listUnpaidFees } = await import("./fees");
+const { ensureFeeSlips, issueFutureSlips, listFeeSlips, listUnpaidFees } = await import("./fees");
 const { loadDebtors } = await import("./debts");
 
 const free: PriceSettings = { monthlyFeeMale: 0, monthlyFeeFemale: 0, guestPriceMale: 0, guestPriceFemale: 0 };
@@ -101,5 +101,52 @@ describe("a fixed member back from Nghỉ", () => {
     expect(chi("2026-10-01")).toMatchObject({ billing_mode: "per_session", amount_due: 0 });
     expect(chi("2026-11-01")).toMatchObject({ billing_mode: "monthly", amount_due: 300000 });
     expect(tables.members.find((m) => m.id === "chi")?.fixed_since).toBe("2026-01-01");
+  });
+});
+
+describe("Tạo phiếu trước for coming months", () => {
+  it("makes a slip per member and month at today's fee, and the members owe them", async () => {
+    expect(await issueFutureSlips(CLUB, ["an", "binh"], "2026-11", 3, priced)).toEqual({ created: 6, skipped: 0 });
+    const months = tables.membership_fees.map((s) => [s.member_id, s.period_month, s.billing_mode, s.amount_due]);
+    expect(months).toEqual([
+      ["an", "2026-11-01", "monthly", 300000],
+      ["an", "2026-12-01", "monthly", 300000],
+      ["an", "2027-01-01", "monthly", 300000],
+      ["binh", "2026-11-01", "monthly", 250000],
+      ["binh", "2026-12-01", "monthly", 250000],
+      ["binh", "2027-01-01", "monthly", 250000],
+    ]);
+    expect((await loadDebtors(CLUB)).map((d) => [d.name, d.total])).toEqual([
+      ["An", 900000],
+      ["Bình", 750000],
+    ]);
+  });
+
+  it("leaves months that already have a slip as they are", async () => {
+    tables.membership_fees.push({
+      id: "nov-paid",
+      club_id: CLUB,
+      member_id: "an",
+      period_month: "2026-11-01",
+      billing_mode: "monthly",
+      amount_due: 200000,
+      payment_status: "paid",
+    });
+    expect(await issueFutureSlips(CLUB, ["an"], "2026-11", 2, priced)).toEqual({ created: 1, skipped: 1 });
+    expect(tables.membership_fees.find((s) => s.id === "nov-paid")).toMatchObject({ amount_due: 200000, payment_status: "paid" });
+    expect(await issueFutureSlips(CLUB, ["an"], "2026-11", 2, priced)).toEqual({ created: 0, skipped: 2 });
+  });
+
+  it("only makes slips for active fixed members of the club, from the month they start", async () => {
+    tables.members.push(
+      { id: "cuong", club_id: CLUB, full_name: "Cường", gender: "male", member_type: "fixed", status: "inactive", fixed_since: "2026-01-01" },
+      { id: "dung", club_id: CLUB, full_name: "Dũng", gender: "male", member_type: "fixed", status: "active", fixed_since: "2026-12-15" },
+      { id: "other", club_id: "club-2", full_name: "Khác", gender: "male", member_type: "fixed", status: "active", fixed_since: "2026-01-01" },
+    );
+    await issueFutureSlips(CLUB, ["cuong", "dung", "other"], "2026-11", 3, priced);
+    expect(tables.membership_fees.map((s) => [s.member_id, s.period_month, s.billing_mode])).toEqual([
+      ["dung", "2026-12-01", "per_session"],
+      ["dung", "2027-01-01", "monthly"],
+    ]);
   });
 });

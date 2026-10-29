@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { getPriceSettings, loadViewer, requireClub, requireUser, todayInVietnam } from "@/lib/club";
-import { chargeFeeIncrease } from "@/lib/fee-adjust";
+import { chargeFeeIncrease, repriceIssuedSlips } from "@/lib/fee-adjust";
 import { getCourt, setClubCourt } from "@/lib/courts";
 import { parseVnd } from "@/lib/money";
 import { db } from "@/lib/supabase";
@@ -47,7 +47,8 @@ type PriceValues = Record<(typeof PRICE_FIELDS)[number], string>;
 export type PricesState = { error: string | null; saved: boolean; values: PriceValues; notice?: string | null };
 
 // GIA-4: only new sessions and new fee slips use these prices; saved amounts are never recalculated,
-// except months after this one already paid ahead: a higher monthly fee asks those for the difference.
+// except months after this one: paid ahead, a higher monthly fee asks for the difference; made ahead and unpaid,
+// they take the new fee.
 export async function updatePrices(_prev: PricesState, formData: FormData): Promise<PricesState> {
   const { club } = await requireClub();
   const values = Object.fromEntries(PRICE_FIELDS.map((f) => [f, String(formData.get(f) ?? "")])) as PriceValues;
@@ -63,14 +64,18 @@ export async function updatePrices(_prev: PricesState, formData: FormData): Prom
     .from("club_settings")
     .upsert({ club_id: club.id, ...amounts, updated_at: new Date().toISOString() }, { onConflict: "club_id" });
   if (error) return { error: "Không lưu được. Thử lại sau.", saved: false, values };
-  let notice: string | null = null;
+  const notices: string[] = [];
+  const thisMonth = todayInVietnam().slice(0, 7);
+  const newFees = { male: amounts.monthly_fee_male, female: amounts.monthly_fee_female };
   if (amounts.monthly_fee_male > before.monthlyFeeMale || amounts.monthly_fee_female > before.monthlyFeeFemale) {
-    const changed = await chargeFeeIncrease(club.id, todayInVietnam().slice(0, 7), {
-      male: amounts.monthly_fee_male,
-      female: amounts.monthly_fee_female,
-    });
-    if (changed > 0) notice = `${changed} tháng đã đóng trước giờ còn nợ phần chênh lệch. Xem ở Người còn nợ.`;
+    const changed = await chargeFeeIncrease(club.id, thisMonth, newFees);
+    if (changed > 0) notices.push(`${changed} tháng đã đóng trước giờ còn nợ phần chênh lệch. Xem ở Người còn nợ.`);
   }
+  if (amounts.monthly_fee_male !== before.monthlyFeeMale || amounts.monthly_fee_female !== before.monthlyFeeFemale) {
+    const repriced = await repriceIssuedSlips(club.id, thisMonth, newFees);
+    if (repriced > 0) notices.push(`${repriced} phiếu tạo trước chưa nộp đã đổi theo phí mới.`);
+  }
+  const notice = notices.length > 0 ? notices.join(" ") : null;
   revalidatePath("/", "layout");
   return { error: null, saved: true, values, notice };
 }

@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireClub, todayInVietnam } from "@/lib/club";
-import { listRefundable, refundMonths } from "@/lib/fee-adjust";
+import { dropIssuedSlips, listRefundable, refundMonths } from "@/lib/fee-adjust";
 import { parseMember, rejoinedOnAfterEdit, readMemberForm, type MemberFormValues } from "@/lib/members";
 import { db } from "@/lib/supabase";
 
@@ -62,7 +62,8 @@ export async function updateMember(
   }
   const rejoined_on = rejoinedOnAfterEdit(before, parsed.data, todayInVietnam());
 
-  // Stopped paying monthly (Nghỉ, or no longer fixed): months after this one paid ahead are paid back.
+  // Stopped paying monthly (Nghỉ, or no longer fixed): months after this one paid ahead are paid back,
+  // and months made ahead but not paid are removed.
   // The form asked first (MemberForm `refund`), so the user knows the amount.
   const wasPaying = before.status === "active" && before.member_type === "fixed";
   const stillPaying = parsed.data.status === "active" && parsed.data.member_type === "fixed";
@@ -71,6 +72,7 @@ export async function updateMember(
     const months = await listRefundable(club.id, memberId, today.slice(0, 7));
     try {
       await refundMonths(userId, club.id, parsed.data.full_name, months, today);
+      await dropIssuedSlips(club.id, memberId, today.slice(0, 7));
     } catch {
       return { error: "Chưa hoàn được tiền các tháng đóng trước. Thử lại sau.", values };
     }

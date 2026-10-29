@@ -105,6 +105,8 @@ export async function chargeFeeIncrease(
     const fee = newFees[s.members.gender];
     const paid = s.payment_status === "paid";
     const prepaid = Number(s.prepaid_amount ?? 0) + (paid ? Number(s.amount_due) : 0);
+    // Made ahead and nothing paid yet: repriceIssuedSlips() gives it the new fee.
+    if (prepaid === 0) continue;
     const owed = fee - prepaid;
     // Unpaid and already asking the right amount, or nothing more to ask.
     if (owed <= 0 || (!paid && Number(s.amount_due) === owed)) continue;
@@ -124,4 +126,57 @@ export async function chargeFeeIncrease(
     changed++;
   }
   return changed;
+}
+
+/**
+ * "Tạo phiếu trước": slips of months after `thisMonth` that are unpaid and had nothing paid on them follow the
+ * monthly fee in Cài đặt, up or down. Nobody paid for them, so GIA-4 (keep past amounts) does not apply.
+ * Returns how many slips changed.
+ */
+export async function repriceIssuedSlips(
+  clubId: string,
+  thisMonth: string,
+  newFees: Record<"male" | "female", number>,
+): Promise<number> {
+  const { data, error } = await db()
+    .from("membership_fees")
+    .select("id, amount_due, prepaid_amount, members!inner(gender)")
+    .eq("club_id", clubId)
+    .eq("billing_mode", "monthly")
+    .eq("payment_status", "unpaid")
+    .gt("period_month", `${thisMonth}-01`);
+  if (error) throw error;
+  const slips = (
+    data as unknown as {
+      id: string;
+      amount_due: number;
+      prepaid_amount: number | null;
+      members: { gender: "male" | "female" };
+    }[]
+  ).filter((s) => Number(s.prepaid_amount ?? 0) === 0 && Number(s.amount_due) !== newFees[s.members.gender]);
+
+  await Promise.all(
+    slips.map(async (s) => {
+      const { error: updateError } = await db()
+        .from("membership_fees")
+        .update({ amount_due: newFees[s.members.gender], updated_at: new Date().toISOString() })
+        .eq("id", s.id)
+        .eq("payment_status", "unpaid");
+      if (updateError) throw updateError;
+    }),
+  );
+  return slips.length;
+}
+
+/** A member who stops owes nothing for months after `thisMonth` that were made ahead and not paid: they are removed. */
+export async function dropIssuedSlips(clubId: string, memberId: string, thisMonth: string) {
+  const { error } = await db()
+    .from("membership_fees")
+    .delete()
+    .eq("club_id", clubId)
+    .eq("member_id", memberId)
+    .eq("payment_status", "unpaid")
+    .eq("prepaid_amount", 0)
+    .gt("period_month", `${thisMonth}-01`);
+  if (error) throw error;
 }
