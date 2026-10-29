@@ -6,12 +6,12 @@ export const SESSION_DAYS = 30;
 
 /**
  * Who is signed in. The admin (club owner) manages everything; a member only looks at
- * Tổng quan, Lịch and Quỹ of their own club.
+ * Tổng quan, Lịch, Quỹ and their own Lịch sử đóng phí.
  */
 export type SessionUser = { kind: "admin"; id: string } | { kind: "member"; accountId: string };
 
 /** The only screens a member may open. */
-export const MEMBER_PATHS = ["/", "/schedule", "/fund", "/pay", "/account", "/logout"];
+export const MEMBER_PATHS = ["/", "/schedule", "/fund", "/pay", "/history", "/account", "/logout"];
 
 function secretKey(): Uint8Array {
   const secret = process.env.SESSION_SECRET;

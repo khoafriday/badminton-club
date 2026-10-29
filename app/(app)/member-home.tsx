@@ -127,10 +127,11 @@ export async function MemberHome({ viewer }: { viewer: Extract<Viewer, { kind: "
           <p className="text-xs text-muted">Đã đóng quỹ</p>
           <p className="mt-1 text-lg font-bold tracking-tight">{history.paidMonths} tháng</p>
         </div>
-        <div className="card p-4">
+        <Link href="/history" className="card p-4">
           <p className="text-xs text-muted">Tổng đã đóng cho CLB</p>
           <p className="mt-1 text-lg font-bold tracking-tight text-brand-700">{formatVnd(history.paid)}</p>
-        </div>
+          <p className="mt-1 text-xs font-bold text-brand-700">Lịch sử đóng phí ›</p>
+        </Link>
       </div>
 
       <div className="mx-5 mt-2 flex items-center justify-between">

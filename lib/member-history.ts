@@ -1,5 +1,6 @@
 import "server-only";
 import type { FeeStatus, PaymentStatus } from "./billing";
+import { paymentEntries, type PaidSlip, type PaidVisit } from "./payment-history";
 import { db } from "./supabase";
 
 export type VisitRow = {
@@ -85,4 +86,57 @@ export async function loadMemberHistory(memberId: string) {
   const paidMonths = slips.filter((s) => s.billingMode === "monthly" && s.status === "paid").length;
 
   return { visits, slips, owed: owedSessions + owedFees, paid: paidSessions + paidFees, paidMonths };
+}
+
+/** Lịch sử đóng phí: what one person paid, across the member rows they have (one per club). */
+export async function loadPaymentHistory(memberIds: string[]) {
+  if (memberIds.length === 0) return [];
+  const [visitsResult, slipsResult] = await Promise.all([
+    db()
+      .from("attendance")
+      .select("id, charge_mode, amount_due, payment_status, paid_at, payment_method, sessions!inner(session_date, status, club_id)")
+      .in("member_id", memberIds)
+      .eq("is_present", true)
+      .eq("payment_status", "paid")
+      .eq("sessions.status", "active"),
+    db()
+      .from("membership_fees")
+      .select("id, club_id, period_month, billing_mode, amount_due, prepaid_amount, payment_status, paid_at, payment_method")
+      .in("member_id", memberIds),
+  ]);
+  if (visitsResult.error) throw visitsResult.error;
+  if (slipsResult.error) throw slipsResult.error;
+
+  const visits: PaidVisit[] = (
+    visitsResult.data as unknown as {
+      id: string;
+      charge_mode: "monthly" | "per_session";
+      amount_due: number;
+      payment_status: PaymentStatus;
+      paid_at: string | null;
+      payment_method: "cash" | "transfer" | null;
+      sessions: { session_date: string; club_id: string };
+    }[]
+  ).map((v) => ({
+    id: v.id,
+    clubId: v.sessions.club_id,
+    date: v.sessions.session_date,
+    chargeMode: v.charge_mode,
+    amountDue: Number(v.amount_due),
+    status: v.payment_status,
+    paidAt: v.paid_at,
+    method: v.payment_method,
+  }));
+  const slips: PaidSlip[] = slipsResult.data.map((s) => ({
+    id: s.id,
+    clubId: s.club_id,
+    month: (s.period_month as string).slice(0, 7),
+    billingMode: s.billing_mode,
+    amountDue: Number(s.amount_due),
+    prepaid: Number(s.prepaid_amount ?? 0),
+    status: s.payment_status,
+    paidAt: s.paid_at,
+    method: s.payment_method,
+  }));
+  return paymentEntries(slips, visits);
 }

@@ -24,7 +24,7 @@ describe("login cookie", () => {
   });
 
   it("lets a member open only Tổng quan, Lịch, Quỹ and their account", () => {
-    expect(MEMBER_PATHS).toEqual(["/", "/schedule", "/fund", "/pay", "/account", "/logout"]);
+    expect(MEMBER_PATHS).toEqual(["/", "/schedule", "/fund", "/pay", "/history", "/account", "/logout"]);
   });
 });
 
