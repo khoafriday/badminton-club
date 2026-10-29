@@ -8,12 +8,14 @@ import { PageHeader } from "@/app/ui/page-header";
 import { getPriceSettings, loadClub, todayInVietnam } from "@/lib/club";
 import { addMonths, formatMonthLabel } from "@/lib/dates";
 import { ensureFeeSlips, listFeeSlips, listIssueMembers, waiveFullMonthAbsences } from "@/lib/fees";
+import { translator } from "@/lib/i18n";
+import { getLocale } from "@/lib/i18n/server";
 import { FeeList } from "./fee-list";
 import { IssueForm } from "./issue-form";
 
 async function FeesContent({ searchParams }: { searchParams: PageProps<"/fees">["searchParams"] }) {
-  const sp = await searchParams;
-  const { club } = await loadClub();
+  const [sp, { club }, locale] = await Promise.all([searchParams, loadClub(), getLocale()]);
+  const t = translator(locale);
   if (!club) return <NoClub />;
 
   const today = todayInVietnam();
@@ -29,15 +31,15 @@ async function FeesContent({ searchParams }: { searchParams: PageProps<"/fees">[
       <div className="card mx-5 flex items-center justify-between px-2 py-1">
         <Link
           href={`/fees?month=${addMonths(month, -1)}`}
-          aria-label="Tháng trước"
+          aria-label={t("Tháng trước")}
           className="flex size-10 items-center justify-center text-2xl"
         >
           ‹
         </Link>
-        <p className="font-bold">{formatMonthLabel(month)}</p>
+        <p className="font-bold">{formatMonthLabel(month, locale)}</p>
         <Link
           href={`/fees?month=${addMonths(month, 1)}`}
-          aria-label="Tháng sau"
+          aria-label={t("Tháng sau")}
           className="flex size-10 items-center justify-center text-2xl"
         >
           ›
@@ -45,7 +47,7 @@ async function FeesContent({ searchParams }: { searchParams: PageProps<"/fees">[
       </div>
       {month > today.slice(0, 7) && slips.length === 0 && (
         <p className="px-5 pt-3 text-sm text-muted">
-          Phiếu của tháng này sẽ được tạo khi tháng bắt đầu. Muốn thu trước thì bấm Tạo phiếu các tháng tới.
+          {t("Phiếu của tháng này sẽ được tạo khi tháng bắt đầu. Muốn thu trước thì bấm Tạo phiếu các tháng tới.")}
         </p>
       )}
       <Fresh>
@@ -65,7 +67,7 @@ async function FeesContent({ searchParams }: { searchParams: PageProps<"/fees">[
         }))}
       />
       <p className="px-5 pt-4 text-xs text-muted">
-        Hết tháng mà người cố định không đi buổi nào, phiếu chưa nộp tự chuyển sang Miễn.
+        {t("Hết tháng mà người cố định không đi buổi nào, phiếu chưa nộp tự chuyển sang Miễn.")}
       </p>
     </>
   );

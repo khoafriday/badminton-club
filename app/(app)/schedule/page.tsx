@@ -18,6 +18,8 @@ import {
   mondayOf,
 } from "@/lib/dates";
 import { monthEnd } from "@/lib/billing";
+import { translator, type T } from "@/lib/i18n";
+import { getLocale } from "@/lib/i18n/server";
 import { ensureSessions, listSessions, listUpcomingSessions, type SessionRow } from "@/lib/schedule";
 
 type View = "week" | "month" | "all";
@@ -35,8 +37,8 @@ function scheduleHref(view: View, date: string) {
 }
 
 async function ScheduleContent({ searchParams }: { searchParams: PageProps<"/schedule">["searchParams"] }) {
-  const sp = await searchParams;
-  const viewer = await loadViewer();
+  const [sp, viewer, locale] = await Promise.all([searchParams, loadViewer(), getLocale()]);
+  const t = translator(locale);
   const { club } = viewer;
   if (!club) return <NoClub />;
   // A member sees the sessions of all their clubs, without links into admin screens.
@@ -72,7 +74,7 @@ async function ScheduleContent({ searchParams }: { searchParams: PageProps<"/sch
       period = {
         from,
         to,
-        label: `${formatShortDate(from)} đến ${formatShortDate(to)}`,
+        label: `${formatShortDate(from)} ${t("đến")} ${formatShortDate(to)}`,
         prev: addDays(from, -7),
         next: addDays(from, 7),
       };
@@ -82,7 +84,7 @@ async function ScheduleContent({ searchParams }: { searchParams: PageProps<"/sch
       period = {
         from,
         to: monthEnd(from),
-        label: formatMonthLabel(month),
+        label: formatMonthLabel(month, locale),
         prev: `${addMonths(month, -1)}-01`,
         next: `${addMonths(month, 1)}-01`,
       };
@@ -106,9 +108,9 @@ async function ScheduleContent({ searchParams }: { searchParams: PageProps<"/sch
   const byDate = new Map<string, ListedSession[]>();
   for (const s of sessions) byDate.set(s.session_date, [...(byDate.get(s.session_date) ?? []), s]);
   const emptyText = {
-    week: "trong tuần này",
-    month: "trong tháng này",
-    all: "sắp tới",
+    week: "Không có buổi nào trong tuần này.",
+    month: "Không có buổi nào trong tháng này.",
+    all: "Không có buổi nào sắp tới.",
   }[view];
 
   return (
@@ -122,7 +124,7 @@ async function ScheduleContent({ searchParams }: { searchParams: PageProps<"/sch
                 href={scheduleHref(v, anchor)}
                 className={`rounded-full px-4 py-2 ${v === view ? "bg-surface text-ink shadow-card" : "text-muted"}`}
               >
-                {VIEW_LABEL[v]}
+                {t(VIEW_LABEL[v])}
               </Link>
             ))}
           </div>
@@ -131,7 +133,7 @@ async function ScheduleContent({ searchParams }: { searchParams: PageProps<"/sch
               href="/schedule/weekly"
               className="shrink-0 rounded-full bg-brand-50 px-3 py-2 text-xs font-bold text-brand-700"
             >
-              Lịch cố định ›
+              {t("Lịch cố định")} ›
             </Link>
           )}
         </div>
@@ -139,7 +141,7 @@ async function ScheduleContent({ searchParams }: { searchParams: PageProps<"/sch
           <div className="card flex items-center justify-between px-2 py-1">
             <Link
               href={scheduleHref(view, period.prev)}
-              aria-label="Trước"
+              aria-label={t("Trước")}
               className="flex size-10 items-center justify-center text-2xl"
             >
               ‹
@@ -148,13 +150,13 @@ async function ScheduleContent({ searchParams }: { searchParams: PageProps<"/sch
               <p className="font-bold">{period.label}</p>
               {(today < period.from || today > period.to) && (
                 <Link href={scheduleHref(view, today)} className="text-xs text-brand-700">
-                  Về hôm nay
+                  {t("Về hôm nay")}
                 </Link>
               )}
             </div>
             <Link
               href={scheduleHref(view, period.next)}
-              aria-label="Sau"
+              aria-label={t("Sau")}
               className="flex size-10 items-center justify-center text-2xl"
             >
               ›
@@ -162,21 +164,23 @@ async function ScheduleContent({ searchParams }: { searchParams: PageProps<"/sch
           </div>
         ) : (
           <p className="text-sm text-muted">
-            Các buổi từ hôm nay của {clubs.length > 1 ? `cả ${clubs.length} CLB` : "CLB"} bạn quản lý.
+            {clubs.length > 1
+              ? t("Các buổi từ hôm nay của cả {count} CLB bạn quản lý.", { count: clubs.length })
+              : t("Các buổi từ hôm nay của CLB bạn quản lý.")}
           </p>
         )}
       </div>
 
       {sessions.length === 0 ? (
         <div className="px-5 py-10 text-center text-sm text-muted">
-          <p>Không có buổi nào {emptyText}.</p>
+          <p>{t(emptyText)}</p>
           {admin && scheduleCount === 0 && (
             <p className="mt-1">
-              Tạo{" "}
+              {t("Tạo")}{" "}
               <Link href="/schedule/weekly" className="font-semibold text-brand-700">
-                lịch cố định
+                {t("lịch cố định")}
               </Link>{" "}
-              để app tự tạo buổi, hoặc bấm + để thêm buổi lẻ.
+              {t("để app tự tạo buổi, hoặc bấm + để thêm buổi lẻ.")}
             </p>
           )}
         </div>
@@ -186,11 +190,15 @@ async function ScheduleContent({ searchParams }: { searchParams: PageProps<"/sch
             <li key={date} className="flex gap-3">
               <p
                 className={`w-12 shrink-0 pt-2.5 text-center ${date === today ? "text-brand-700" : "text-muted"}`}
-                aria-label={formatDayLabel(date)}
+                aria-label={formatDayLabel(date, locale)}
               >
                 <span className="block text-xl leading-tight font-bold tracking-tight">{date.slice(8, 10)}</span>
-                <span className="block text-[10px] font-bold uppercase">{formatDayLabel(date).split(",")[0]}</span>
-                {view === "all" && <span className="block text-[10px]">Th{Number(date.slice(5, 7))}</span>}
+                <span className="block text-[10px] font-bold uppercase">{formatDayLabel(date, locale).split(",")[0]}</span>
+                {view === "all" && (
+                  <span className="block text-[10px]">
+                    {locale === "en" ? formatMonthLabel(date.slice(0, 7), "en").slice(0, 3) : `Th${Number(date.slice(5, 7))}`}
+                  </span>
+                )}
               </p>
               <ul className="flex min-w-0 flex-1 flex-col gap-2">
                 {daySessions.map((s) => (
@@ -201,6 +209,7 @@ async function ScheduleContent({ searchParams }: { searchParams: PageProps<"/sch
                       isCurrentClub={s.club_id === club.id}
                       today={today}
                       readOnly={!admin}
+                      t={t}
                     />
                   </li>
                 ))}
@@ -209,7 +218,7 @@ async function ScheduleContent({ searchParams }: { searchParams: PageProps<"/sch
           ))}
         </ul>
       )}
-      {admin && <Fab href={`/schedule/new?date=${anchor < today ? today : anchor}`} label="Thêm buổi lẻ" />}
+      {admin && <Fab href={`/schedule/new?date=${anchor < today ? today : anchor}`} label={t("Thêm buổi lẻ")} />}
     </>
   );
 }
@@ -221,6 +230,7 @@ function SessionCard({
   isCurrentClub,
   today,
   readOnly,
+  t,
 }: {
   session: ListedSession;
   club: Club;
@@ -228,25 +238,26 @@ function SessionCard({
   today: string;
   /** A member's view: the card opens nothing. */
   readOnly: boolean;
+  t: T;
 }) {
   const className = "card flex items-center gap-3 px-4 py-3 active:bg-surface-2";
   const content = (
     <>
       <span className={`min-w-0 flex-1 ${s.status === "cancelled" ? "text-faint line-through" : ""}`}>
         <span className="font-bold">
-          {formatTime(s.start_time)} đến {formatTime(s.end_time)}
+          {formatTime(s.start_time)} {t("đến")} {formatTime(s.end_time)}
         </span>
         <span className="block truncate text-xs font-semibold text-brand-700">{club.name}</span>
         <span className="block truncate text-xs text-muted">
-          {s.court_name ?? club.court_name ?? "Chưa có sân"}
-          {s.schedule_id ? "" : " · Buổi lẻ"}
+          {s.court_name ?? club.court_name ?? t("Chưa có sân")}
+          {s.schedule_id ? "" : ` · ${t("Buổi lẻ")}`}
         </span>
       </span>
       {s.status === "cancelled" ? (
-        <span className="rounded-full bg-red-50 px-2.5 py-1 text-xs font-bold text-red-600">Hủy</span>
+        <span className="rounded-full bg-red-50 px-2.5 py-1 text-xs font-bold text-red-600">{t("Hủy")}</span>
       ) : (
         s.session_date === today && (
-          <span className="rounded-full bg-brand-50 px-2.5 py-1 text-xs font-bold text-brand-700">Hôm nay</span>
+          <span className="rounded-full bg-brand-50 px-2.5 py-1 text-xs font-bold text-brand-700">{t("Hôm nay")}</span>
         )
       )}
     </>

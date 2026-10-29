@@ -4,12 +4,14 @@ import { useActionState, useState } from "react";
 import type { TxFormState, TxFormValues } from "@/app/actions/fund";
 import { Choice } from "@/app/ui/choice";
 import { inputClass, labelClass, primaryButtonClass, selectClass } from "@/app/ui/form";
+import { useLocale, useT } from "@/app/ui/locale";
 import { MoneyInput } from "@/app/ui/money-input";
 import { formatVnd, type PriceSettings } from "@/lib/billing";
 import { GUEST_FEE_OPTION, MEMBER_FEE_OPTION } from "@/lib/categories";
 import { formatMonthLabel, formatShortDate } from "@/lib/dates";
 import type { GuestDebtor } from "@/lib/debts";
 import type { CategoryOption } from "@/lib/fund";
+import { translator } from "@/lib/i18n";
 import { MAX_PREPAY_COUNT, oldDebts, planPrepay, type PrepayMember } from "@/lib/prepay";
 
 type Props = {
@@ -28,15 +30,17 @@ type MemberFeeData = { members: PrepayMember[]; settings: PriceSettings; fromMon
 
 /** Which club's book the line goes into, so a line is not written to the wrong club. */
 export function ClubBadge({ name }: { name: string }) {
+  const t = useT();
   return (
     <p className="flex items-center gap-2 rounded-2xl bg-brand-50 px-4 py-3 text-sm text-brand-700">
-      CLB
+      {t("CLB")}
       <span className="min-w-0 truncate font-bold">{name}</span>
     </p>
   );
 }
 
 export function TxForm({ action, initialValues, categories, submitLabel, memberFees, guestFees }: Props) {
+  const t = useT();
   const [state, formAction, pending] = useActionState(action, { error: null, values: initialValues });
   const v = state.values;
   const [type, setType] = useState(v.type);
@@ -56,12 +60,12 @@ export function TxForm({ action, initialValues, categories, submitLabel, memberF
   return (
     <form key={JSON.stringify(v)} action={formAction} className="flex flex-col gap-4">
       <fieldset className="flex gap-2">
-        <legend className="sr-only">Thu hay chi</legend>
-        <Choice name="type" value="expense" label="Khoản chi" checked={v.type === "expense"} onChange={pickType} />
-        <Choice name="type" value="income" label="Khoản thu" checked={v.type === "income"} onChange={pickType} />
+        <legend className="sr-only">{t("Thu hay chi")}</legend>
+        <Choice name="type" value="expense" label={t("Khoản chi")} checked={v.type === "expense"} onChange={pickType} />
+        <Choice name="type" value="income" label={t("Khoản thu")} checked={v.type === "income"} onChange={pickType} />
       </fieldset>
       <label className={labelClass}>
-        Loại
+        {t("Loại")}
         <select
           key={type}
           name="category_id"
@@ -71,11 +75,11 @@ export function TxForm({ action, initialValues, categories, submitLabel, memberF
           className={selectClass}
         >
           <option value="" disabled>
-            Chọn loại
+            {t("Chọn loại")}
           </option>
           {options.map((o) => (
             <option key={o.id} value={o.id}>
-              {o.label}
+              {t(o.label)}
             </option>
           ))}
         </select>
@@ -95,7 +99,7 @@ export function TxForm({ action, initialValues, categories, submitLabel, memberF
         />
       ) : (
         <label className={labelClass}>
-          Số tiền
+          {t("Số tiền")}
           <div className="relative">
             <MoneyInput name="amount" initialValue={v.amount} required className={`${inputClass} pr-8`} />
             <span className="pointer-events-none absolute top-1/2 right-4 -translate-y-1/2 text-faint">đ</span>
@@ -103,18 +107,23 @@ export function TxForm({ action, initialValues, categories, submitLabel, memberF
         </label>
       )}
       <label className={labelClass}>
-        Ngày
+        {t("Ngày")}
         <input type="date" name="occurred_on" defaultValue={v.occurred_on} required className={inputClass} />
       </label>
       <label className={labelClass}>
-        Ghi chú
-        <input name="description" defaultValue={v.description} placeholder="Ví dụ: 2 hộp cầu" className={inputClass} />
+        {t("Ghi chú")}
+        <input
+          name="description"
+          defaultValue={v.description}
+          placeholder={t("Ví dụ: 2 hộp cầu")}
+          className={inputClass}
+        />
       </label>
       <p aria-live="polite" className="min-h-5 text-sm text-red-600">
-        {state.error}
+        {state.error && t(state.error)}
       </p>
       <button disabled={pending} className={primaryButtonClass}>
-        {pending ? "Đang lưu..." : submitLabel}
+        {t(pending ? "Đang lưu..." : submitLabel)}
       </button>
     </form>
   );
@@ -135,6 +144,8 @@ function MemberFeeFields({
   initialFeeIds: string[];
   initialMonths: number;
 }) {
+  const locale = useLocale();
+  const t = translator(locale);
   const { members, settings, fromMonth } = data;
   const [memberId, setMemberId] = useState(members.some((m) => m.id === initialMemberId) ? initialMemberId : "");
   const [picked, setPicked] = useState(() => new Set(initialFeeIds));
@@ -147,13 +158,13 @@ function MemberFeeFields({
     ahead.reduce((sum, m) => sum + m.amount, 0);
 
   if (members.length === 0) {
-    return <p className="text-sm text-muted">Chưa có thành viên cố định nào.</p>;
+    return <p className="text-sm text-muted">{t("Chưa có thành viên cố định nào.")}</p>;
   }
 
   return (
     <>
       <label className={labelClass}>
-        Thành viên
+        {t("Thành viên")}
         <select
           name="member_id"
           value={memberId}
@@ -167,19 +178,19 @@ function MemberFeeFields({
           className={selectClass}
         >
           <option value="" disabled>
-            Chọn thành viên cố định
+            {t("Chọn thành viên cố định")}
           </option>
           {members.map((m) => (
             <option key={m.id} value={m.id}>
               {m.name}
-              {m.canPayAhead ? "" : " (đã nghỉ)"}
+              {m.canPayAhead ? "" : ` (${t("đã nghỉ")})`}
             </option>
           ))}
         </select>
       </label>
       {member && debts.length > 0 && (
         <fieldset className="flex flex-col gap-2">
-          <legend className="mb-1.5 text-sm font-semibold text-muted">Tháng cũ còn nợ</legend>
+          <legend className="mb-1.5 text-sm font-semibold text-muted">{t("Tháng cũ còn nợ")}</legend>
           {debts.map((f) => (
             <label
               key={f.id}
@@ -198,7 +209,7 @@ function MemberFeeFields({
                 }}
                 className="size-4 accent-brand-600"
               />
-              <span className="flex-1 font-semibold text-ink">{formatMonthLabel(f.month)}</span>
+              <span className="flex-1 font-semibold text-ink">{formatMonthLabel(f.month, locale)}</span>
               <span className="text-muted">{formatVnd(f.amount)}</span>
             </label>
           ))}
@@ -207,9 +218,9 @@ function MemberFeeFields({
       {member?.canPayAhead && (
         <div className="flex flex-col gap-2">
           <div className="flex items-center justify-between gap-3">
-            <span className="text-sm font-semibold text-muted">Số tháng đóng, tính từ tháng này</span>
+            <span className="text-sm font-semibold text-muted">{t("Số tháng đóng, tính từ tháng này")}</span>
             <div className="flex items-center gap-1">
-              <StepButton label="Bớt 1 tháng" disabled={count <= 0} onClick={() => setCount(count - 1)}>
+              <StepButton label={t("Bớt 1 tháng")} disabled={count <= 0} onClick={() => setCount(count - 1)}>
                 −
               </StepButton>
               <input
@@ -220,10 +231,10 @@ function MemberFeeFields({
                 max={MAX_PREPAY_COUNT}
                 value={count}
                 onChange={(e) => setCount(Math.max(0, Math.min(MAX_PREPAY_COUNT, Math.trunc(Number(e.target.value) || 0))))}
-                aria-label="Số tháng đóng"
+                aria-label={t("Số tháng đóng")}
                 className="h-10 w-14 rounded-2xl border border-line-strong bg-surface text-center font-bold"
               />
-              <StepButton label="Thêm 1 tháng" disabled={count >= MAX_PREPAY_COUNT} onClick={() => setCount(count + 1)}>
+              <StepButton label={t("Thêm 1 tháng")} disabled={count >= MAX_PREPAY_COUNT} onClick={() => setCount(count + 1)}>
                 +
               </StepButton>
             </div>
@@ -232,19 +243,19 @@ function MemberFeeFields({
             <ul className="flex flex-col gap-1 rounded-2xl bg-surface-2 px-4 py-2 text-sm">
               {ahead.map((m) => (
                 <li key={m.month} className="flex justify-between">
-                  <span>{formatMonthLabel(m.month)}</span>
+                  <span>{formatMonthLabel(m.month, locale)}</span>
                   <span className="text-muted">{formatVnd(m.amount)}</span>
                 </li>
               ))}
             </ul>
           )}
           {ahead.length > 0 && ahead[0].month !== fromMonth && (
-            <p className="text-xs text-muted">Tháng đã nộp hoặc tính theo buổi được bỏ qua.</p>
+            <p className="text-xs text-muted">{t("Tháng đã nộp hoặc tính theo buổi được bỏ qua.")}</p>
           )}
         </div>
       )}
       <div className={labelClass}>
-        Số tiền
+        {t("Số tiền")}
         <p className="flex h-12 items-center rounded-2xl border border-line bg-surface-2 px-4 text-base font-bold text-ink">
           {formatVnd(total)}
         </p>
@@ -263,19 +274,20 @@ function GuestFeeFields({
   initialMemberId: string;
   initialIds: string[];
 }) {
+  const t = useT();
   const [memberId, setMemberId] = useState(debtors.some((d) => d.memberId === initialMemberId) ? initialMemberId : "");
   const [picked, setPicked] = useState(() => new Set(initialIds));
   const debtor = debtors.find((d) => d.memberId === memberId);
   const total = debtor ? debtor.sessions.filter((s) => picked.has(s.id)).reduce((sum, s) => sum + s.amount, 0) : 0;
 
   if (debtors.length === 0) {
-    return <p className="text-sm text-muted">Không ai còn nợ tiền buổi.</p>;
+    return <p className="text-sm text-muted">{t("Không ai còn nợ tiền buổi.")}</p>;
   }
 
   return (
     <>
       <label className={labelClass}>
-        Người nộp
+        {t("Người nộp")}
         <select
           name="member_id"
           value={memberId}
@@ -289,7 +301,7 @@ function GuestFeeFields({
           className={selectClass}
         >
           <option value="" disabled>
-            Chọn người còn nợ tiền buổi
+            {t("Chọn người còn nợ tiền buổi")}
           </option>
           {debtors.map((d) => (
             <option key={d.memberId} value={d.memberId}>
@@ -300,7 +312,7 @@ function GuestFeeFields({
       </label>
       {debtor && (
         <fieldset className="flex flex-col gap-2">
-          <legend className="mb-1.5 text-sm font-semibold text-muted">Buổi chưa nộp</legend>
+          <legend className="mb-1.5 text-sm font-semibold text-muted">{t("Buổi chưa nộp")}</legend>
           {debtor.sessions.map((s) => (
             <label
               key={s.id}
@@ -319,14 +331,14 @@ function GuestFeeFields({
                 }}
                 className="size-4 accent-brand-600"
               />
-              <span className="flex-1 font-semibold text-ink">Buổi {formatShortDate(s.date)}</span>
+              <span className="flex-1 font-semibold text-ink">{t("Buổi {date}", { date: formatShortDate(s.date) })}</span>
               <span className="text-muted">{formatVnd(s.amount)}</span>
             </label>
           ))}
         </fieldset>
       )}
       <div className={labelClass}>
-        Số tiền
+        {t("Số tiền")}
         <p className="flex h-12 items-center rounded-2xl border border-line bg-surface-2 px-4 text-base font-bold text-ink">
           {formatVnd(total)}
         </p>

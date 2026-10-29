@@ -7,12 +7,13 @@ import { PageHeader } from "@/app/ui/page-header";
 import { NoClub } from "@/app/clubs/no-club";
 import { ClubPicker } from "@/app/ui/club-picker";
 import { loadClub } from "@/lib/club";
+import { getT } from "@/lib/i18n/server";
 import { parseMemberFilter, type MemberRow } from "@/lib/member-filter";
 import { db } from "@/lib/supabase";
 import { MemberList } from "./member-list";
 
 async function Members({ searchParams }: { searchParams: PageProps<"/members">["searchParams"] }) {
-  const [sp, { club }] = await Promise.all([searchParams, loadClub()]);
+  const [sp, { club }, t] = await Promise.all([searchParams, loadClub(), getT()]);
   if (!club) return <NoClub />;
 
   // One query for everyone; the list filters in the browser, so changing a filter does not reload.
@@ -30,7 +31,7 @@ async function Members({ searchParams }: { searchParams: PageProps<"/members">["
     <>
       <div className="flex items-center justify-end px-5 pb-3">
         <Link href="/fees" className="rounded-full bg-brand-50 px-3 py-2 text-xs font-bold text-brand-700">
-          Phí tháng ›
+          {t("Phí tháng")} ›
         </Link>
       </div>
       <MemberList
@@ -38,7 +39,7 @@ async function Members({ searchParams }: { searchParams: PageProps<"/members">["
         initialFilter={parseMemberFilter(sp.filter)}
         initialQ={typeof sp.q === "string" ? sp.q.trim() : ""}
       />
-      <Fab href="/members/new" label="Thêm thành viên" />
+      <Fab href="/members/new" label={t("Thêm thành viên")} />
     </>
   );
 }

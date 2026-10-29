@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { getCurrentClub, requireUser } from "@/lib/club";
 import { parseCourt, readCourtForm, type CourtFormValues } from "@/lib/court-form";
 import { setClubCourt } from "@/lib/courts";
+import { getT } from "@/lib/i18n/server";
 import { db } from "@/lib/supabase";
 
 export type CourtFormState = { error: string | null; values: CourtFormValues };
@@ -60,7 +61,12 @@ export async function deleteCourt(courtId: string): Promise<DeleteCourtState> {
 
   const active = uses.filter((u) => !u.clubs.archived_at);
   if (active.length > 0) {
-    return { error: `Sân đang được dùng bởi ${active.map((u) => u.clubs.name).join(", ")}. Đổi sân cho CLB trước.` };
+    const t = await getT();
+    return {
+      error: t("Sân đang được dùng bởi {clubs}. Đổi sân cho CLB trước.", {
+        clubs: active.map((u) => u.clubs.name).join(", "),
+      }),
+    };
   }
   // Sessions keep the court they were played on, so a court with sessions stays.
   const [sessions, schedules] = await Promise.all([

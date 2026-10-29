@@ -9,6 +9,8 @@ import { formatVnd } from "@/lib/billing";
 import { loadClub } from "@/lib/club";
 import { formatMonthLabel, formatShortDate } from "@/lib/dates";
 import { getFeeBatch } from "@/lib/fund";
+import { translator } from "@/lib/i18n";
+import { getLocale } from "@/lib/i18n/server";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -17,7 +19,8 @@ async function FeeBatchDetail({ params }: { params: Promise<{ id: string }> }) {
   if (!UUID.test(id)) notFound();
   const { club } = await loadClub();
   if (!club) notFound();
-  const batch = await getFeeBatch(club.id, id);
+  const [batch, locale] = await Promise.all([getFeeBatch(club.id, id), getLocale()]);
+  const t = translator(locale);
   if (!batch) notFound();
   const total = batch.months.reduce((sum, m) => sum + m.amount, 0);
 
@@ -32,22 +35,25 @@ async function FeeBatchDetail({ params }: { params: Promise<{ id: string }> }) {
         <ul className="mt-2 flex flex-col gap-1 text-sm">
           {batch.months.map((m) => (
             <li key={m.month} className="flex justify-between">
-              <span>{formatMonthLabel(m.month)}</span>
+              <span>{formatMonthLabel(m.month, locale)}</span>
               <span className="text-muted">{formatVnd(m.amount)}</span>
             </li>
           ))}
         </ul>
         <p className="mt-2 flex justify-between border-t border-line pt-2 font-bold">
-          <span>Tổng</span>
+          <span>{t("Tổng")}</span>
           <span className="text-brand-700">{formatVnd(total)}</span>
         </p>
       </section>
       <form action={undoMemberFees.bind(null, id)}>
         <ConfirmButton
-          message={`Hoàn tác lần thu ${formatVnd(total)} của ${batch.memberName}? Các tháng này về Chưa nộp.`}
+          message={t("Hoàn tác lần thu {amount} của {name}? Các tháng này về Chưa nộp.", {
+            amount: formatVnd(total),
+            name: batch.memberName,
+          })}
           className="h-11 w-full rounded-full border border-red-200 text-sm font-semibold text-red-600"
         >
-          Hoàn tác lần thu này
+          {t("Hoàn tác lần thu này")}
         </ConfirmButton>
       </form>
     </div>

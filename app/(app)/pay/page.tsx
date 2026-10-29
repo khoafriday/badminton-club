@@ -7,6 +7,7 @@ import { Loading } from "@/app/ui/loading";
 import { PageHeader } from "@/app/ui/page-header";
 import { formatVnd } from "@/lib/billing";
 import { loadViewer } from "@/lib/club";
+import { getT } from "@/lib/i18n/server";
 import { loadMemberHistory } from "@/lib/member-history";
 import { getBankAccount, isCurrent, latestPaymentRequest } from "@/lib/payments";
 import { TPBANK_BIN, vietQrPayload } from "@/lib/vietqr";
@@ -41,15 +42,15 @@ function Row({ label, value, copy }: { label: string; value: string; copy?: stri
 
 /** The QR a member opens from "Đóng tiền nợ": everything they owe, paid by one transfer that the app confirms itself. */
 async function PayContent() {
-  const viewer = await loadViewer();
-  if (viewer.kind !== "member") return <Note>Màn này dành cho thành viên.</Note>;
+  const [viewer, t] = await Promise.all([loadViewer(), getT()]);
+  if (viewer.kind !== "member") return <Note>{t("Màn này dành cho thành viên.")}</Note>;
   const { club, memberId } = viewer;
   const [bank, request, history] = await Promise.all([
     getBankAccount(club.id),
     latestPaymentRequest(club.id, memberId),
     loadMemberHistory(memberId),
   ]);
-  if (!bank) return <Note>CLB chưa cài tài khoản nhận tiền. Liên hệ admin để đóng tiền.</Note>;
+  if (!bank) return <Note>{t("CLB chưa cài tài khoản nhận tiền. Liên hệ admin để đóng tiền.")}</Note>;
 
   if (request?.status === "paid") {
     const extra = (request.receivedAmount ?? request.amount) - request.amount;
@@ -58,13 +59,15 @@ async function PayContent() {
         <Note tone="ok">
           <p className="text-lg font-bold text-brand-700">
             {history.owed === 0
-              ? `Đã thanh toán hết các khoản nợ của CLB ${club.name},`
-              : `Đã thanh toán ${formatVnd(request.amount)} cho CLB ${club.name},`}
+              ? t("Đã thanh toán hết các khoản nợ của CLB {club},", { club: club.name })
+              : t("Đã thanh toán {amount} cho CLB {club},", { amount: formatVnd(request.amount), club: club.name })}
           </p>
-          <p>Chúc bạn tiếp tục chơi cầu vui vẻ!</p>
+          <p>{t("Chúc bạn tiếp tục chơi cầu vui vẻ!")}</p>
         </Note>
         {extra > 0 && (
-          <Note tone="warn">Bạn đã chuyển thừa {formatVnd(extra)}. Liên hệ admin để được xử lý phần tiền thừa.</Note>
+          <Note tone="warn">
+            {t("Bạn đã chuyển thừa {amount}. Liên hệ admin để được xử lý phần tiền thừa.", { amount: formatVnd(extra) })}
+          </Note>
         )}
         <BackHomeCountdown />
       </>
@@ -74,18 +77,20 @@ async function PayContent() {
     return (
       <>
         <Note tone="warn">
-          <p className="font-bold">Đã nhận {formatVnd(request.receivedAmount ?? 0)} cho mã {request.code}</p>
-          <p>Số tiền không khớp số nợ lúc chuyển, nên chưa đánh Đã nộp. Liên hệ admin để được xử lý.</p>
+          <p className="font-bold">
+            {t("Đã nhận {amount} cho mã {code}", { amount: formatVnd(request.receivedAmount ?? 0), code: request.code })}
+          </p>
+          <p>{t("Số tiền không khớp số nợ lúc chuyển, nên chưa đánh Đã nộp. Liên hệ admin để được xử lý.")}</p>
         </Note>
       </>
     );
   }
   if (!request || !(await isCurrent(request, memberId))) {
-    if (history.owed === 0) return <Note tone="ok">Bạn không còn khoản nợ nào.</Note>;
+    if (history.owed === 0) return <Note tone="ok">{t("Bạn không còn khoản nợ nào.")}</Note>;
     return (
       <>
-        <Note>Số nợ đã thay đổi so với mã QR trước. Tạo mã mới cho {formatVnd(history.owed)}.</Note>
-        <PayAgain label="Tạo mã QR mới" />
+        <Note>{t("Số nợ đã thay đổi so với mã QR trước. Tạo mã mới cho {amount}.", { amount: formatVnd(history.owed) })}</Note>
+        <PayAgain label={t("Tạo mã QR mới")} />
       </>
     );
   }
@@ -99,17 +104,17 @@ async function PayContent() {
         <div
           className="w-full max-w-72 rounded-2xl bg-[#ffffff] p-2"
           role="img"
-          aria-label={`Mã QR chuyển ${formatVnd(request.amount)}`}
+          aria-label={t("Mã QR chuyển {amount}", { amount: formatVnd(request.amount) })}
           dangerouslySetInnerHTML={{ __html: svg }}
         />
         <p className="text-2xl font-bold tracking-tight text-red-600">{formatVnd(request.amount)}</p>
-        <p className="text-center text-xs text-muted">Mở app ngân hàng, quét mã. Không sửa số tiền và nội dung.</p>
+        <p className="text-center text-xs text-muted">{t("Mở app ngân hàng, quét mã. Không sửa số tiền và nội dung.")}</p>
       </section>
       <section className="card flex flex-col gap-3 p-4">
-        <Row label="Ngân hàng" value={BANK_NAME[bank.bin] ?? bank.bin} />
-        <Row label="Số tài khoản" value={bank.accountNo} copy={bank.accountNo} />
-        <Row label="Chủ tài khoản" value={bank.accountName} />
-        <Row label="Nội dung chuyển khoản" value={request.code} copy={request.code} />
+        <Row label={t("Ngân hàng")} value={BANK_NAME[bank.bin] ?? bank.bin} />
+        <Row label={t("Số tài khoản")} value={bank.accountNo} copy={bank.accountNo} />
+        <Row label={t("Chủ tài khoản")} value={bank.accountName} />
+        <Row label={t("Nội dung chuyển khoản")} value={request.code} copy={request.code} />
       </section>
       <WaitForPayment />
     </>

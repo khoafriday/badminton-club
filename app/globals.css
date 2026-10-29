@@ -180,3 +180,9 @@ html,
 body {
   height: 100%;
 }
+
+/* <Bi> sends both languages for text drawn before the request is known; <html lang> keeps one. */
+html:lang(en) .lang-vi,
+html:not(:lang(en)) .lang-en {
+  display: none;
+}

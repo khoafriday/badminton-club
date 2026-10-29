@@ -1,4 +1,7 @@
+"use client";
+
 import { labelClass, selectClass } from "./form";
+import { useT } from "./locale";
 
 export type CourtOption = { id: string; name: string };
 
@@ -12,18 +15,19 @@ type Props = {
 
 /** SAN-1: a court picked from the courts in Settings. */
 export function CourtSelect({ courts, value, emptyLabel, emptyHint }: Props) {
+  const t = useT();
   return (
     <label className={labelClass}>
-      Sân
+      {t("Sân")}
       <select name="court_id" defaultValue={value} className={selectClass}>
-        {(emptyLabel !== null || courts.length === 0) && <option value="">{emptyLabel ?? "Chưa có sân"}</option>}
+        {(emptyLabel !== null || courts.length === 0) && <option value="">{t(emptyLabel ?? "Chưa có sân")}</option>}
         {courts.map((c) => (
           <option key={c.id} value={c.id}>
             {c.name}
           </option>
         ))}
       </select>
-      {courts.length === 0 && <span className="text-xs font-normal text-muted">{emptyHint}</span>}
+      {courts.length === 0 && <span className="text-xs font-normal text-muted">{t(emptyHint)}</span>}
     </label>
   );
 }

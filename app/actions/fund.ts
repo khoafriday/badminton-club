@@ -8,6 +8,7 @@ import { getPriceSettings, requireClub, todayInVietnam } from "@/lib/club";
 import { guestDebtors, loadDebtors } from "@/lib/debts";
 import { listPrepayMembers, priceUnpricedSlips } from "@/lib/fees";
 import { listCategories } from "@/lib/fund";
+import { getT } from "@/lib/i18n/server";
 import { parseVnd } from "@/lib/money";
 import { MAX_PREPAY_COUNT, oldDebts, planPrepay } from "@/lib/prepay";
 import { readForm } from "@/lib/schedule-forms";
@@ -87,7 +88,7 @@ async function collectMemberFees(userId: string, clubId: string, values: TxFormV
   const count = Number(values.months ?? "0");
   if (!values.member_id) return "Chọn thành viên.";
   if (!Number.isInteger(count) || count < 0 || count > MAX_PREPAY_COUNT) {
-    return `Số tháng đóng từ 0 đến ${MAX_PREPAY_COUNT}.`;
+    return (await getT())("Số tháng đóng từ 0 đến {max}.", { max: MAX_PREPAY_COUNT });
   }
   if (!/^\d{4}-\d{2}-\d{2}$/.test(values.occurred_on)) return "Chọn ngày.";
 

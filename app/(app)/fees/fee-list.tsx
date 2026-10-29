@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useOptimistic, useState, useTransition } from "react";
 import { setFeePaid, setFeeWaived, type FeeResult } from "@/app/actions/fees";
+import { useT } from "@/app/ui/locale";
 import { formatVnd, type FeeStatus } from "@/lib/billing";
 
 export type FeeItem = {
@@ -35,6 +36,7 @@ export function FeeList({ items }: { items: FeeItem[] }) {
   const [list, setStatus] = useOptimistic(items, (current, change: { id: string; status: FeeStatus }) =>
     current.map((f) => (f.id === change.id ? { ...f, status: change.status } : f)),
   );
+  const t = useT();
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
@@ -43,26 +45,26 @@ export function FeeList({ items }: { items: FeeItem[] }) {
     startTransition(async () => {
       setStatus({ id, status });
       const result = await action();
-      if (result.error) setError(result.error);
+      if (result.error) setError(t(result.error));
     });
   }
 
-  const t = totals(list);
+  const sum = totals(list);
   return (
     <>
       <section className="card mx-5 mt-3 grid grid-cols-3 gap-2 p-2.5 text-center">
         <div className="rounded-2xl bg-surface-2 px-1 py-2.5">
-          <p className="text-xs text-muted">Phải thu</p>
-          <p className="text-sm font-bold tracking-tight">{formatVnd(t.due)}</p>
+          <p className="text-xs text-muted">{t("Phải thu")}</p>
+          <p className="text-sm font-bold tracking-tight">{formatVnd(sum.due)}</p>
         </div>
         <div className="rounded-2xl bg-surface-2 px-1 py-2.5">
-          <p className="text-xs text-muted">Đã thu</p>
-          <p className="text-sm font-bold tracking-tight text-brand-700">{formatVnd(t.paid)}</p>
+          <p className="text-xs text-muted">{t("Đã thu")}</p>
+          <p className="text-sm font-bold tracking-tight text-brand-700">{formatVnd(sum.paid)}</p>
         </div>
         <div className="rounded-2xl bg-surface-2 px-1 py-2.5">
-          <p className="text-xs text-muted">Còn nợ</p>
-          <p className={`text-sm font-bold tracking-tight ${t.outstanding > 0 ? "text-red-600" : ""}`}>
-            {formatVnd(t.outstanding)}
+          <p className="text-xs text-muted">{t("Còn nợ")}</p>
+          <p className={`text-sm font-bold tracking-tight ${sum.outstanding > 0 ? "text-red-600" : ""}`}>
+            {formatVnd(sum.outstanding)}
           </p>
         </div>
       </section>
@@ -72,7 +74,7 @@ export function FeeList({ items }: { items: FeeItem[] }) {
         </p>
       )}
       {list.length === 0 ? (
-        <p className="px-5 py-10 text-center text-sm text-muted">Không có phiếu phí tháng nào trong tháng này.</p>
+        <p className="px-5 py-10 text-center text-sm text-muted">{t("Không có phiếu phí tháng nào trong tháng này.")}</p>
       ) : (
         <ul className="mx-5 mt-3 flex flex-col gap-2">
           {list.map((f) => (
@@ -81,11 +83,14 @@ export function FeeList({ items }: { items: FeeItem[] }) {
                 <p className="truncate font-semibold">{f.name}</p>
                 <p className="text-xs text-muted">
                   {f.billingMode === "per_session"
-                    ? "Vào giữa tháng, tính theo buổi"
+                    ? t("Vào giữa tháng, tính theo buổi")
                     : f.status === "waived"
-                      ? `${formatVnd(f.amountDue)} · ${WAIVE_LABEL[f.waiveReason ?? "manual"] ?? "Miễn"}`
+                      ? `${formatVnd(f.amountDue)} · ${t(WAIVE_LABEL[f.waiveReason ?? "manual"] ?? "Miễn")}`
                       : f.prepaid > 0
-                        ? `Đã đóng ${formatVnd(f.prepaid)}, ${f.status === "paid" ? "đã bù" : "bù thêm"} ${formatVnd(f.amountDue)}`
+                        ? t(f.status === "paid" ? "Đã đóng {prepaid}, đã bù {amount}" : "Đã đóng {prepaid}, bù thêm {amount}", {
+                            prepaid: formatVnd(f.prepaid),
+                            amount: formatVnd(f.amountDue),
+                          })
                         : formatVnd(f.amountDue)}
                 </p>
               </Link>
@@ -103,7 +108,7 @@ export function FeeList({ items }: { items: FeeItem[] }) {
                         f.status === "waived" ? "bg-cta text-on-cta" : "bg-surface-2 text-muted"
                       }`}
                     >
-                      Miễn
+                      {t("Miễn")}
                     </button>
                   )}
                   {f.status !== "waived" && (
@@ -116,7 +121,7 @@ export function FeeList({ items }: { items: FeeItem[] }) {
                         f.status === "paid" ? "bg-brand-50 text-brand-700" : "bg-red-50 text-red-600"
                       }`}
                     >
-                      {f.status === "paid" ? "Đã nộp" : "Chưa nộp"}
+                      {t(f.status === "paid" ? "Đã nộp" : "Chưa nộp")}
                     </button>
                   )}
                 </div>
