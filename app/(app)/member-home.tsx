@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { openPaymentQr } from "@/app/actions/payments";
-import { primaryButtonClass } from "@/app/ui/form";
 import { ClubSelect } from "@/app/ui/club-select";
 import { ThemeToggle } from "@/app/ui/theme-toggle";
 import { formatVnd } from "@/lib/billing";
@@ -91,10 +90,22 @@ export async function MemberHome({ viewer }: { viewer: Extract<Viewer, { kind: "
         <h2 className="section-title">Của bạn · {name}</h2>
       </div>
       <Card className={history.owed > 0 ? "border-red-200 bg-red-50" : ""}>
-        <p className="text-xs text-muted">Đang nợ</p>
-        <p className={`mt-1 text-2xl font-bold tracking-tight ${history.owed > 0 ? "text-red-600" : "text-brand-700"}`}>
-          {history.owed > 0 ? formatVnd(history.owed) : "Không nợ"}
-        </p>
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-xs text-muted">Đang nợ</p>
+            <p className={`mt-1 text-2xl font-bold tracking-tight ${history.owed > 0 ? "text-red-600" : "text-brand-700"}`}>
+              {history.owed > 0 ? formatVnd(history.owed) : "Không nợ"}
+            </p>
+          </div>
+          {/* QR chuyển khoản for the whole debt; shown once the club has an account to be paid into. */}
+          {history.owed > 0 && bank && (
+            <form action={openPaymentQr} className="shrink-0">
+              <button className="h-11 rounded-full bg-pink-700 px-4 text-sm font-bold text-page shadow-sm active:opacity-80">
+                Nộp tiền nợ
+              </button>
+            </form>
+          )}
+        </div>
         {debts.length > 0 && (
           <ul className="mt-2 flex flex-col gap-1 text-sm">
             {debts.map((d) => (
@@ -104,12 +115,6 @@ export async function MemberHome({ viewer }: { viewer: Extract<Viewer, { kind: "
               </li>
             ))}
           </ul>
-        )}
-        {/* QR chuyển khoản for the whole debt; shown once the club has an account to be paid into. */}
-        {history.owed > 0 && bank && (
-          <form action={openPaymentQr} className="mt-3">
-            <button className={`${primaryButtonClass} w-full`}>Đóng tiền nợ {formatVnd(history.owed)}</button>
-          </form>
         )}
       </Card>
       <div className="mx-5 grid grid-cols-2 gap-3">
