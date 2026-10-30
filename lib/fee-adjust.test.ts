@@ -5,7 +5,7 @@ vi.mock("server-only", () => ({}));
 let tables: Tables;
 vi.mock("./supabase", () => ({ db: () => fakeDb(tables) }));
 
-const { chargeFeeIncrease, listRefundable, refundMonths } = await import("./fee-adjust");
+const { chargeFeeIncrease, dropIssuedSlips, listRefundable, refundMonths, repriceIssuedSlips } = await import("./fee-adjust");
 const CLUB = "club-1";
 
 const slip = (id: string, month: string, status: string, amount: number, prepaid = 0) => ({
@@ -76,5 +76,28 @@ describe("charge the difference when the fee goes up", () => {
   it("changes nothing when the fee goes down", async () => {
     expect(await chargeFeeIncrease(CLUB, "2026-10", { male: 250000, female: 250000 })).toBe(0);
     expect(tables.membership_fees.every((s) => s.payment_status === "paid")).toBe(true);
+  });
+});
+
+describe("slips made ahead and not paid", () => {
+  beforeEach(() => {
+    tables.membership_fees.push(slip("jan", "2027-01", "unpaid", 300000), slip("feb", "2027-02", "unpaid", 300000));
+  });
+
+  it("take the new fee, up or down, and are not counted as months paid ahead", async () => {
+    expect(await chargeFeeIncrease(CLUB, "2026-10", { male: 350000, female: 250000 })).toBe(2);
+    expect(await repriceIssuedSlips(CLUB, "2026-10", { male: 350000, female: 250000 })).toBe(2);
+    expect(tables.membership_fees.find((s) => s.id === "jan")).toMatchObject({ amount_due: 350000, prepaid_amount: 0 });
+
+    expect(await repriceIssuedSlips(CLUB, "2026-10", { male: 280000, female: 250000 })).toBe(2);
+    expect(tables.membership_fees.find((s) => s.id === "feb")).toMatchObject({ amount_due: 280000, payment_status: "unpaid" });
+    // Paid ahead at the old fee, now owing the difference: left to chargeFeeIncrease.
+    expect(tables.membership_fees.find((s) => s.id === "nov")).toMatchObject({ amount_due: 50000, prepaid_amount: 300000 });
+  });
+
+  it("are removed when the member stops, without a refund", async () => {
+    await dropIssuedSlips(CLUB, "an", "2026-10");
+    expect(tables.membership_fees.map((s) => s.id)).toEqual(["oct", "nov", "dec"]);
+    expect((await listRefundable(CLUB, "an", "2026-10")).map((m) => m.month)).toEqual(["2026-11", "2026-12"]);
   });
 });

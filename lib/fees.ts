@@ -10,6 +10,7 @@ import {
   type MemberForBilling,
   type PriceSettings,
 } from "./billing";
+import { addMonths } from "./dates";
 import { oldDebts, type PrepayMember, type SlipState } from "./prepay";
 import { db } from "./supabase";
 
@@ -244,4 +245,87 @@ export async function listPrepayMembers(clubId: string, fromMonth: string): Prom
     }))
     .filter((m) => m.canPayAhead || oldDebts(m, fromMonth).length > 0)
     .sort((a, b) => a.name.localeCompare(b.name, "vi"));
+}
+
+export const MAX_ISSUE_MONTHS = 12;
+
+/** "Tạo phiếu trước": an active fixed member the admin can make slips of coming months for. */
+export type IssueMember = { id: string; name: string };
+
+export async function listIssueMembers(clubId: string): Promise<IssueMember[]> {
+  const { data, error } = await db()
+    .from("members")
+    .select("id, full_name")
+    .eq("club_id", clubId)
+    .eq("member_type", "fixed")
+    .eq("status", "active");
+  if (error) throw error;
+  return data
+    .map((m) => ({ id: m.id as string, name: m.full_name as string }))
+    .sort((a, b) => a.name.localeCompare(b.name, "vi"));
+}
+
+/**
+ * "Tạo phiếu trước": makes the slips of `count` months from `fromMonth` (YYYY-MM, after this month) for the chosen
+ * active fixed members, so a club can collect by quarter or longer. A month that already has a slip is left as it is.
+ * New slips are priced at today's fee, the same as the slip made when the month starts.
+ */
+export async function issueFutureSlips(
+  clubId: string,
+  memberIds: string[],
+  fromMonth: string,
+  count: number,
+  settings: PriceSettings,
+): Promise<{ created: number; skipped: number }> {
+  if (memberIds.length === 0 || count <= 0) return { created: 0, skipped: 0 };
+  const months = Array.from({ length: Math.min(count, MAX_ISSUE_MONTHS) }, (_, i) => `${addMonths(fromMonth, i)}-01`);
+
+  const [{ data: members, error }, { data: existing, error: slipError }] = await Promise.all([
+    db()
+      .from("members")
+      .select("id, gender, member_type, status, fixed_since, rejoined_on")
+      .eq("club_id", clubId)
+      .eq("member_type", "fixed")
+      .eq("status", "active")
+      .in("id", memberIds),
+    db()
+      .from("membership_fees")
+      .select("member_id, period_month")
+      .eq("club_id", clubId)
+      .in("member_id", memberIds)
+      .gte("period_month", months[0])
+      .lte("period_month", months[months.length - 1]),
+  ]);
+  if (error) throw error;
+  if (slipError) throw slipError;
+  const taken = new Set(existing.map((s) => `${s.member_id}:${s.period_month}`));
+
+  let skipped = 0;
+  const rows = (members as MemberRow[]).flatMap((m) =>
+    months.flatMap((period) => {
+      const slip = buildFeeSlip(toBilling(m), period, settings);
+      if (!slip) return [];
+      if (taken.has(`${m.id}:${slip.periodMonth}`)) {
+        skipped++;
+        return [];
+      }
+      return [
+        {
+          club_id: clubId,
+          member_id: m.id,
+          period_month: slip.periodMonth,
+          billing_mode: slip.billingMode,
+          amount_due: slip.amountDue,
+          prepaid_amount: 0,
+        },
+      ];
+    }),
+  );
+  if (rows.length > 0) {
+    const { error: insertError } = await db()
+      .from("membership_fees")
+      .upsert(rows, { onConflict: "member_id,period_month", ignoreDuplicates: true });
+    if (insertError) throw insertError;
+  }
+  return { created: rows.length, skipped };
 }

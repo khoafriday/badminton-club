@@ -1,7 +1,9 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { requireClub } from "@/lib/club";
+import { getPriceSettings, requireClub, todayInVietnam } from "@/lib/club";
+import { addMonths, formatMonthLabel } from "@/lib/dates";
+import { issueFutureSlips, MAX_ISSUE_MONTHS } from "@/lib/fees";
 import { db } from "@/lib/supabase";
 
 export type FeeResult = { error: string | null };
@@ -49,4 +51,35 @@ export async function setFeeWaived(feeId: string, waived: boolean): Promise<FeeR
   if (error) return FAILED;
   revalidatePath("/", "layout");
   return { error: null };
+}
+
+export type IssueState = { error: string | null; notice: string | null };
+
+/** "Tạo phiếu trước": slips of coming months, so members can be asked for a quarter or more at once. */
+export async function issueFeeSlips(_prev: IssueState, formData: FormData): Promise<IssueState> {
+  const { club } = await requireClub();
+  const thisMonth = todayInVietnam().slice(0, 7);
+  const fromMonth = String(formData.get("from_month") ?? "");
+  const count = Number(formData.get("count"));
+  const memberIds = formData.getAll("member").map(String);
+  if (!/^\d{4}-\d{2}$/.test(fromMonth) || fromMonth <= thisMonth || fromMonth > addMonths(thisMonth, MAX_ISSUE_MONTHS)) {
+    return { error: "Chọn tháng bắt đầu sau tháng này.", notice: null };
+  }
+  if (!Number.isInteger(count) || count < 1 || count > MAX_ISSUE_MONTHS) {
+    return { error: `Chọn từ 1 đến ${MAX_ISSUE_MONTHS} tháng.`, notice: null };
+  }
+  if (memberIds.length === 0) return { error: "Chọn ít nhất 1 thành viên.", notice: null };
+
+  let result;
+  try {
+    result = await issueFutureSlips(club.id, memberIds, fromMonth, count, await getPriceSettings(club.id));
+  } catch {
+    return { error: FAILED.error, notice: null };
+  }
+  revalidatePath("/", "layout");
+  const lastMonth = addMonths(fromMonth, count - 1);
+  const range =
+    count === 1 ? formatMonthLabel(fromMonth) : `${formatMonthLabel(fromMonth)} đến ${formatMonthLabel(lastMonth)}`;
+  const skipped = result.skipped > 0 ? ` Bỏ qua ${result.skipped} phiếu đã có.` : "";
+  return { error: null, notice: `Đã tạo ${result.created} phiếu cho ${range.toLowerCase()}.${skipped}` };
 }
