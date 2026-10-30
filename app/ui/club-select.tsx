@@ -3,6 +3,7 @@
 import { useOptimistic, useTransition } from "react";
 import { switchClub } from "@/app/actions/settings";
 import { Spinner } from "./loading";
+import { useT } from "./locale";
 
 type Props = {
   clubs: { id: string; name: string }[];
@@ -16,13 +17,14 @@ const VARIANT_CLASS = {
 };
 
 export function ClubSelect({ clubs, currentId, variant }: Props) {
+  const t = useT();
   const [pending, startTransition] = useTransition();
   // Shows the picked club straight away while the screens reload with its data.
   const [selected, setSelected] = useOptimistic(currentId);
   return (
     <span className="flex min-w-0 items-center gap-2">
       <select
-        aria-label="Chọn CLB"
+        aria-label={t("Chọn CLB")}
         value={selected}
         disabled={pending}
         onChange={(e) => {

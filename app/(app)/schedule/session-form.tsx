@@ -4,6 +4,7 @@ import { useActionState, useState } from "react";
 import type { SessionFormState } from "@/app/actions/schedule";
 import { CourtSelect, type CourtOption } from "@/app/ui/court-select";
 import { inputClass, labelClass, primaryButtonClass, selectClass } from "@/app/ui/form";
+import { useT } from "@/app/ui/locale";
 import type { SessionFormValues } from "@/lib/schedule-forms";
 
 type Props = {
@@ -19,22 +20,23 @@ type Props = {
 type ClubOption = { id: string; name: string; court_id: string | null };
 
 export function SessionForm({ action, initialValues, courts, submitLabel, clubs }: Props) {
+  const t = useT();
   const [state, formAction, pending] = useActionState(action, { error: null, values: initialValues });
   const v = state.values;
   return (
     <form key={JSON.stringify(v)} action={formAction} className="flex flex-col gap-4">
       {clubs && <ClubAndCourt clubs={clubs} courts={courts} initialClubId={v.club_id ?? ""} initialCourtId={v.court_id} />}
       <label className={labelClass}>
-        Ngày
+        {t("Ngày")}
         <input type="date" name="session_date" defaultValue={v.session_date} required className={inputClass} />
       </label>
       <div className="grid grid-cols-2 gap-3">
         <label className={labelClass}>
-          Bắt đầu
+          {t("Bắt đầu", { context: "time" })}
           <input type="time" name="start_time" defaultValue={v.start_time} required className={inputClass} />
         </label>
         <label className={labelClass}>
-          Kết thúc
+          {t("Kết thúc")}
           <input type="time" name="end_time" defaultValue={v.end_time} required className={inputClass} />
         </label>
       </div>
@@ -47,14 +49,14 @@ export function SessionForm({ action, initialValues, courts, submitLabel, clubs 
         />
       )}
       <label className={labelClass}>
-        Ghi chú
+        {t("Ghi chú")}
         <input name="note" defaultValue={v.note} className={inputClass} />
       </label>
       <p aria-live="polite" className="min-h-5 text-sm text-red-600">
-        {state.error}
+        {state.error && t(state.error)}
       </p>
       <button disabled={pending} className={primaryButtonClass}>
-        {pending ? "Đang lưu..." : submitLabel}
+        {t(pending ? "Đang lưu..." : submitLabel)}
       </button>
     </form>
   );

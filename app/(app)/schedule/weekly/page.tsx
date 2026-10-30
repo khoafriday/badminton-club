@@ -6,19 +6,22 @@ import { Fab } from "@/app/ui/fab";
 import { Loading } from "@/app/ui/loading";
 import { PageHeader } from "@/app/ui/page-header";
 import { loadClub } from "@/lib/club";
-import { WEEKDAY_LABEL, formatTime } from "@/lib/dates";
+import { formatTime, weekdayLabel, weekdayShort } from "@/lib/dates";
+import { translator } from "@/lib/i18n";
+import { getLocale } from "@/lib/i18n/server";
 import { listSchedules } from "@/lib/schedule";
 
 async function WeeklyContent() {
   const { club } = await loadClub();
   if (!club) return <NoClub />;
-  const schedules = await listSchedules(club.id);
+  const [schedules, locale] = await Promise.all([listSchedules(club.id), getLocale()]);
+  const t = translator(locale);
 
   return (
     <>
-      <p className="px-5 pt-1 text-sm text-muted">App tự tạo buổi cho 4 tuần tới theo các khung giờ này.</p>
+      <p className="px-5 pt-1 text-sm text-muted">{t("App tự tạo buổi cho 4 tuần tới theo các khung giờ này.")}</p>
       {schedules.length === 0 ? (
-        <p className="px-5 py-10 text-center text-sm text-muted">Chưa có lịch cố định. Bấm + để thêm.</p>
+        <p className="px-5 py-10 text-center text-sm text-muted">{t("Chưa có lịch cố định. Bấm + để thêm.")}</p>
       ) : (
         <ul className="flex flex-col gap-2 px-5 py-4">
           {schedules.map((s) => (
@@ -33,23 +36,24 @@ async function WeeklyContent() {
                   }`}
                   aria-hidden
                 >
-                  {WEEKDAY_LABEL[s.weekday].replace("Thứ ", "T").replace("Chủ nhật", "CN")}
+                  {weekdayShort(s.weekday, locale)}
                 </span>
                 <span className={`flex-1 ${s.is_active ? "" : "text-faint"}`}>
-                  <span className="font-bold">{WEEKDAY_LABEL[s.weekday]} hằng tuần</span>
+                  <span className="font-bold">{t("{day} hằng tuần", { day: weekdayLabel(s.weekday, locale) })}</span>
                   <span className="block text-xs text-muted">
-                    {formatTime(s.start_time)} đến {formatTime(s.end_time)} · {s.court_name ?? club.court_name ?? "Chưa có sân"}
+                    {formatTime(s.start_time)} {t("đến")} {formatTime(s.end_time)} ·{" "}
+                    {s.court_name ?? club.court_name ?? t("Chưa có sân")}
                   </span>
                 </span>
                 {!s.is_active && (
-                  <span className="rounded-full bg-surface-2 px-2.5 py-1 text-xs font-bold text-muted">Tạm ngưng</span>
+                  <span className="rounded-full bg-surface-2 px-2.5 py-1 text-xs font-bold text-muted">{t("Tạm ngưng")}</span>
                 )}
               </Link>
             </li>
           ))}
         </ul>
       )}
-      <Fab href="/schedule/weekly/new" label="Thêm khung giờ" />
+      <Fab href="/schedule/weekly/new" label={t("Thêm khung giờ")} />
     </>
   );
 }

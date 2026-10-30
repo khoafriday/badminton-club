@@ -10,6 +10,7 @@ import { formatVnd } from "@/lib/billing";
 import { AUTO_CATEGORY_CODES } from "@/lib/categories";
 import { loadClub } from "@/lib/club";
 import { listCategories } from "@/lib/fund";
+import { getT } from "@/lib/i18n/server";
 import { db } from "@/lib/supabase";
 import { ClubBadge, TxForm } from "../tx-form";
 
@@ -31,7 +32,7 @@ async function EditTx({ params }: { params: Promise<{ id: string }> }) {
   // Lines the app wrote (a refund, a payment made before a fee rise) are kept as they are.
   const code = (tx.transaction_categories as unknown as { code: string | null } | null)?.code ?? "";
   if (AUTO_CATEGORY_CODES.includes(code)) notFound();
-  const categories = await listCategories(club.id);
+  const [categories, t] = await Promise.all([listCategories(club.id), getT()]);
 
   return (
     <div className="flex flex-col gap-4 px-5 py-6">
@@ -52,10 +53,10 @@ async function EditTx({ params }: { params: Promise<{ id: string }> }) {
       </Fresh>
       <form action={deleteTransaction.bind(null, tx.id)}>
         <ConfirmButton
-          message="Xóa khoản này khỏi sổ thu chi?"
+          message={t("Xóa khoản này khỏi sổ thu chi?")}
           className="h-11 w-full rounded-full border border-red-200 text-sm font-semibold text-red-600"
         >
-          Xóa khoản này
+          {t("Xóa khoản này")}
         </ConfirmButton>
       </form>
     </div>

@@ -2,12 +2,16 @@
 
 import { useActionState } from "react";
 import { login, type LoginState } from "@/app/actions/auth";
+import { Bi } from "@/app/ui/bi";
 import { inputClass, labelClass, primaryButtonClass } from "@/app/ui/form";
+import { useShellT } from "@/app/ui/locale";
 
 const initialState: LoginState = { error: null, id: "" };
 
 export function LoginForm() {
   const [state, formAction, pending] = useActionState(login, initialState);
+  // The login page is static, so its text cannot wait for the request (see app/ui/bi.tsx).
+  const t = useShellT();
 
   return (
     <form action={formAction} className="flex flex-col gap-4">
@@ -23,7 +27,7 @@ export function LoginForm() {
         />
       </label>
       <label className={labelClass}>
-        Mật khẩu
+        <Bi text="Mật khẩu" />
         <input
           name="password"
           type="password"
@@ -33,10 +37,10 @@ export function LoginForm() {
         />
       </label>
       <p aria-live="polite" className="min-h-5 text-sm text-red-600">
-        {state.error}
+        {state.error && t(state.error)}
       </p>
       <button disabled={pending} className={primaryButtonClass}>
-        {pending ? "Đang đăng nhập..." : "Đăng nhập"}
+        {pending ? t("Đang đăng nhập...") : <Bi text="Đăng nhập" />}
       </button>
     </form>
   );

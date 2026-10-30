@@ -10,6 +10,8 @@ import { formatVnd, periodRange, type FundPeriod } from "@/lib/billing";
 import { loadViewer, todayInVietnam } from "@/lib/club";
 import { addMonths, formatMonthLabel, formatShortDate } from "@/lib/dates";
 import { listTransactions, summarize } from "@/lib/fund";
+import { translator, type Locale, type T } from "@/lib/i18n";
+import { getLocale } from "@/lib/i18n/server";
 
 const PERIODS: { key: FundPeriod; label: string }[] = [
   { key: "month", label: "Tháng" },
@@ -21,15 +23,17 @@ function fundHref(period: FundPeriod, date: string) {
   return period === "all" ? "/fund?period=all" : `/fund?period=${period}&date=${date}`;
 }
 
-function periodLabel(period: FundPeriod, date: string) {
-  if (period === "month") return formatMonthLabel(date.slice(0, 7));
-  if (period === "quarter") return `Quý ${Math.floor((Number(date.slice(5, 7)) - 1) / 3) + 1}/${date.slice(0, 4)}`;
-  return "Từ trước tới nay";
+function periodLabel(period: FundPeriod, date: string, locale: Locale, t: T) {
+  if (period === "month") return formatMonthLabel(date.slice(0, 7), locale);
+  if (period === "quarter") {
+    return t("Quý {quarter}/{year}", { quarter: Math.floor((Number(date.slice(5, 7)) - 1) / 3) + 1, year: date.slice(0, 4) });
+  }
+  return t("Từ trước tới nay");
 }
 
 async function FundContent({ searchParams }: { searchParams: PageProps<"/fund">["searchParams"] }) {
-  const sp = await searchParams;
-  const viewer = await loadViewer();
+  const [sp, viewer, locale] = await Promise.all([searchParams, loadViewer(), getLocale()]);
+  const t = translator(locale);
   const { club } = viewer;
   if (!club) return <NoClub />;
   // A member sees every line but changes nothing, and does not see who owes (TK-4).
@@ -52,11 +56,15 @@ async function FundContent({ searchParams }: { searchParams: PageProps<"/fund">[
   return (
     <>
       <section className="hero mx-5 mt-1 p-5">
-        <p className="text-xs opacity-80">Quỹ tồn hiện tại</p>
+        <p className="text-xs opacity-80">{t("Quỹ tồn hiện tại")}</p>
         <p className="mt-1 text-[34px] leading-tight font-extrabold tracking-tight">{formatVnd(allTime.balance)}</p>
         <p className="mt-1 flex gap-4 text-xs opacity-85">
-          <span>↑ Thu {formatVnd(allTime.income)}</span>
-          <span>↓ Chi {formatVnd(allTime.expense)}</span>
+          <span>
+            ↑ {t("Thu")} {formatVnd(allTime.income)}
+          </span>
+          <span>
+            ↓ {t("Chi")} {formatVnd(allTime.expense)}
+          </span>
         </p>
       </section>
 
@@ -67,13 +75,13 @@ async function FundContent({ searchParams }: { searchParams: PageProps<"/fund">[
               href="/fund/new?type=income"
               className="flex h-12 items-center justify-center rounded-full bg-brand-600 text-sm font-bold text-white"
             >
-              + Ghi thu
+              + {t("Ghi thu")}
             </Link>
             <Link
               href="/fund/new?type=expense"
               className="flex h-12 items-center justify-center rounded-full bg-cta text-sm font-bold text-on-cta"
             >
-              − Ghi chi
+              − {t("Ghi chi")}
             </Link>
           </div>
           <div className="mt-3 flex gap-2 px-5">
@@ -81,13 +89,13 @@ async function FundContent({ searchParams }: { searchParams: PageProps<"/fund">[
               href="/fees"
               className="rounded-full border border-line-strong bg-surface px-4 py-2 text-sm font-semibold"
             >
-              Phí tháng ›
+              {t("Phí tháng")} ›
             </Link>
             <Link
               href="/debts"
               className="rounded-full border border-line-strong bg-surface px-4 py-2 text-sm font-semibold"
             >
-              Người còn nợ ›
+              {t("Người còn nợ")} ›
             </Link>
           </div>
         </>
@@ -101,7 +109,7 @@ async function FundContent({ searchParams }: { searchParams: PageProps<"/fund">[
               href={fundHref(p.key, date)}
               className={`flex-1 rounded-full py-2 text-center ${p.key === period ? "bg-surface text-ink shadow-card" : "text-muted"}`}
             >
-              {p.label}
+              {t(p.label)}
             </Link>
           ))}
         </div>
@@ -111,19 +119,19 @@ async function FundContent({ searchParams }: { searchParams: PageProps<"/fund">[
           ) : (
             <Link
               href={fundHref(period, prev)}
-              aria-label="Trước"
+              aria-label={t("Trước")}
               className="flex size-10 items-center justify-center text-2xl"
             >
               ‹
             </Link>
           )}
-          <p className="font-bold">{periodLabel(period, date)}</p>
+          <p className="font-bold">{periodLabel(period, date, locale, t)}</p>
           {period === "all" ? (
             <span className="size-10" />
           ) : (
             <Link
               href={fundHref(period, next)}
-              aria-label="Sau"
+              aria-label={t("Sau")}
               className="flex size-10 items-center justify-center text-2xl"
             >
               ›
@@ -132,22 +140,22 @@ async function FundContent({ searchParams }: { searchParams: PageProps<"/fund">[
         </div>
         <div className="card grid grid-cols-3 gap-2 p-2.5 text-center">
           <div className="rounded-2xl bg-surface-2 px-1 py-2.5">
-            <p className="text-xs text-muted">Tổng thu</p>
+            <p className="text-xs text-muted">{t("Tổng thu")}</p>
             <p className="text-sm font-bold tracking-tight text-brand-700">{formatVnd(sum.income)}</p>
           </div>
           <div className="rounded-2xl bg-surface-2 px-1 py-2.5">
-            <p className="text-xs text-muted">Tổng chi</p>
+            <p className="text-xs text-muted">{t("Tổng chi")}</p>
             <p className="text-sm font-bold tracking-tight text-red-600">{formatVnd(sum.expense)}</p>
           </div>
           <div className="rounded-2xl bg-surface-2 px-1 py-2.5">
-            <p className="text-xs text-muted">Chênh lệch</p>
+            <p className="text-xs text-muted">{t("Chênh lệch")}</p>
             <p className="text-sm font-bold tracking-tight">{formatVnd(sum.balance)}</p>
           </div>
         </div>
       </div>
 
       {inRange.length === 0 ? (
-        <p className="px-5 py-10 text-center text-sm text-muted">Chưa có khoản thu chi nào trong kỳ này.</p>
+        <p className="px-5 py-10 text-center text-sm text-muted">{t("Chưa có khoản thu chi nào trong kỳ này.")}</p>
       ) : (
         <ul className="mt-3 flex flex-col gap-2 px-5">
           {inRange.map((r) => (
@@ -175,12 +183,12 @@ async function FundContent({ searchParams }: { searchParams: PageProps<"/fund">[
                   {r.type === "income" ? "↑" : "↓"}
                 </span>
                 <span className="min-w-0 flex-1">
-                  <span className="block truncate text-sm font-semibold">{r.category}</span>
+                  <span className="block truncate text-sm font-semibold">{t(r.category)}</span>
                   {r.description && <span className="block truncate text-xs text-ink">{r.description}</span>}
                   <span className="block truncate text-xs text-muted">
                     {[
                       formatShortDate(r.occurredOn),
-                      r.payer ?? (r.source !== "manual" ? "Tự ghi khi bấm Đã nộp" : r.auto ? "App tự ghi" : null),
+                      r.payer ?? (r.source !== "manual" ? t("Tự ghi khi bấm Đã nộp") : r.auto ? t("App tự ghi") : null),
                     ]
                       .filter(Boolean)
                       .join(" · ")}

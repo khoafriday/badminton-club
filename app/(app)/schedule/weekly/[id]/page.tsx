@@ -8,6 +8,7 @@ import { PageHeader } from "@/app/ui/page-header";
 import { loadClub } from "@/lib/club";
 import { listCourts } from "@/lib/courts";
 import { formatTime } from "@/lib/dates";
+import { getT } from "@/lib/i18n/server";
 import { listSchedules } from "@/lib/schedule";
 import { ScheduleForm } from "../../schedule-form";
 
@@ -15,7 +16,7 @@ async function EditSchedule({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const { userId, club } = await loadClub();
   if (!club) notFound();
-  const [schedules, courts] = await Promise.all([listSchedules(club.id), listCourts(userId)]);
+  const [schedules, courts, t] = await Promise.all([listSchedules(club.id), listCourts(userId), getT()]);
   const schedule = schedules.find((s) => s.id === id);
   if (!schedule) notFound();
 
@@ -35,7 +36,7 @@ async function EditSchedule({ params }: { params: Promise<{ id: string }> }) {
         />
       </Fresh>
       <p className="text-xs text-muted">
-        Sửa giờ sẽ cập nhật các buổi sắp tới chưa điểm danh. Buổi đã điểm danh hoặc đã hủy giữ nguyên.
+        {t("Sửa giờ sẽ cập nhật các buổi sắp tới chưa điểm danh. Buổi đã điểm danh hoặc đã hủy giữ nguyên.")}
       </p>
       <form action={setScheduleActive.bind(null, schedule.id, !schedule.is_active)}>
         <button
@@ -43,7 +44,7 @@ async function EditSchedule({ params }: { params: Promise<{ id: string }> }) {
             schedule.is_active ? "border-amber-300 text-amber-700" : "border-brand-600 text-brand-700"
           }`}
         >
-          {schedule.is_active ? "Tạm ngưng khung giờ này" : "Bật lại khung giờ này"}
+          {t(schedule.is_active ? "Tạm ngưng khung giờ này" : "Bật lại khung giờ này")}
         </button>
       </form>
     </div>

@@ -4,11 +4,13 @@ import { logout } from "@/app/actions/auth";
 import { switchClub } from "@/app/actions/settings";
 import { NoClub } from "@/app/clubs/no-club";
 import { RequireDatabase } from "@/app/ui/database-missing";
+import { Bi } from "@/app/ui/bi";
 import { Loading } from "@/app/ui/loading";
 import { PageHeader } from "@/app/ui/page-header";
 import { formatVnd } from "@/lib/billing";
 import { getPriceSettings, listClubs, loadClub } from "@/lib/club";
 import { listCourts } from "@/lib/courts";
+import { getT } from "@/lib/i18n/server";
 import { formatVndInput } from "@/lib/money";
 import { getBankAccount } from "@/lib/payments";
 import { ArchiveClubButton, BankAccountForm, ClubInfoForm, PricesForm } from "./settings-forms";
@@ -23,11 +25,11 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 }
 
 /** Separates the current club's settings (above) from the ones shared by every club (below). */
-function SettingsDivider() {
+function SettingsDivider({ label }: { label: string }) {
   return (
     <div className="flex items-center gap-3 px-5 pt-4 pb-2">
       <hr className="flex-1 border-line-strong" />
-      <span className="text-[11px] font-bold tracking-wider text-faint uppercase">Cấu hình chung</span>
+      <span className="text-[11px] font-bold tracking-wider text-faint uppercase">{label}</span>
       <hr className="flex-1 border-line-strong" />
     </div>
   );
@@ -36,29 +38,30 @@ function SettingsDivider() {
 async function SettingsContent() {
   const { userId, club } = await loadClub();
   if (!club) return <NoClub />;
-  const [prices, clubs, courts, bank] = await Promise.all([
+  const [prices, clubs, courts, bank, t] = await Promise.all([
     getPriceSettings(club.id),
     listClubs(userId),
     listCourts(userId),
     getBankAccount(club.id),
+    getT(),
   ]);
 
   return (
     <>
-      <Section title="Chọn CLB">
+      <Section title={t("Chọn CLB")}>
         <ul className="flex flex-col gap-2">
           {clubs.map((c) => (
             <li key={c.id}>
               {c.id === club.id ? (
                 <div className="flex h-12 items-center justify-between rounded-2xl border-2 border-brand-600 px-4">
                   <span className="font-semibold">{c.name}</span>
-                  <span className="rounded-full bg-brand-50 px-2.5 py-1 text-xs font-bold text-brand-700">Đang dùng</span>
+                  <span className="rounded-full bg-brand-50 px-2.5 py-1 text-xs font-bold text-brand-700">{t("Đang dùng")}</span>
                 </div>
               ) : (
                 <form action={switchClub.bind(null, c.id)}>
                   <button className="flex h-12 w-full items-center justify-between rounded-2xl bg-surface-2 px-4 text-left">
                     <span className="font-semibold">{c.name}</span>
-                    <span className="text-xs text-muted">Chuyển sang ›</span>
+                    <span className="text-xs text-muted">{t("Chuyển sang")} ›</span>
                   </button>
                 </form>
               )}
@@ -69,16 +72,16 @@ async function SettingsContent() {
           href="/settings/clubs/new"
           className="flex h-11 items-center justify-center rounded-full border border-line-strong bg-surface text-sm font-bold text-ink"
         >
-          + Tạo CLB mới
+          + {t("Tạo CLB mới")}
         </Link>
       </Section>
 
-      <Section title="Thông tin CLB">
+      <Section title={t("Thông tin CLB")}>
         <ClubInfoForm key={club.id} courts={courts} initial={{ name: club.name, court_id: club.court_id ?? "" }} />
         <ArchiveClubButton clubName={club.name} />
       </Section>
 
-      <Section title="Giá tham gia">
+      <Section title={t("Giá tham gia")}>
         {/* key: a club switch must reset the form, not keep the last club's values. */}
         <PricesForm
           key={club.id}
@@ -91,15 +94,15 @@ async function SettingsContent() {
         />
       </Section>
 
-      <Section title="Tài khoản nhận tiền">
+      <Section title={t("Tài khoản nhận tiền")}>
         <BankAccountForm
           key={club.id}
           initial={{ bank_account_no: bank?.accountNo ?? "", bank_account_name: bank?.accountName ?? "" }}
         />
       </Section>
 
-      <SettingsDivider />
-      <Section title="Sân cầu">
+      <SettingsDivider label={t("Cấu hình chung")} />
+      <Section title={t("Sân cầu")}>
         {courts.length > 0 && (
           <ul className="flex flex-col gap-2">
             {courts.map((c) => (
@@ -112,16 +115,18 @@ async function SettingsContent() {
                     <span className="block font-semibold">
                       {c.name}
                       {c.id === club.court_id && (
-                        <span className="ml-2 rounded-full bg-brand-50 px-2 py-0.5 text-[11px] font-bold text-brand-700">CLB này</span>
+                        <span className="ml-2 rounded-full bg-brand-50 px-2 py-0.5 text-[11px] font-bold text-brand-700">
+                          {t("CLB này")}
+                        </span>
                       )}
                     </span>
                     <span className="block truncate text-xs text-muted">
-                      {c.address ?? "Chưa có địa chỉ"}
-                      {c.max_players && ` · Tối đa ${c.max_players} người`}
+                      {c.address ?? t("Chưa có địa chỉ")}
+                      {c.max_players && ` · ${t("Tối đa {count} người", { count: c.max_players })}`}
                     </span>
                   </span>
                   <span className="shrink-0 text-sm font-bold">
-                    {c.price > 0 ? `${formatVnd(c.price)}/giờ` : "Chưa có giá"}
+                    {c.price > 0 ? t("{price}/giờ", { price: formatVnd(c.price) }) : t("Chưa có giá")}
                   </span>
                 </Link>
               </li>
@@ -132,7 +137,7 @@ async function SettingsContent() {
           href="/settings/courts/new"
           className="flex h-11 items-center justify-center rounded-full border border-line-strong bg-surface text-sm font-bold text-ink"
         >
-          + Thêm sân
+          + {t("Thêm sân")}
         </Link>
       </Section>
     </>
@@ -150,7 +155,9 @@ export default function SettingsPage() {
       </Suspense>
       <div className="px-5 pt-2 pb-6">
         <form action={logout}>
-          <button className="card h-12 w-full text-sm font-bold text-red-600">Đăng xuất</button>
+          <button className="card h-12 w-full text-sm font-bold text-red-600">
+            <Bi text="Đăng xuất" />
+          </button>
         </form>
       </div>
     </main>

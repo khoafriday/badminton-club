@@ -6,6 +6,7 @@ import { z } from "zod";
 import { getPriceSettings, loadViewer, requireClub, requireUser, todayInVietnam } from "@/lib/club";
 import { chargeFeeIncrease, repriceIssuedSlips } from "@/lib/fee-adjust";
 import { getCourt, setClubCourt } from "@/lib/courts";
+import { getT } from "@/lib/i18n/server";
 import { parseVnd } from "@/lib/money";
 import { db } from "@/lib/supabase";
 
@@ -64,16 +65,19 @@ export async function updatePrices(_prev: PricesState, formData: FormData): Prom
     .from("club_settings")
     .upsert({ club_id: club.id, ...amounts, updated_at: new Date().toISOString() }, { onConflict: "club_id" });
   if (error) return { error: "Không lưu được. Thử lại sau.", saved: false, values };
+  const t = await getT();
   const notices: string[] = [];
   const thisMonth = todayInVietnam().slice(0, 7);
   const newFees = { male: amounts.monthly_fee_male, female: amounts.monthly_fee_female };
   if (amounts.monthly_fee_male > before.monthlyFeeMale || amounts.monthly_fee_female > before.monthlyFeeFemale) {
     const changed = await chargeFeeIncrease(club.id, thisMonth, newFees);
-    if (changed > 0) notices.push(`${changed} tháng đã đóng trước giờ còn nợ phần chênh lệch. Xem ở Người còn nợ.`);
+    if (changed > 0) {
+      notices.push(t("{count} tháng đã đóng trước giờ còn nợ phần chênh lệch. Xem ở Người còn nợ.", { count: changed }));
+    }
   }
   if (amounts.monthly_fee_male !== before.monthlyFeeMale || amounts.monthly_fee_female !== before.monthlyFeeFemale) {
     const repriced = await repriceIssuedSlips(club.id, thisMonth, newFees);
-    if (repriced > 0) notices.push(`${repriced} phiếu tạo trước chưa nộp đã đổi theo phí mới.`);
+    if (repriced > 0) notices.push(t("{count} phiếu tạo trước chưa nộp đã đổi theo phí mới.", { count: repriced }));
   }
   const notice = notices.length > 0 ? notices.join(" ") : null;
   revalidatePath("/", "layout");

@@ -9,6 +9,8 @@ import { loadAttendance } from "@/lib/attendance";
 import { getPriceSettings, loadClub, todayInVietnam } from "@/lib/club";
 import { ensureFeeSlips } from "@/lib/fees";
 import { formatDayLabel, formatTime } from "@/lib/dates";
+import { translator } from "@/lib/i18n";
+import { getLocale } from "@/lib/i18n/server";
 import { getSession, sessionsWithData } from "@/lib/schedule";
 import { Attendance } from "./attendance";
 import { CancelSessionForm, DeleteSessionButton } from "./session-actions";
@@ -24,7 +26,12 @@ async function SessionDetail({ params }: { params: Promise<{ id: string }> }) {
   if (!session) notFound();
   const cancelled = session.status === "cancelled";
   await ensureFeeSlips(club.id, session.session_date, todayInVietnam(), settings);
-  const [lists, used] = await Promise.all([loadAttendance(club.id, session, settings), sessionsWithData([session.id])]);
+  const [lists, used, locale] = await Promise.all([
+    loadAttendance(club.id, session, settings),
+    sessionsWithData([session.id]),
+    getLocale(),
+  ]);
+  const t = translator(locale);
   const hasData = used.size > 0;
 
   return (
@@ -33,11 +40,11 @@ async function SessionDetail({ params }: { params: Promise<{ id: string }> }) {
         <div className="flex items-start justify-between gap-3">
           <div>
             <p className={`text-[22px] font-bold tracking-tight ${cancelled ? "text-faint line-through" : ""}`}>
-              {formatDayLabel(session.session_date)}
+              {formatDayLabel(session.session_date, locale)}
             </p>
             <p className="text-sm text-muted">
-              {formatTime(session.start_time)} đến {formatTime(session.end_time)} ·{" "}
-              {session.court_name ?? club.court_name ?? "Chưa có sân"}
+              {formatTime(session.start_time)} {t("đến")} {formatTime(session.end_time)} ·{" "}
+              {session.court_name ?? club.court_name ?? t("Chưa có sân")}
             </p>
             {session.note && <p className="mt-1 text-sm text-muted">{session.note}</p>}
           </div>
@@ -46,11 +53,11 @@ async function SessionDetail({ params }: { params: Promise<{ id: string }> }) {
               cancelled ? "bg-red-100 text-red-700" : "bg-brand-100 text-brand-700"
             }`}
           >
-            {cancelled ? "Hủy" : "Active"}
+            {cancelled ? t("Hủy") : "Active"}
           </span>
         </div>
         {cancelled && session.cancel_reason && (
-          <p className="rounded-2xl bg-red-50 p-3 text-sm text-red-700">Lý do hủy: {session.cancel_reason}</p>
+          <p className="rounded-2xl bg-red-50 p-3 text-sm text-red-700">{t("Lý do hủy: {reason}", { reason: session.cancel_reason })}</p>
         )}
       </div>
 
@@ -67,19 +74,19 @@ async function SessionDetail({ params }: { params: Promise<{ id: string }> }) {
 
       <details className="card mx-5 mt-8">
         <summary className="cursor-pointer px-4 py-3 text-sm font-semibold text-muted">
-          Quản lý buổi: sửa, hủy, xóa
+          {t("Quản lý buổi: sửa, hủy, xóa")}
         </summary>
         <div className="flex flex-col gap-2 px-4 pb-4">
           <Link
             href={`/sessions/${session.id}/edit`}
             className="flex h-11 items-center justify-center rounded-full bg-cta text-sm font-semibold text-on-cta"
           >
-            Sửa ngày, giờ, sân
+            {t("Sửa ngày, giờ, sân")}
           </Link>
           {cancelled ? (
             <form action={setSessionCancelled.bind(null, session.id, false)}>
               <button className="h-11 w-full rounded-full border border-brand-600 text-sm font-semibold text-brand-700">
-                Khôi phục buổi (Active)
+                {t("Khôi phục buổi (Active)")}
               </button>
             </form>
           ) : (

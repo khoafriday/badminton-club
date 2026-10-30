@@ -4,6 +4,8 @@ import { revalidatePath } from "next/cache";
 import { getPriceSettings, requireClub, todayInVietnam } from "@/lib/club";
 import { addMonths, formatMonthLabel } from "@/lib/dates";
 import { issueFutureSlips, MAX_ISSUE_MONTHS } from "@/lib/fees";
+import { getLocale } from "@/lib/i18n/server";
+import { translator } from "@/lib/i18n";
 import { db } from "@/lib/supabase";
 
 export type FeeResult = { error: string | null };
@@ -62,11 +64,13 @@ export async function issueFeeSlips(_prev: IssueState, formData: FormData): Prom
   const fromMonth = String(formData.get("from_month") ?? "");
   const count = Number(formData.get("count"));
   const memberIds = formData.getAll("member").map(String);
+  const locale = await getLocale();
+  const t = translator(locale);
   if (!/^\d{4}-\d{2}$/.test(fromMonth) || fromMonth <= thisMonth || fromMonth > addMonths(thisMonth, MAX_ISSUE_MONTHS)) {
     return { error: "Chọn tháng bắt đầu sau tháng này.", notice: null };
   }
   if (!Number.isInteger(count) || count < 1 || count > MAX_ISSUE_MONTHS) {
-    return { error: `Chọn từ 1 đến ${MAX_ISSUE_MONTHS} tháng.`, notice: null };
+    return { error: t("Chọn từ 1 đến {max} tháng.", { max: MAX_ISSUE_MONTHS }), notice: null };
   }
   if (memberIds.length === 0) return { error: "Chọn ít nhất 1 thành viên.", notice: null };
 
@@ -78,8 +82,12 @@ export async function issueFeeSlips(_prev: IssueState, formData: FormData): Prom
   }
   revalidatePath("/", "layout");
   const lastMonth = addMonths(fromMonth, count - 1);
-  const range =
-    count === 1 ? formatMonthLabel(fromMonth) : `${formatMonthLabel(fromMonth)} đến ${formatMonthLabel(lastMonth)}`;
-  const skipped = result.skipped > 0 ? ` Bỏ qua ${result.skipped} phiếu đã có.` : "";
-  return { error: null, notice: `Đã tạo ${result.created} phiếu cho ${range.toLowerCase()}.${skipped}` };
+  const from = formatMonthLabel(fromMonth, locale);
+  const range = count === 1 ? from : `${from} ${t("đến")} ${formatMonthLabel(lastMonth, locale)}`;
+  const created = t("Đã tạo {count} phiếu cho {range}.", {
+    count: result.created,
+    range: locale === "en" ? range : range.toLowerCase(),
+  });
+  const skipped = result.skipped > 0 ? ` ${t("Bỏ qua {count} phiếu đã có.", { count: result.skipped })}` : "";
+  return { error: null, notice: created + skipped };
 }

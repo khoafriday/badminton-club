@@ -3,7 +3,9 @@
 import { useActionState, useState } from "react";
 import { issueFeeSlips } from "@/app/actions/fees";
 import { labelClass, primaryButtonClass, selectClass } from "@/app/ui/form";
+import { useLocale } from "@/app/ui/locale";
 import { addMonths, formatMonthLabel } from "@/lib/dates";
+import { translator } from "@/lib/i18n";
 
 /** How many months the admin can make slips for in one go, the same as MAX_ISSUE_MONTHS on the server. */
 const MAX_MONTHS = 12;
@@ -20,6 +22,8 @@ export function IssueForm({
   thisMonth: string;
   members: { id: string; name: string }[];
 }) {
+  const locale = useLocale();
+  const t = translator(locale);
   const [state, formAction, pending] = useActionState(issueFeeSlips, { error: null, notice: null });
   const [fromMonth, setFromMonth] = useState(addMonths(thisMonth, 1));
   const [count, setCount] = useState(3);
@@ -29,16 +33,16 @@ export function IssueForm({
   return (
     <details className="card mx-5 mt-3 px-4 py-3" open={state.notice !== null || state.error !== null}>
       <summary className="flex min-h-11 cursor-pointer items-center justify-between font-bold">
-        Tạo phiếu các tháng tới
-        <span className="text-xs font-semibold text-muted">Thu theo quý, theo năm</span>
+        {t("Tạo phiếu các tháng tới")}
+        <span className="text-xs font-semibold text-muted">{t("Thu theo quý, theo năm")}</span>
       </summary>
       {members.length === 0 ? (
-        <p className="py-2 text-sm text-muted">CLB chưa có thành viên cố định đang chơi.</p>
+        <p className="py-2 text-sm text-muted">{t("CLB chưa có thành viên cố định đang chơi.")}</p>
       ) : (
         <form action={formAction} className="mt-2 flex flex-col gap-3">
           <div className="grid grid-cols-2 gap-3">
             <label className={labelClass}>
-              Từ tháng
+              {t("Từ tháng")}
               <select
                 name="from_month"
                 value={fromMonth}
@@ -47,13 +51,13 @@ export function IssueForm({
               >
                 {Array.from({ length: MAX_MONTHS }, (_, i) => addMonths(thisMonth, i + 1)).map((m) => (
                   <option key={m} value={m}>
-                    {formatMonthLabel(m)}
+                    {formatMonthLabel(m, locale)}
                   </option>
                 ))}
               </select>
             </label>
             <label className={labelClass}>
-              Số tháng
+              {t("Số tháng")}
               <select
                 name="count"
                 value={count}
@@ -62,19 +66,23 @@ export function IssueForm({
               >
                 {Array.from({ length: MAX_MONTHS }, (_, i) => i + 1).map((n) => (
                   <option key={n} value={n}>
-                    {COUNT_LABEL[n] ?? `${n} tháng`}
+                    {COUNT_LABEL[n] ? t(COUNT_LABEL[n]) : t("{count} tháng", { count: n })}
                   </option>
                 ))}
               </select>
             </label>
           </div>
           <p className="text-sm text-muted">
-            {count === 1 ? formatMonthLabel(fromMonth) : `${formatMonthLabel(fromMonth)} đến ${formatMonthLabel(lastMonth).toLowerCase()}`}
-            , giá phí tháng hiện tại. Tháng đã có phiếu thì giữ nguyên.
+            {count === 1
+              ? formatMonthLabel(fromMonth, locale)
+              : `${formatMonthLabel(fromMonth, locale)} ${t("đến")} ${
+                  locale === "en" ? formatMonthLabel(lastMonth, "en") : formatMonthLabel(lastMonth).toLowerCase()
+                }`}
+            {t(", giá phí tháng hiện tại. Tháng đã có phiếu thì giữ nguyên.")}
           </p>
           <fieldset className="flex flex-col gap-2">
             <legend className="mb-1.5 flex w-full items-center justify-between text-sm font-semibold text-muted">
-              Thành viên ({picked.size}/{members.length})
+              {t("Thành viên")} ({picked.size}/{members.length})
               <button
                 type="button"
                 onClick={() =>
@@ -82,7 +90,7 @@ export function IssueForm({
                 }
                 className="h-9 rounded-full bg-surface-2 px-3 text-xs font-bold text-ink"
               >
-                {picked.size === members.length ? "Bỏ chọn hết" : "Chọn hết"}
+                {t(picked.size === members.length ? "Bỏ chọn hết" : "Chọn hết")}
               </button>
             </legend>
             {members.map((m) => (
@@ -108,10 +116,10 @@ export function IssueForm({
             ))}
           </fieldset>
           <p aria-live="polite" className={`min-h-5 text-sm ${state.error ? "text-red-600" : "text-brand-700"}`}>
-            {state.error ?? state.notice ?? ""}
+            {state.error ? t(state.error) : (state.notice ?? "")}
           </p>
           <button disabled={pending || picked.size === 0} className={primaryButtonClass}>
-            {pending ? "Đang tạo..." : `Tạo phiếu ${count} tháng`}
+            {pending ? t("Đang tạo...") : t("Tạo phiếu {count} tháng", { count })}
           </button>
         </form>
       )}

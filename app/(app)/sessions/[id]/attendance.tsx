@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useOptimistic, useState, useTransition } from "react";
 import { addNewGuest, setLinePaid, setLinePrice, setPresence, type AttendanceResult } from "@/app/actions/attendance";
 import { formatVnd, sessionTotals, type FeeStatus, type Gender } from "@/lib/billing";
+import { useT } from "@/app/ui/locale";
 import { MoneyInput } from "@/app/ui/money-input";
 import type { AttendanceView, GuestOption } from "@/lib/attendance";
 
@@ -63,6 +64,7 @@ export function Attendance({
   feesHref,
   maxPlayers,
 }: Props) {
+  const t = useT();
   const [lists, applyOptimistic] = useOptimistic<Lists, Change>({ fixed, guests }, applyChange);
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -74,15 +76,18 @@ export function Attendance({
     startTransition(async () => {
       applyOptimistic(change);
       const result = await action();
-      if (result.error) setError(result.error);
+      if (result.error) setError(t(result.error));
     });
   }
 
   const togglePresence = (r: AttendanceView) => {
     // A paid line holds money in the fund: say why it stays instead of removing it and putting it back.
     if (r.isPresent && r.paymentStatus === "paid") {
-      const who = r.memberType === "guest" ? "Khách" : "Người";
-      window.alert(`${who} "${r.name}" đã nộp tiền buổi này nên không xóa được.\nMuốn xóa thì bấm Đã nộp để chuyển về Chưa nộp trước.`);
+      const text =
+        r.memberType === "guest"
+          ? 'Khách "{name}" đã nộp tiền buổi này nên không xóa được.\nMuốn xóa thì bấm Đã nộp để chuyển về Chưa nộp trước.'
+          : 'Người "{name}" đã nộp tiền buổi này nên không xóa được.\nMuốn xóa thì bấm Đã nộp để chuyển về Chưa nộp trước.';
+      window.alert(t(text, { name: r.name }));
       return;
     }
     run({ kind: "presence", memberId: r.memberId, present: !r.isPresent }, () =>
@@ -97,14 +102,14 @@ export function Attendance({
   return (
     <>
       <section className="card mx-5 grid grid-cols-3 gap-2 p-2.5 text-center">
-        <Total label="Phải thu" value={totals.due} />
-        <Total label="Đã thu" value={totals.paid} />
-        <Total label="Còn nợ" value={totals.outstanding} warn={totals.outstanding > 0} />
+        <Total label={t("Phải thu")} value={totals.due} />
+        <Total label={t("Đã thu")} value={totals.paid} />
+        <Total label={t("Còn nợ")} value={totals.outstanding} warn={totals.outstanding > 0} />
       </section>
 
       {maxPlayers !== null && present > maxPlayers && (
         <p className="mx-5 mt-2 text-xs text-muted">
-          ⚠ {present} người có mặt, sân chỉ tối đa {maxPlayers} người.
+          ⚠ {t("{present} người có mặt, sân chỉ tối đa {max} người.", { present, max: maxPlayers })}
         </p>
       )}
 
@@ -116,13 +121,13 @@ export function Attendance({
 
       <div className="mx-5 mt-6 mb-2 flex items-center justify-between">
         <h2 className="section-title">
-          Cố định · {presentFixed}/{lists.fixed.length} có mặt
+          {t("Cố định · {present}/{total} có mặt", { present: presentFixed, total: lists.fixed.length })}
         </h2>
         <Link href={feesHref} className="text-xs font-bold text-brand-700">
-          Phí tháng ›
+          {t("Phí tháng")} ›
         </Link>
       </div>
-      {lists.fixed.length === 0 && <p className="mx-5 mt-2 text-sm text-muted">Chưa có thành viên cố định.</p>}
+      {lists.fixed.length === 0 && <p className="mx-5 mt-2 text-sm text-muted">{t("Chưa có thành viên cố định.")}</p>}
       <ul className="mx-5 flex flex-col gap-2">
         {lists.fixed.map((r) => (
           <li key={r.memberId} className="card flex min-h-16 items-center gap-3 px-3 py-2">
@@ -130,18 +135,18 @@ export function Attendance({
             <div className="min-w-0 flex-1">
               <p className={`truncate font-semibold ${r.isPresent ? "" : "text-faint"}`}>{r.name}</p>
               {r.chargeMode === "per_session" && (
-                <p className="text-xs text-muted">Vào giữa tháng, tính giá vãng lai</p>
+                <p className="text-xs text-muted">{t("Vào giữa tháng, tính giá vãng lai")}</p>
               )}
             </div>
             {r.chargeMode === "monthly" ? (
               <span className="flex flex-col items-end gap-1 text-sm font-bold">
-                Phí tháng
+                {t("Phí tháng")}
                 <span
                   className={`rounded-full px-2.5 py-0.5 text-[11px] ${
                     r.monthlyFee === "paid" ? "bg-brand-50 text-brand-700" : "bg-red-50 text-red-600"
                   }`}
                 >
-                  {r.monthlyFee ? FEE_LABEL[r.monthlyFee] : "Chưa có phiếu"}
+                  {t(r.monthlyFee ? FEE_LABEL[r.monthlyFee] : "Chưa có phiếu")}
                 </span>
               </span>
             ) : (
@@ -169,13 +174,13 @@ export function Attendance({
       </ul>
 
       <div className="mx-5 mt-6 mb-2 flex items-center justify-between">
-        <h2 className="section-title">Vãng lai · {lists.guests.length} người</h2>
+        <h2 className="section-title">{t("Vãng lai · {count} người", { count: lists.guests.length })}</h2>
         {!readOnly && (
           <button
             onClick={() => setAddingGuest(true)}
             className="h-9 rounded-full bg-brand-600 px-4 text-sm font-bold text-white"
           >
-            + Khách
+            + {t("Khách")}
           </button>
         )}
       </div>
@@ -205,8 +210,8 @@ export function Attendance({
             <div className="min-w-0 flex-1">
               <p className="truncate font-semibold">{r.name}</p>
               <p className="text-xs text-muted">
-                {GENDER_LABEL[r.gender]}
-                {r.priceNote && ` · ${r.priceNote}`}
+                {t(GENDER_LABEL[r.gender])}
+                {r.priceNote && ` · ${t(r.priceNote)}`}
               </p>
             </div>
             <ChargeControls
@@ -232,7 +237,7 @@ export function Attendance({
       </ul>
       {!readOnly && lists.guests.length > 0 && (
         <p className="mx-5 mt-2 text-xs text-muted">
-          Bấm vào giá để sửa giá riêng. Bỏ dấu ✓ để xóa khách khỏi buổi.
+          {t("Bấm vào giá để sửa giá riêng. Bỏ dấu ✓ để xóa khách khỏi buổi.")}
         </p>
       )}
     </>
@@ -270,12 +275,13 @@ function Total({ label, value, warn }: { label: string; value: number; warn?: bo
 }
 
 function PresenceButton({ row, disabled, onToggle }: { row: AttendanceView; disabled: boolean; onToggle: () => void }) {
+  const t = useT();
   return (
     <button
       onClick={onToggle}
       disabled={disabled}
       aria-pressed={row.isPresent}
-      aria-label={`${row.name}: ${row.isPresent ? "có mặt" : "vắng"}`}
+      aria-label={`${row.name}: ${t(row.isPresent ? "có mặt" : "vắng")}`}
       className={`flex size-11 shrink-0 items-center justify-center rounded-full border-2 text-lg font-bold disabled:opacity-50 ${
         row.isPresent ? "border-brand-600 bg-brand-600 text-white" : "border-line-strong text-transparent"
       }`}
@@ -302,6 +308,7 @@ function ChargeControls({
   onSavePrice: (input: string, amount: number) => void;
   onTogglePaid: () => void;
 }) {
+  const t = useT();
   const [draft, setDraft] = useState(formatVnd(row.amountDue).replace("đ", ""));
 
   if (editing) {
@@ -318,11 +325,11 @@ function ChargeControls({
           autoFocus
           initialValue={draft}
           onValueChange={setDraft}
-          aria-label="Giá buổi này"
+          aria-label={t("Giá buổi này")}
           className="h-10 w-24 rounded-2xl border border-line-strong bg-surface px-2 text-right"
         />
-        <button className="h-10 rounded-full bg-cta px-3 text-sm font-semibold text-on-cta">Lưu</button>
-        <button type="button" onClick={onCancelEdit} aria-label="Bỏ qua" className="h-10 px-2 text-muted">
+        <button className="h-10 rounded-full bg-cta px-3 text-sm font-semibold text-on-cta">{t("Lưu")}</button>
+        <button type="button" onClick={onCancelEdit} aria-label={t("Bỏ qua")} className="h-10 px-2 text-muted">
           ✕
         </button>
       </form>
@@ -346,7 +353,7 @@ function ChargeControls({
           paid ? "bg-brand-50 text-brand-700" : "bg-red-50 text-red-600"
         }`}
       >
-        {paid ? "Đã nộp" : "Chưa nộp"}
+        {t(paid ? "Đã nộp" : "Chưa nộp")}
       </button>
     </div>
   );
@@ -365,6 +372,7 @@ function AddGuest({
   onPickExisting: (option: GuestOption) => void;
   onAddNew: (name: string, gender: Gender) => void;
 }) {
+  const t = useT();
   const [name, setName] = useState("");
   const [gender, setGender] = useState<Gender>("male");
   const query = name.trim().toLowerCase();
@@ -374,7 +382,7 @@ function AddGuest({
     <div className="card mx-5 mb-3 flex flex-col gap-3 border-2 border-brand-600 p-3">
       <input
         autoFocus
-        placeholder="Tên khách (gõ để tìm người cũ)"
+        placeholder={t("Tên khách (gõ để tìm người cũ)")}
         value={name}
         onChange={(e) => setName(e.target.value)}
         className="h-12 rounded-2xl border border-line-strong bg-surface px-4 outline-none focus:border-2 focus:border-brand-600"
@@ -388,9 +396,9 @@ function AddGuest({
                 className="flex h-11 w-full items-center justify-between rounded-2xl bg-surface-2 px-4 text-left text-sm font-medium"
               >
                 <span>
-                  {o.name} · {GENDER_LABEL[o.gender]}
+                  {o.name} · {t(GENDER_LABEL[o.gender])}
                 </span>
-                <span className="font-bold text-brand-700">+ Thêm</span>
+                <span className="font-bold text-brand-700">+ {t("Thêm")}</span>
               </button>
             </li>
           ))}
@@ -404,7 +412,7 @@ function AddGuest({
             onAddNew(name.trim(), gender);
           }}
         >
-          <p className="text-xs text-muted">Hoặc thêm khách mới tên &quot;{name.trim()}&quot;:</p>
+          <p className="text-xs text-muted">{t('Hoặc thêm khách mới tên "{name}":', { name: name.trim() })}</p>
           <div className="grid grid-cols-2 gap-2">
             {(["male", "female"] as const).map((g) => (
               <button
@@ -415,15 +423,15 @@ function AddGuest({
                   gender === g ? "border-cta bg-cta text-on-cta" : "border-line-strong text-muted"
                 }`}
               >
-                {GENDER_LABEL[g]} · {formatVnd(prices[g])}
+                {t(GENDER_LABEL[g])} · {formatVnd(prices[g])}
               </button>
             ))}
           </div>
-          <button className="h-12 rounded-full bg-brand-600 text-sm font-bold text-white">Thêm khách mới</button>
+          <button className="h-12 rounded-full bg-brand-600 text-sm font-bold text-white">{t("Thêm khách mới")}</button>
         </form>
       )}
       <button onClick={onClose} className="h-10 text-sm text-muted">
-        Đóng
+        {t("Đóng")}
       </button>
     </div>
   );

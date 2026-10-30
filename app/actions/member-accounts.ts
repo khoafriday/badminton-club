@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireClub } from "@/lib/club";
+import { getT } from "@/lib/i18n/server";
 import { MIN_PASSWORD, accountMemberships, normalizeLoginId, setAccountPassword } from "@/lib/member-accounts";
 import { hashPassword } from "@/lib/password";
 import { currentUser } from "@/lib/session";
@@ -10,7 +11,7 @@ import { db } from "@/lib/supabase";
 
 export type AccountFormState = { error: string | null; saved: boolean; loginId: string };
 
-const PASSWORD_TOO_SHORT = `Mật khẩu ít nhất ${MIN_PASSWORD} ký tự.`;
+const passwordTooShort = async () => (await getT())("Mật khẩu ít nhất {min} ký tự.", { min: MIN_PASSWORD });
 const SAVE_FAILED = "Không lưu được. Thử lại sau.";
 
 /** The member's club when they are a fixed member of the admin's current club, else null. */
@@ -47,7 +48,7 @@ export async function createMemberAccount(
   if (loginId === normalizeLoginId(process.env.ADMIN_ID ?? "")) {
     return { error: "ID này đã có người dùng.", saved: false, loginId };
   }
-  if (password.length < MIN_PASSWORD) return { error: PASSWORD_TOO_SHORT, saved: false, loginId };
+  if (password.length < MIN_PASSWORD) return { error: await passwordTooShort(), saved: false, loginId };
   if (await linkedAccountId(memberId)) return { error: "Thành viên này đã có tài khoản.", saved: false, loginId };
 
   const { data: account, error } = await db()
@@ -102,7 +103,7 @@ export async function resetMemberPassword(
   const password = String(formData.get("password") ?? "");
   const accountId = (await clubMember(memberId)) ? await linkedAccountId(memberId) : null;
   if (!accountId) return { error: "Không tìm thấy tài khoản.", saved: false, loginId: "" };
-  if (password.length < MIN_PASSWORD) return { error: PASSWORD_TOO_SHORT, saved: false, loginId: "" };
+  if (password.length < MIN_PASSWORD) return { error: await passwordTooShort(), saved: false, loginId: "" };
   try {
     await setAccountPassword(accountId, password, false);
   } catch {
@@ -132,7 +133,7 @@ export async function changeOwnPassword(_prev: ChangePasswordState, formData: Fo
   const user = await currentUser();
   if (user?.kind !== "member") redirect("/");
   const password = String(formData.get("password") ?? "");
-  if (password.length < MIN_PASSWORD) return { error: PASSWORD_TOO_SHORT };
+  if (password.length < MIN_PASSWORD) return { error: await passwordTooShort() };
   if (password !== String(formData.get("confirm") ?? "")) return { error: "Hai lần nhập mật khẩu không giống nhau." };
   try {
     await setAccountPassword(user.accountId, password, true);

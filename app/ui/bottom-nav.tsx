@@ -2,6 +2,7 @@
 
 import Link, { useLinkStatus } from "next/link";
 import { usePathname } from "next/navigation";
+import { Bi } from "./bi";
 import { Spinner } from "./loading";
 
 const ADMIN_TABS = [
@@ -61,7 +62,7 @@ export function NavBar({ pathname, member = false }: { pathname: string | null; 
               }`}
             >
               <TabIcon icon={tab.icon} active={active} />
-              {tab.label}
+              <Bi text={tab.label} />
             </Link>
           );
         })}

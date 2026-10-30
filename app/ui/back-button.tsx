@@ -3,6 +3,7 @@
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect } from "react";
 import { backTarget, visit, type TrailEntry } from "@/lib/nav-trail";
+import { useShellT } from "./locale";
 
 // Lives for the tab; a full reload starts empty and ‹ then falls back to the screen one level up.
 let trail: TrailEntry[] = [];
@@ -19,11 +20,12 @@ export function NavTrail() {
 
 export function BackButton({ fallback }: { fallback: string }) {
   const router = useRouter();
+  const t = useShellT();
   return (
     <button
       type="button"
       onClick={() => router.push(backTarget(trail, fallback))}
-      aria-label="Quay lại"
+      aria-label={t("Quay lại")}
       className="flex size-10 items-center justify-center text-3xl"
     >
       ‹

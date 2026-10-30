@@ -5,17 +5,12 @@ import type { ScheduleFormState } from "@/app/actions/schedule";
 import { Choice } from "@/app/ui/choice";
 import { CourtSelect, type CourtOption } from "@/app/ui/court-select";
 import { inputClass, labelClass, primaryButtonClass } from "@/app/ui/form";
+import { useLocale } from "@/app/ui/locale";
+import { weekdayShort } from "@/lib/dates";
+import { translator } from "@/lib/i18n";
 import type { ScheduleFormValues } from "@/lib/schedule-forms";
 
-const WEEKDAYS = [
-  ["1", "T2"],
-  ["2", "T3"],
-  ["3", "T4"],
-  ["4", "T5"],
-  ["5", "T6"],
-  ["6", "T7"],
-  ["7", "CN"],
-] as const;
+const WEEKDAYS = [1, 2, 3, 4, 5, 6, 7];
 
 type Props = {
   action: (prev: ScheduleFormState, formData: FormData) => Promise<ScheduleFormState>;
@@ -25,25 +20,33 @@ type Props = {
 };
 
 export function ScheduleForm({ action, initialValues, courts, submitLabel }: Props) {
+  const locale = useLocale();
+  const t = translator(locale);
   const [state, formAction, pending] = useActionState(action, { error: null, values: initialValues });
   const v = state.values;
   return (
     <form key={JSON.stringify(v)} action={formAction} className="flex flex-col gap-4">
       <fieldset className="flex flex-col gap-1">
-        <legend className="mb-1.5 text-sm font-semibold text-muted">Thứ</legend>
+        <legend className="mb-1.5 text-sm font-semibold text-muted">{t("Thứ")}</legend>
         <div className="flex gap-1">
-          {WEEKDAYS.map(([value, label]) => (
-            <Choice key={value} name="weekday" value={value} label={label} checked={v.weekday === value} />
+          {WEEKDAYS.map((day) => (
+            <Choice
+              key={day}
+              name="weekday"
+              value={String(day)}
+              label={weekdayShort(day, locale)}
+              checked={v.weekday === String(day)}
+            />
           ))}
         </div>
       </fieldset>
       <div className="grid grid-cols-2 gap-3">
         <label className={labelClass}>
-          Bắt đầu
+          {t("Bắt đầu", { context: "time" })}
           <input type="time" name="start_time" defaultValue={v.start_time} required className={inputClass} />
         </label>
         <label className={labelClass}>
-          Kết thúc
+          {t("Kết thúc")}
           <input type="time" name="end_time" defaultValue={v.end_time} required className={inputClass} />
         </label>
       </div>
@@ -54,10 +57,10 @@ export function ScheduleForm({ action, initialValues, courts, submitLabel }: Pro
         emptyHint="Chưa có sân. Thêm sân trong Cài đặt."
       />
       <p aria-live="polite" className="min-h-5 text-sm text-red-600">
-        {state.error}
+        {state.error && t(state.error)}
       </p>
       <button disabled={pending} className={primaryButtonClass}>
-        {pending ? "Đang lưu..." : submitLabel}
+        {t(pending ? "Đang lưu..." : submitLabel)}
       </button>
     </form>
   );

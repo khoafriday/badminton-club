@@ -10,6 +10,8 @@ import { formatVnd } from "@/lib/billing";
 import { loadClub, todayInVietnam } from "@/lib/club";
 import { formatDayLabel, formatMonthLabel } from "@/lib/dates";
 import { listRefundable } from "@/lib/fee-adjust";
+import { translator, type Locale } from "@/lib/i18n";
+import { getLocale } from "@/lib/i18n/server";
 import { getMemberAccount } from "@/lib/member-accounts";
 import { loadMemberHistory } from "@/lib/member-history";
 import { db } from "@/lib/supabase";
@@ -21,8 +23,9 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 async function MemberDetail({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   if (!UUID.test(id)) notFound();
-  const { club } = await loadClub();
+  const [{ club }, locale] = await Promise.all([loadClub(), getLocale()]);
   if (!club) notFound();
+  const t = translator(locale);
 
   const { data: m, error } = await db()
     .from("members")
@@ -46,23 +49,23 @@ async function MemberDetail({ params }: { params: Promise<{ id: string }> }) {
         <h2 className="text-[22px] font-bold tracking-tight">{m.full_name}</h2>
         <div className="flex flex-wrap justify-center gap-1.5 text-xs font-bold">
           <span className="rounded-full bg-brand-50 px-3 py-1 text-brand-700">
-            {m.member_type === "fixed" ? "Cố định" : "Vãng lai"}
+            {t(m.member_type === "fixed" ? "Cố định" : "Vãng lai")}
           </span>
           <span
             className={`rounded-full px-3 py-1 ${m.gender === "male" ? "bg-blue-50 text-blue-700" : "bg-pink-50 text-pink-700"}`}
           >
-            {m.gender === "male" ? "Nam" : "Nữ"}
+            {t(m.gender === "male" ? "Nam" : "Nữ")}
           </span>
           <span
             className={`rounded-full px-3 py-1 ${m.status === "active" ? "bg-blue-50 text-blue-700" : "bg-surface-2 text-muted"}`}
           >
-            {m.status === "active" ? "Đang chơi" : "Nghỉ"}
+            {t(m.status === "active" ? "Đang chơi" : "Nghỉ")}
           </span>
         </div>
       </div>
-      <MemberHistory memberId={m.id} />
+      <MemberHistory memberId={m.id} locale={locale} />
       <section>
-        <h2 className="section-title mb-2">Thông tin</h2>
+        <h2 className="section-title mb-2">{t("Thông tin")}</h2>
         <div className="card p-4">
           <Fresh>
             <MemberForm
@@ -88,7 +91,7 @@ async function MemberDetail({ params }: { params: Promise<{ id: string }> }) {
       </section>
       {m.member_type === "fixed" && (
         <section>
-          <h2 className="section-title mb-2">Tài khoản đăng nhập</h2>
+          <h2 className="section-title mb-2">{t("Tài khoản đăng nhập")}</h2>
           <div className="card p-4">
             <MemberAccountPanel memberId={m.id} account={await getMemberAccount(m.id)} />
           </div>
@@ -100,17 +103,18 @@ async function MemberDetail({ params }: { params: Promise<{ id: string }> }) {
 
 const PAY_LABEL = { paid: "Đã nộp", unpaid: "Chưa nộp", exempt: "Miễn", waived: "Miễn" } as const;
 
-async function MemberHistory({ memberId }: { memberId: string }) {
+async function MemberHistory({ memberId, locale }: { memberId: string; locale: Locale }) {
   const { visits, slips, owed } = await loadMemberHistory(memberId);
+  const t = translator(locale);
   return (
     <div className="flex flex-col gap-6">
       <div className="grid grid-cols-2 gap-3">
         <div className="card p-4">
-          <p className="text-xs text-muted">Số buổi đã đi</p>
-          <p className="mt-1 text-lg font-bold tracking-tight">{visits.length} buổi</p>
+          <p className="text-xs text-muted">{t("Số buổi đã đi")}</p>
+          <p className="mt-1 text-lg font-bold tracking-tight">{t("{count} buổi", { count: visits.length })}</p>
         </div>
         <div className="card p-4">
-          <p className="text-xs text-muted">Còn nợ</p>
+          <p className="text-xs text-muted">{t("Còn nợ")}</p>
           <p className={`mt-1 text-lg font-bold tracking-tight ${owed > 0 ? "text-red-600" : "text-brand-700"}`}>
             {formatVnd(owed)}
           </p>
@@ -118,23 +122,23 @@ async function MemberHistory({ memberId }: { memberId: string }) {
       </div>
 
       <section>
-        <h2 className="section-title mb-2">Phí tháng</h2>
+        <h2 className="section-title mb-2">{t("Phí tháng")}</h2>
         {slips.length === 0 ? (
-          <p className="text-sm text-muted">Chưa có phiếu.</p>
+          <p className="text-sm text-muted">{t("Chưa có phiếu.")}</p>
         ) : (
           <ul className="card divide-y divide-line px-4">
             {slips.slice(0, 6).map((s) => (
               <li key={s.id}>
                 <Link href={`/fees?month=${s.month}`} className="flex items-center justify-between py-3 text-sm">
-                  <span>{formatMonthLabel(s.month)}</span>
+                  <span>{formatMonthLabel(s.month, locale)}</span>
                   <span
                     className={
                       s.status === "unpaid" && s.billingMode === "monthly" ? "font-semibold text-red-600" : "text-muted"
                     }
                   >
                     {s.billingMode === "per_session"
-                      ? "Tính theo buổi"
-                      : `${formatVnd(s.amountDue)} · ${PAY_LABEL[s.status]}`}
+                      ? t("Tính theo buổi")
+                      : `${formatVnd(s.amountDue)} · ${t(PAY_LABEL[s.status])}`}
                   </span>
                 </Link>
               </li>
@@ -144,15 +148,15 @@ async function MemberHistory({ memberId }: { memberId: string }) {
       </section>
 
       <section>
-        <h2 className="section-title mb-2">Các buổi đã đi</h2>
+        <h2 className="section-title mb-2">{t("Các buổi đã đi")}</h2>
         {visits.length === 0 ? (
-          <p className="text-sm text-muted">Chưa đi buổi nào.</p>
+          <p className="text-sm text-muted">{t("Chưa đi buổi nào.")}</p>
         ) : (
           <ul className="card divide-y divide-line px-4">
             {visits.slice(0, 10).map((v) => (
               <li key={v.attendanceId}>
                 <Link href={`/sessions/${v.sessionId}`} className="flex items-center justify-between py-3 text-sm">
-                  <span>{formatDayLabel(v.date)}</span>
+                  <span>{formatDayLabel(v.date, locale)}</span>
                   <span
                     className={
                       v.chargeMode === "per_session" && v.paymentStatus === "unpaid"
@@ -161,8 +165,8 @@ async function MemberHistory({ memberId }: { memberId: string }) {
                     }
                   >
                     {v.chargeMode === "monthly"
-                      ? "Phí tháng"
-                      : `${formatVnd(v.amountDue)} · ${PAY_LABEL[v.paymentStatus]}`}
+                      ? t("Phí tháng")
+                      : `${formatVnd(v.amountDue)} · ${t(PAY_LABEL[v.paymentStatus])}`}
                   </span>
                 </Link>
               </li>

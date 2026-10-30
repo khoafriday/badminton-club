@@ -6,9 +6,13 @@ import { setLinePaid } from "@/app/actions/attendance";
 import { setFeePaid } from "@/app/actions/fees";
 import { formatVnd } from "@/lib/billing";
 import type { Debtor, DebtItem } from "@/lib/debts";
-import { formatDayLabel, formatMonthLabel } from "@/lib/dates";
+import { useLocale } from "@/app/ui/locale";
+import { translator } from "@/lib/i18n";
+import { feeMonthLabel, sessionDayLabel } from "@/lib/i18n/labels";
 
 export function DebtList({ debtors }: { debtors: Debtor[] }) {
+  const locale = useLocale();
+  const t = translator(locale);
   // Paid items disappear at once; the server refresh then confirms it.
   const [paidIds, markPaid] = useOptimistic<string[], string>([], (ids, id) => [...ids, id]);
   const [, startTransition] = useTransition();
@@ -28,16 +32,16 @@ export function DebtList({ debtors }: { debtors: Debtor[] }) {
       markPaid(item.id);
       const result =
         item.kind === "fee" ? await setFeePaid(item.id, true) : await setLinePaid(item.sessionId, item.id, true);
-      if (result.error) setError(result.error);
+      if (result.error) setError(t(result.error));
     });
   }
 
   return (
     <>
       <section className="hero mx-5 mt-1 p-5">
-        <p className="text-xs opacity-80">Tổng còn nợ</p>
+        <p className="text-xs opacity-80">{t("Tổng còn nợ")}</p>
         <p className="mt-1 text-[32px] leading-tight font-extrabold tracking-tight">{formatVnd(grandTotal)}</p>
-        <p className="mt-1 text-xs opacity-85">{visible.length} người</p>
+        <p className="mt-1 text-xs opacity-85">{t("{count} người", { count: visible.length })}</p>
       </section>
       {error && (
         <p role="alert" className="mx-5 mt-3 rounded-2xl bg-red-50 p-3 text-sm text-red-700">
@@ -45,7 +49,7 @@ export function DebtList({ debtors }: { debtors: Debtor[] }) {
         </p>
       )}
       {visible.length === 0 ? (
-        <p className="px-5 py-10 text-center text-sm text-muted">Không ai còn nợ.</p>
+        <p className="px-5 py-10 text-center text-sm text-muted">{t("Không ai còn nợ.")}</p>
       ) : (
         <ul className="mt-3 flex flex-col gap-3 px-5">
           {visible.map((d) => (
@@ -66,16 +70,14 @@ export function DebtList({ debtors }: { debtors: Debtor[] }) {
                       href={i.kind === "fee" ? `/fees?month=${i.month}` : `/sessions/${i.sessionId}`}
                       className="flex-1 text-muted"
                     >
-                      {i.kind === "fee"
-                        ? `Phí ${formatMonthLabel(i.month).toLowerCase()}`
-                        : `Buổi ${formatDayLabel(i.date)}`}
+                      {i.kind === "fee" ? feeMonthLabel(i.month, locale) : sessionDayLabel(i.date, locale)}
                     </Link>
                     <span>{formatVnd(i.amount)}</span>
                     <button
                       onClick={() => pay(i)}
                       className="h-8 rounded-full border border-line-strong bg-surface px-3 text-xs font-bold text-ink"
                     >
-                      Đã nộp
+                      {t("Đã nộp")}
                     </button>
                   </li>
                 ))}
