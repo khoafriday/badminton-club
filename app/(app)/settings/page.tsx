@@ -102,6 +102,18 @@ async function SettingsContent() {
       </Section>
 
       <SettingsDivider label={t("Cấu hình chung")} />
+      <Section title={t("Tài khoản thành viên")}>
+        <Link
+          href="/settings/accounts"
+          className="flex items-center justify-between gap-3 rounded-2xl bg-surface-2 px-4 py-3"
+        >
+          <span className="min-w-0">
+            <span className="block font-semibold">{t("Quản lý tài khoản")}</span>
+            <span className="block text-xs text-muted">{t("ID đăng nhập của thành viên ở mọi CLB")}</span>
+          </span>
+          <span className="shrink-0 text-muted">›</span>
+        </Link>
+      </Section>
       <Section title={t("Sân cầu")}>
         {courts.length > 0 && (
           <ul className="flex flex-col gap-2">

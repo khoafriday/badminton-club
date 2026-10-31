@@ -22,6 +22,8 @@ export async function findAccountLogin(
   if (error) throw error;
   if (!data || !(await verifyPassword(password, data.password_hash))) return null;
   if ((await accountMemberships(data.id)).length === 0) return null;
+  // Best effort: a failed write must not stop the login.
+  await db().from("accounts").update({ last_login_at: new Date().toISOString() }).eq("id", data.id);
   return { accountId: data.id, passwordChanged: data.password_changed };
 }
 
@@ -54,6 +56,7 @@ export type MemberAccount = {
   accountId: string;
   loginId: string;
   passwordChanged: boolean;
+  lastLoginAt: string | null;
   /** How many members (one per club) share this login. */
   linkCount: number;
 };
@@ -62,12 +65,16 @@ export type MemberAccount = {
 export async function getMemberAccount(memberId: string): Promise<MemberAccount | null> {
   const { data, error } = await db()
     .from("account_members")
-    .select("account_id, accounts!inner(login_id, password_changed)")
+    .select("account_id, accounts!inner(login_id, password_changed, last_login_at)")
     .eq("member_id", memberId)
     .maybeSingle();
   if (error) throw error;
   if (!data) return null;
-  const account = data.accounts as unknown as { login_id: string; password_changed: boolean };
+  const account = data.accounts as unknown as {
+    login_id: string;
+    password_changed: boolean;
+    last_login_at: string | null;
+  };
   const { count } = await db()
     .from("account_members")
     .select("member_id", { count: "exact", head: true })
@@ -76,6 +83,7 @@ export async function getMemberAccount(memberId: string): Promise<MemberAccount 
     accountId: data.account_id,
     loginId: account.login_id,
     passwordChanged: account.password_changed,
+    lastLoginAt: account.last_login_at ?? null,
     linkCount: count ?? 1,
   };
 }

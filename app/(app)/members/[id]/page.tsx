@@ -7,8 +7,8 @@ import { Loading } from "@/app/ui/loading";
 import { Fresh } from "@/app/ui/fresh";
 import { PageHeader } from "@/app/ui/page-header";
 import { formatVnd } from "@/lib/billing";
-import { listLinkCandidates } from "@/lib/account-links";
-import { listClubs, loadClub, todayInVietnam } from "@/lib/club";
+import { formatLoginTime } from "@/lib/account-links";
+import { loadClub, todayInVietnam } from "@/lib/club";
 import { formatDayLabel, formatMonthLabel } from "@/lib/dates";
 import { listRefundable } from "@/lib/fee-adjust";
 import { translator, type Locale } from "@/lib/i18n";
@@ -17,14 +17,13 @@ import { getMemberAccount } from "@/lib/member-accounts";
 import { loadMemberHistory } from "@/lib/member-history";
 import { db } from "@/lib/supabase";
 import { MemberForm } from "../member-form";
-import { MemberAccountPanel } from "./member-account";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 async function MemberDetail({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   if (!UUID.test(id)) notFound();
-  const [{ userId, club }, locale] = await Promise.all([loadClub(), getLocale()]);
+  const [{ club }, locale] = await Promise.all([loadClub(), getLocale()]);
   if (!club) notFound();
   const t = translator(locale);
 
@@ -94,7 +93,7 @@ async function MemberDetail({ params }: { params: Promise<{ id: string }> }) {
         <section>
           <h2 className="section-title mb-2">{t("Tài khoản đăng nhập")}</h2>
           <div className="card p-4">
-            <AccountPanel userId={userId} clubId={club.id} memberId={m.id} memberName={m.full_name} />
+            <AccountSummary memberId={m.id} locale={locale} />
           </div>
         </section>
       )}
@@ -102,13 +101,43 @@ async function MemberDetail({ params }: { params: Promise<{ id: string }> }) {
   );
 }
 
-async function AccountPanel(props: { userId: string; clubId: string; memberId: string; memberName: string }) {
-  const account = await getMemberAccount(props.memberId);
-  // Members of the other clubs are only offered while making a new login (TK-6).
-  const candidates = account
-    ? []
-    : await listLinkCandidates(await listClubs(props.userId), props.clubId, props.memberName);
-  return <MemberAccountPanel memberId={props.memberId} account={account} candidates={candidates} />;
+/** The login is managed in Cài đặt > Tài khoản thành viên (TK-7); this shows it and leads there. */
+async function AccountSummary({ memberId, locale }: { memberId: string; locale: Locale }) {
+  const account = await getMemberAccount(memberId);
+  const t = translator(locale);
+  const linkClass = "flex h-11 items-center justify-center rounded-full border border-line-strong text-sm font-semibold";
+  if (!account) {
+    return (
+      <div className="flex flex-col gap-3">
+        <p className="text-sm text-muted">{t("Chưa có tài khoản.")}</p>
+        <div className="grid grid-cols-2 gap-2">
+          <Link href={`/settings/accounts/new?member=${memberId}`} className={linkClass}>
+            {t("Tạo tài khoản mới")}
+          </Link>
+          <Link href="/settings/accounts" className={linkClass}>
+            {t("Gắn tài khoản có sẵn")}
+          </Link>
+        </div>
+      </div>
+    );
+  }
+  return (
+    <div className="flex flex-col gap-3">
+      <p className="text-sm">
+        ID <span className="font-bold">{account.loginId}</span>
+        <span className="block text-xs text-muted">
+          {t(account.passwordChanged ? "Thành viên đã đổi mật khẩu." : "Chưa đổi mật khẩu lần đầu.")}{" "}
+          {account.linkCount > 1 ? `${t("Dùng chung cho {count} CLB.", { count: account.linkCount })} ` : ""}
+          {account.lastLoginAt
+            ? t("Đăng nhập gần nhất: {time}", { time: formatLoginTime(account.lastLoginAt) })
+            : t("Chưa đăng nhập")}
+        </span>
+      </p>
+      <Link href={`/settings/accounts/${account.accountId}`} className={linkClass}>
+        {t("Quản lý tài khoản")} ›
+      </Link>
+    </div>
+  );
 }
 
 const PAY_LABEL = { paid: "Đã nộp", unpaid: "Chưa nộp", exempt: "Miễn", waived: "Miễn" } as const;
