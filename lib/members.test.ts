@@ -3,6 +3,7 @@ import { parseMember, rejoinedOnAfterEdit, type MemberFormValues } from "./membe
 
 const base: MemberFormValues = {
   full_name: "  Anh Tuấn ",
+  nickname: "",
   gender: "male",
   phone: "",
   member_type: "fixed",
@@ -14,7 +15,7 @@ const base: MemberFormValues = {
 describe("parseMember", () => {
   it("trims the name and turns empty optional fields into null", () => {
     expect(parseMember(base)).toEqual({
-      data: { ...base, full_name: "Anh Tuấn", phone: null, note: null },
+      data: { ...base, full_name: "Anh Tuấn", nickname: null, phone: null, note: null },
     });
   });
 

@@ -4,6 +4,10 @@ import { z } from "zod";
 export const memberSchema = z
   .object({
     full_name: z.string().trim().min(1, "Nhập tên."),
+    nickname: z
+      .string()
+      .trim()
+      .transform((v) => v || null),
     gender: z.enum(["male", "female"], { error: "Chọn Nam hoặc Nữ." }),
     phone: z
       .string()
@@ -33,25 +37,36 @@ export type MemberInput = z.output<typeof memberSchema>;
 /** Raw form values, sent back to the form so React's reset does not wipe what was typed. */
 export type MemberFormValues = {
   full_name: string;
+  nickname: string;
   gender: string;
   phone: string;
   member_type: string;
   status: string;
   fixed_since: string;
   note: string;
+  /** Adding someone already in the app (lib/member-candidates.ts) instead of typing a new member. */
+  source_member_id?: string;
 };
 
 export function readMemberForm(formData: FormData): MemberFormValues {
   const get = (key: string) => String(formData.get(key) ?? "");
   return {
     full_name: get("full_name"),
+    nickname: get("nickname"),
     gender: get("gender"),
     phone: get("phone"),
     member_type: get("member_type"),
     status: get("status") || "active",
     fixed_since: get("fixed_since"),
     note: get("note"),
+    source_member_id: get("source_member_id"),
   };
+}
+
+/** Fixed from this day (PHI-2), for someone picked from the app's members: the only field the form still asks. */
+export function parseFixedSince(value: string): { data: string } | { error: string } {
+  const day = value.trim();
+  return /^\d{4}-\d{2}-\d{2}$/.test(day) ? { data: day } : { error: "Chọn ngày bắt đầu cố định." };
 }
 
 export function parseMember(values: MemberFormValues): { data: MemberInput } | { error: string } {

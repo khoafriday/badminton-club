@@ -29,7 +29,7 @@ async function MemberDetail({ params }: { params: Promise<{ id: string }> }) {
 
   const { data: m, error } = await db()
     .from("members")
-    .select("id, full_name, gender, phone, member_type, status, fixed_since, rejoined_on, note")
+    .select("id, full_name, nickname, gender, phone, member_type, status, fixed_since, rejoined_on, note")
     .eq("id", id)
     .eq("club_id", club.id)
     .maybeSingle();
@@ -47,6 +47,7 @@ async function MemberDetail({ params }: { params: Promise<{ id: string }> }) {
           {m.full_name.trim().charAt(0).toUpperCase()}
         </span>
         <h2 className="text-[22px] font-bold tracking-tight">{m.full_name}</h2>
+        {m.nickname && <p className="-mt-2 text-sm text-muted">{m.nickname}</p>}
         <div className="flex flex-wrap justify-center gap-1.5 text-xs font-bold">
           <span className="rounded-full bg-brand-50 px-3 py-1 text-brand-700">
             {t(m.member_type === "fixed" ? "Cố định" : "Vãng lai")}
@@ -77,6 +78,7 @@ async function MemberDetail({ params }: { params: Promise<{ id: string }> }) {
               refund={refund}
               initialValues={{
                 full_name: m.full_name,
+                nickname: m.nickname ?? "",
                 gender: m.gender,
                 phone: m.phone ?? "",
                 member_type: m.member_type,

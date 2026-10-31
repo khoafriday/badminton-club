@@ -202,7 +202,16 @@ export const EN: Record<string, string> = {
   "Thêm khách mới": "Add new guest",
 
   // Thành viên
-  "Tìm theo tên hoặc số điện thoại": "Search by name or phone",
+  "Tìm theo tên, biệt danh hoặc số điện thoại": "Search by name, nickname or phone",
+  "Biệt danh": "Nickname",
+  "Chọn người đã có trong app": "Pick someone already in the app",
+  "Hoặc thêm người mới": "Or add someone new",
+  "Bỏ chọn": "Clear",
+  "Vãng lai ở CLB này": "Drop-in at this club",
+  "Chuyển người này từ vãng lai sang cố định, giữ các buổi đã đi.":
+    "Moves this person from drop-in to regular, keeping the sessions they came to.",
+  "Tên, giới tính, số điện thoại và tài khoản đăng nhập lấy theo người đã chọn.":
+    "Name, gender, phone and login come from the person picked.",
   "Không tìm thấy ai.": "Nobody found.",
   "Chưa có thành viên. Bấm + để thêm.": "No members yet. Tap + to add one.",
   "Không có ai trong mục này.": "Nobody here.",

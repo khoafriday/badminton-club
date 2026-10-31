@@ -9,6 +9,8 @@ import { useLocale } from "@/app/ui/locale";
 import { formatVnd } from "@/lib/billing";
 import { formatFullDate, formatMonthLabel } from "@/lib/dates";
 import { translator } from "@/lib/i18n";
+import type { Candidate } from "@/lib/member-candidates";
+import { MemberPicker } from "./member-picker";
 
 type Props = {
   action: (prev: MemberFormState, formData: FormData) => Promise<MemberFormState>;
@@ -22,9 +24,20 @@ type Props = {
   rejoinedOn?: string | null;
   /** Months after this one already paid: paid back if the member stops paying monthly. */
   refund?: { month: string; amount: number }[];
+  /** Thêm thành viên: people already in the app who can be picked instead of typing a new member. */
+  candidates?: Candidate[];
 };
 
-export function MemberForm({ action, initialValues, submitLabel, showStatus, today, rejoinedOn, refund = [] }: Props) {
+export function MemberForm({
+  action,
+  initialValues,
+  submitLabel,
+  showStatus,
+  today,
+  rejoinedOn,
+  refund = [],
+  candidates = [],
+}: Props) {
   const locale = useLocale();
   const t = translator(locale);
   const [state, formAction, pending] = useActionState(action, { error: null, values: initialValues });
@@ -32,6 +45,8 @@ export function MemberForm({ action, initialValues, submitLabel, showStatus, tod
   const [memberType, setMemberType] = useState(v.member_type);
   // Back from Nghỉ: billed from today, as the server also records (rejoinedOnAfterEdit).
   const [returnDate, setReturnDate] = useState<string | null>(null);
+  // Kept after a failed save: the returned values still name the person picked.
+  const [picked, setPicked] = useState(() => candidates.find((c) => c.id === v.source_member_id) ?? null);
 
   function pickStatus(status: string) {
     const back = initialValues.status === "inactive" && status === "active" && memberType === "fixed";
@@ -60,18 +75,45 @@ export function MemberForm({ action, initialValues, submitLabel, showStatus, tod
       }}
       className="flex flex-col gap-4"
     >
-      <label className={labelClass}>
-        {t("Tên")}
-        <input name="full_name" defaultValue={v.full_name} required className={inputClass} />
-      </label>
-
-      <fieldset className="flex flex-col gap-1">
-        <legend className="mb-1.5 text-sm font-semibold text-muted">{t("Giới tính")}</legend>
-        <div className="flex gap-2">
-          <Choice name="gender" value="male" label={t("Nam")} checked={v.gender === "male"} />
-          <Choice name="gender" value="female" label={t("Nữ")} checked={v.gender === "female"} />
+      {candidates.length > 0 && (
+        <div className="flex flex-col gap-1.5">
+          <p className="text-sm font-semibold text-muted">{t("Chọn người đã có trong app")}</p>
+          <MemberPicker candidates={candidates} picked={picked} onPick={setPicked} />
+          {picked ? (
+            <p className="text-xs text-muted">
+              {t(
+                picked.guestHere
+                  ? "Chuyển người này từ vãng lai sang cố định, giữ các buổi đã đi."
+                  : "Tên, giới tính, số điện thoại và tài khoản đăng nhập lấy theo người đã chọn.",
+              )}
+            </p>
+          ) : (
+            <p className="mt-2 text-center text-xs font-semibold text-muted uppercase">{t("Hoặc thêm người mới")}</p>
+          )}
         </div>
-      </fieldset>
+      )}
+
+      {!picked && (
+        <>
+          <label className={labelClass}>
+            {t("Tên")}
+            <input name="full_name" defaultValue={v.full_name} required className={inputClass} />
+          </label>
+
+          <label className={labelClass}>
+            {t("Biệt danh")}
+            <input name="nickname" defaultValue={v.nickname} className={inputClass} />
+          </label>
+
+          <fieldset className="flex flex-col gap-1">
+            <legend className="mb-1.5 text-sm font-semibold text-muted">{t("Giới tính")}</legend>
+            <div className="flex gap-2">
+              <Choice name="gender" value="male" label={t("Nam")} checked={v.gender === "male"} />
+              <Choice name="gender" value="female" label={t("Nữ")} checked={v.gender === "female"} />
+            </div>
+          </fieldset>
+        </>
+      )}
 
       {/* A new member is always fixed: guests are added in a session. An existing guest can become fixed here. */}
       {showStatus ? (
@@ -121,20 +163,24 @@ export function MemberForm({ action, initialValues, submitLabel, showStatus, tod
         </fieldset>
       )}
 
-      <label className={labelClass}>
-        {t("Số điện thoại")}
-        <input name="phone" type="tel" inputMode="tel" defaultValue={v.phone} className={inputClass} />
-      </label>
+      {!picked && (
+        <>
+          <label className={labelClass}>
+            {t("Số điện thoại")}
+            <input name="phone" type="tel" inputMode="tel" defaultValue={v.phone} className={inputClass} />
+          </label>
 
-      <label className={labelClass}>
-        {t("Ghi chú")}
-        <textarea
-          name="note"
-          defaultValue={v.note}
-          rows={2}
-          className="w-full rounded-2xl border border-line-strong bg-surface px-4 py-3 text-base text-ink outline-none focus:border-2 focus:border-brand-600"
-        />
-      </label>
+          <label className={labelClass}>
+            {t("Ghi chú")}
+            <textarea
+              name="note"
+              defaultValue={v.note}
+              rows={2}
+              className="w-full rounded-2xl border border-line-strong bg-surface px-4 py-3 text-base text-ink outline-none focus:border-2 focus:border-brand-600"
+            />
+          </label>
+        </>
+      )}
 
       <p aria-live="polite" className="min-h-5 text-sm text-red-600">
         {state.error && t(state.error)}

@@ -39,7 +39,7 @@ export function MemberList({
             setQ(e.target.value);
             syncUrl(filter, e.target.value);
           }}
-          placeholder={t("Tìm theo tên hoặc số điện thoại")}
+          placeholder={t("Tìm theo tên, biệt danh hoặc số điện thoại")}
           className="h-12 rounded-full border border-line-strong bg-surface px-5 text-base outline-none focus:border-2 focus:border-brand-600"
         />
         <nav className="no-scrollbar -mx-5 flex gap-2 overflow-x-auto px-5">
@@ -81,7 +81,10 @@ export function MemberList({
                   {m.full_name.trim().charAt(0).toUpperCase()}
                 </span>
                 <span className="flex min-w-0 flex-1 flex-col">
-                  <span className="truncate font-semibold">{m.full_name}</span>
+                  <span className="truncate font-semibold">
+                    {m.full_name}
+                    {m.nickname && <span className="font-normal text-muted"> ({m.nickname})</span>}
+                  </span>
                   <span className="text-xs text-muted">
                     {t(m.member_type === "fixed" ? "Cố định" : "Vãng lai")} · {t(m.gender === "male" ? "Nam" : "Nữ")}
                     {m.phone ? ` · ${m.phone}` : ""}
