@@ -466,6 +466,40 @@ export const EN: Record<string, string> = {
   "ID này đã có người dùng. Nếu là cùng một người, dùng Gắn tài khoản có sẵn.":
     "This ID is taken. If it is the same person, use Link existing account.",
   "Không có tài khoản với ID này.": "No account with this ID.",
+  "Chưa có tài khoản.": "No account yet.",
+  "Đăng nhập gần nhất: {time}": "Last signed in: {time}",
+  "Chưa đăng nhập": "Never signed in",
+  "Quản lý tài khoản": "Manage accounts",
+  "Thành viên đang gắn": "Linked members",
+  "Gắn thêm thành viên": "Link more members",
+  "Chi tiết tài khoản": "Account details",
+  "Đã gắn thêm thành viên.": "Members linked.",
+  "Gắn thành viên": "Link members",
+  'Gỡ "{name}"? Đây là thành viên cuối cùng nên tài khoản sẽ bị xóa.':
+    'Remove "{name}"? They are the last member, so the account will be deleted.',
+  'Gỡ "{name}" khỏi tài khoản này? Người này không vào CLB đó bằng ID này nữa.':
+    'Remove "{name}" from this account? This ID will no longer open that club.',
+  "Gỡ": "Remove",
+  "Tìm theo ID hoặc tên": "Search by ID or name",
+  "Chưa có tài khoản nào.": "No accounts yet.",
+  "Không có tài khoản nào khớp.": "No account matches.",
+  "Chưa đổi mật khẩu": "Password not changed",
+  "Thành viên chưa có tài khoản": "Members without an account",
+  "Tài khoản thành viên": "Member accounts",
+  "ID đăng nhập của thành viên ở mọi CLB": "Member login IDs across all clubs",
+  "Chọn ít nhất một thành viên.": "Pick at least one member.",
+  "ID này đã có người dùng. Mở tài khoản đó để gắn thêm thành viên.":
+    "This ID is taken. Open that account to link more members.",
+  "Gắn thêm cho thành viên ở CLB khác": "Also link members in other clubs",
+  "Cùng một người chơi nhiều CLB thì dùng chung 1 ID. Mỗi CLB chọn 1 thành viên.":
+    "One person playing in several clubs shares one ID. Pick one member per club.",
+  "Tìm theo tên": "Search by name",
+  "Không có thành viên nào khớp.": "No member matches.",
+  "Đã có tài khoản: {id}. Chọn thì chuyển sang ID mới.": "Already has account {id}. Picking moves them to the new ID.",
+  "Các thành viên này đang có tài khoản khác và sẽ chuyển sang ID mới:\n{list}":
+    "These members have another account and will move to the new ID:\n{list}",
+  "Mỗi CLB chỉ gắn được một thành viên.": "Only one member per club can be linked.",
+  "Có thành viên không gắn được. Tải lại trang rồi chọn lại.": "Some members cannot be linked. Reload the page and pick again.",
   "Tài khoản này đã gắn với một thành viên khác của CLB.": "This account is already linked to another member of the club.",
   "CLB đã có thành viên cố định tên này. Đặt tên khác, ví dụ thêm họ hoặc số.":
     "The club already has a regular member with this name. Use another, e.g. add a surname or a number.",

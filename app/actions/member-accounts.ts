@@ -2,128 +2,171 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { requireClub } from "@/lib/club";
+import { checkLinkPicks, getOwnerAccount, listLinkCandidates, type LinkCandidate } from "@/lib/account-links";
+import { listClubs, requireUser } from "@/lib/club";
 import { getT } from "@/lib/i18n/server";
-import { MIN_PASSWORD, accountMemberships, normalizeLoginId, setAccountPassword } from "@/lib/member-accounts";
+import { MIN_PASSWORD, normalizeLoginId, setAccountPassword } from "@/lib/member-accounts";
 import { hashPassword } from "@/lib/password";
 import { currentUser } from "@/lib/session";
 import { db } from "@/lib/supabase";
 
-export type AccountFormState = { error: string | null; saved: boolean; loginId: string };
+export type AccountFormState = {
+  error: string | null;
+  saved: boolean;
+  loginId: string;
+  /** The members picked, kept when the form comes back with an error. */
+  members?: string[];
+};
 
 const passwordTooShort = async () => (await getT())("Mật khẩu ít nhất {min} ký tự.", { min: MIN_PASSWORD });
 const SAVE_FAILED = "Không lưu được. Thử lại sau.";
+const PICK_GONE = "Có thành viên không gắn được. Tải lại trang rồi chọn lại.";
 
-/** The member's club when they are a fixed member of the admin's current club, else null. */
-async function clubMember(memberId: string): Promise<string | null> {
-  const { club } = await requireClub();
-  const { data } = await db()
-    .from("members")
-    .select("id")
-    .eq("id", memberId)
-    .eq("club_id", club.id)
-    .eq("member_type", "fixed")
-    .maybeSingle();
-  return data ? club.id : null;
+function revalidateAccounts(accountId?: string) {
+  revalidatePath("/settings/accounts");
+  if (accountId) revalidatePath(`/settings/accounts/${accountId}`);
+  revalidatePath("/members/[id]", "page");
 }
 
-async function linkedAccountId(memberId: string): Promise<string | null> {
-  const { data } = await db().from("account_members").select("account_id").eq("member_id", memberId).maybeSingle();
-  return data?.account_id ?? null;
-}
-
-// TK-1: the owner gives a fixed member a new login ID and a first password.
-export async function createMemberAccount(
-  memberId: string,
-  _prev: AccountFormState,
+/** The picked member ids, each an active fixed member of the owner's clubs, or an error. */
+async function resolvePicks(
+  userId: string,
   formData: FormData,
-): Promise<AccountFormState> {
+): Promise<{ ids: string[]; picks: LinkCandidate[] | null; clubs: Awaited<ReturnType<typeof listClubs>> }> {
+  const ids = [...new Set(formData.getAll("member").map(String).filter(Boolean))];
+  const clubs = await listClubs(userId);
+  const candidates = await listLinkCandidates(clubs);
+  const picks = ids.map((id) => candidates.find((c) => c.memberId === id));
+  return { ids, clubs, picks: picks.every((p) => p !== undefined) ? picks : null };
+}
+
+/** Drops the given members' links, and any login other than `keep` left with no member. */
+async function unlinkMembers(memberIds: string[], keep: string) {
+  if (memberIds.length === 0) return;
+  const { data } = await db().from("account_members").select("account_id").in("member_id", memberIds);
+  const accountIds = [...new Set((data ?? []).map((r: { account_id: string }) => r.account_id))];
+  for (const id of memberIds) await db().from("account_members").delete().eq("member_id", id);
+  for (const accountId of accountIds.filter((id) => id !== keep)) await deleteIfEmpty(accountId);
+}
+
+async function deleteIfEmpty(accountId: string): Promise<boolean> {
+  const { count } = await db()
+    .from("account_members")
+    .select("member_id", { count: "exact", head: true })
+    .eq("account_id", accountId);
+  if ((count ?? 0) > 0) return false;
+  await db().from("accounts").delete().eq("id", accountId);
+  return true;
+}
+
+/** Links the members to the login; a member with another login is moved off it. */
+async function attachMembers(accountId: string, picks: LinkCandidate[]): Promise<boolean> {
+  try {
+    await unlinkMembers(
+      picks.filter((p) => p.accountId).map((p) => p.memberId),
+      accountId,
+    );
+  } catch {
+    return false;
+  }
+  for (const p of picks) {
+    const { error } = await db().from("account_members").insert({ member_id: p.memberId, account_id: accountId });
+    if (error) return false;
+  }
+  return true;
+}
+
+// TK-1, TK-6: the owner makes a login with a first password and gives it to one or more members, one per club.
+// A picked member who already has a login is moved to the new one; the old login goes if no member is left on it.
+export async function createAccount(_prev: AccountFormState, formData: FormData): Promise<AccountFormState> {
+  const userId = await requireUser();
   const loginId = normalizeLoginId(String(formData.get("login_id") ?? ""));
   const password = String(formData.get("password") ?? "");
-  if (!(await clubMember(memberId)))
-    return { error: "Chỉ thành viên cố định mới có tài khoản.", saved: false, loginId };
+  const { ids, picks } = await resolvePicks(userId, formData);
+  const fail = (error: string): AccountFormState => ({ error, saved: false, loginId, members: ids });
   if (!/^[a-z0-9._-]{3,30}$/.test(loginId)) {
-    return { error: "ID từ 3 đến 30 ký tự: chữ không dấu, số, dấu chấm, gạch.", saved: false, loginId };
+    return fail("ID từ 3 đến 30 ký tự: chữ không dấu, số, dấu chấm, gạch.");
   }
-  if (loginId === normalizeLoginId(process.env.ADMIN_ID ?? "")) {
-    return { error: "ID này đã có người dùng.", saved: false, loginId };
-  }
-  if (password.length < MIN_PASSWORD) return { error: await passwordTooShort(), saved: false, loginId };
-  if (await linkedAccountId(memberId)) return { error: "Thành viên này đã có tài khoản.", saved: false, loginId };
+  if (loginId === normalizeLoginId(process.env.ADMIN_ID ?? "")) return fail("ID này đã có người dùng.");
+  if (password.length < MIN_PASSWORD) return fail(await passwordTooShort());
+  if (ids.length === 0) return fail("Chọn ít nhất một thành viên.");
+  if (!picks) return fail(PICK_GONE);
+  const clash = checkLinkPicks(picks);
+  if (clash) return fail(clash);
 
   const { data: account, error } = await db()
     .from("accounts")
     .insert({ login_id: loginId, password_hash: await hashPassword(password) })
     .select("id")
     .single();
-  if (error?.code === "23505") {
-    return {
-      error: "ID này đã có người dùng. Nếu là cùng một người, dùng Gắn tài khoản có sẵn.",
-      saved: false,
-      loginId,
-    };
-  }
-  if (error) return { error: SAVE_FAILED, saved: false, loginId };
-  const { error: linkError } = await db()
-    .from("account_members")
-    .insert({ member_id: memberId, account_id: account.id });
-  if (linkError) return { error: SAVE_FAILED, saved: false, loginId };
-  revalidatePath(`/members/${memberId}`);
-  return { error: null, saved: true, loginId };
+  if (error?.code === "23505") return fail("ID này đã có người dùng. Mở tài khoản đó để gắn thêm thành viên.");
+  if (error) return fail(SAVE_FAILED);
+  if (!(await attachMembers(account.id, picks))) return fail(SAVE_FAILED);
+  revalidateAccounts(account.id);
+  redirect(`/settings/accounts/${account.id}`);
 }
 
-// TK-5: the same person plays in another club: their existing login now also opens this club.
-export async function linkExistingAccount(
-  memberId: string,
+// TK-5, TK-6: the same person plays in more clubs: the login now opens those clubs too.
+export async function linkAccountMembers(
+  accountId: string,
   _prev: AccountFormState,
   formData: FormData,
 ): Promise<AccountFormState> {
-  const loginId = normalizeLoginId(String(formData.get("login_id") ?? ""));
-  const clubId = await clubMember(memberId);
-  if (!clubId) return { error: "Chỉ thành viên cố định mới có tài khoản.", saved: false, loginId };
-  if (await linkedAccountId(memberId)) return { error: "Thành viên này đã có tài khoản.", saved: false, loginId };
-  const { data: account } = await db().from("accounts").select("id").eq("login_id", loginId).maybeSingle();
-  if (!account) return { error: "Không có tài khoản với ID này.", saved: false, loginId };
-  // One login is one person, so it opens a club through one member only.
-  if ((await accountMemberships(account.id)).some((m) => m.clubId === clubId)) {
-    return { error: "Tài khoản này đã gắn với một thành viên khác của CLB.", saved: false, loginId };
-  }
-  const { error } = await db().from("account_members").insert({ member_id: memberId, account_id: account.id });
-  if (error) return { error: SAVE_FAILED, saved: false, loginId };
-  revalidatePath(`/members/${memberId}`);
-  return { error: null, saved: true, loginId };
+  const userId = await requireUser();
+  const { ids, picks, clubs } = await resolvePicks(userId, formData);
+  const fail = (error: string): AccountFormState => ({ error, saved: false, loginId: "", members: ids });
+  const account = await getOwnerAccount(clubs, accountId);
+  if (!account) return fail("Không tìm thấy tài khoản.");
+  if (ids.length === 0) return fail("Chọn ít nhất một thành viên.");
+  if (!picks || picks.some((p) => p.accountId === accountId)) return fail(PICK_GONE);
+  const clash = checkLinkPicks(
+    picks,
+    account.members.map((m) => m.clubId),
+  );
+  if (clash) return fail(clash);
+  if (!(await attachMembers(accountId, picks))) return fail(SAVE_FAILED);
+  revalidateAccounts(accountId);
+  return { error: null, saved: true, loginId: "" };
+}
+
+/** Takes one member off the login. A login left with no member is deleted. */
+export async function unlinkAccountMember(accountId: string, memberId: string) {
+  const userId = await requireUser();
+  const account = await getOwnerAccount(await listClubs(userId), accountId);
+  if (!account?.members.some((m) => m.memberId === memberId)) return;
+  await db().from("account_members").delete().eq("member_id", memberId).eq("account_id", accountId);
+  revalidateAccounts(accountId);
+  if (await deleteIfEmpty(accountId)) redirect("/settings/accounts");
 }
 
 /** A new first password from the owner, for every club of this login. The member is asked to change it again. */
-export async function resetMemberPassword(
-  memberId: string,
+export async function resetAccountPassword(
+  accountId: string,
   _prev: AccountFormState,
   formData: FormData,
 ): Promise<AccountFormState> {
+  const userId = await requireUser();
   const password = String(formData.get("password") ?? "");
-  const accountId = (await clubMember(memberId)) ? await linkedAccountId(memberId) : null;
-  if (!accountId) return { error: "Không tìm thấy tài khoản.", saved: false, loginId: "" };
+  if (!(await getOwnerAccount(await listClubs(userId), accountId))) {
+    return { error: "Không tìm thấy tài khoản.", saved: false, loginId: "" };
+  }
   if (password.length < MIN_PASSWORD) return { error: await passwordTooShort(), saved: false, loginId: "" };
   try {
     await setAccountPassword(accountId, password, false);
   } catch {
     return { error: SAVE_FAILED, saved: false, loginId: "" };
   }
-  revalidatePath(`/members/${memberId}`);
+  revalidateAccounts(accountId);
   return { error: null, saved: true, loginId: "" };
 }
 
-/** Takes the login off this member. A login left with no member is deleted. */
-export async function unlinkMemberAccount(memberId: string) {
-  const accountId = (await clubMember(memberId)) ? await linkedAccountId(memberId) : null;
-  if (!accountId) return;
-  await db().from("account_members").delete().eq("member_id", memberId);
-  const { count } = await db()
-    .from("account_members")
-    .select("member_id", { count: "exact", head: true })
-    .eq("account_id", accountId);
-  if ((count ?? 0) === 0) await db().from("accounts").delete().eq("id", accountId);
-  revalidatePath(`/members/${memberId}`);
+/** Deletes the login and every link it has. The members stay. */
+export async function deleteAccount(accountId: string) {
+  const userId = await requireUser();
+  if (!(await getOwnerAccount(await listClubs(userId), accountId))) return;
+  await db().from("accounts").delete().eq("id", accountId);
+  revalidateAccounts();
+  redirect("/settings/accounts");
 }
 
 export type ChangePasswordState = { error: string | null };

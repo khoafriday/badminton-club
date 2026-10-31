@@ -1,5 +1,6 @@
 // A tiny in-memory stand-in for the supabase-js query builder, enough for lib/fees.ts and lib/debts.ts.
 // It knows eq/lt/lte/gt/in filters, "members!inner(...)" joins, insert/upsert/update/delete, single() and count heads.
+// insert(...).select() returns the new row.
 
 type Row = Record<string, unknown>;
 export type Tables = Record<string, Row[]>;
@@ -13,6 +14,8 @@ class Query {
   private patch: Row = {};
   private joins: string[] = [];
   private head = false;
+  private inserted: Row | null = null;
+  private returning = false;
 
   constructor(
     private tables: Tables,
@@ -20,6 +23,7 @@ class Query {
   ) {}
 
   select(columns = "*", opts?: { head?: boolean }) {
+    if (this.mode === "insert") this.returning = true;
     this.joins = [...columns.matchAll(/(\w+)!inner\(/g)].map((m) => m[1]);
     this.head = Boolean(opts?.head);
     return this;
@@ -30,13 +34,17 @@ class Query {
     return this;
   }
   insert(row: Row) {
-    this.rows().push({ id: `id-${nextId++}`, ...row });
+    this.inserted = { id: `id-${nextId++}`, ...row };
+    this.rows().push(this.inserted);
     this.mode = "insert";
     return this;
   }
   single() {
     this.one = true;
     return this;
+  }
+  maybeSingle() {
+    return this.single();
   }
   is(c: string, v: null) {
     return this.where(c, (x) => (x ?? null) === v);
@@ -92,6 +100,7 @@ class Query {
     return this.tables[name]?.find((x) => x.id === r[key]);
   }
   private run() {
+    if (this.mode === "insert" && this.returning) return { data: this.one ? this.inserted : [this.inserted], error: null };
     if (this.mode === "upsert" || this.mode === "insert") return { data: null, error: null };
     const hits = this.rows().filter((r) => this.joins.every((j) => this.link(j, r)) && this.filters.every((f) => f(r)));
     if (this.mode === "delete") {
