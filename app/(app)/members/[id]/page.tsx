@@ -7,7 +7,8 @@ import { Loading } from "@/app/ui/loading";
 import { Fresh } from "@/app/ui/fresh";
 import { PageHeader } from "@/app/ui/page-header";
 import { formatVnd } from "@/lib/billing";
-import { loadClub, todayInVietnam } from "@/lib/club";
+import { listLinkCandidates } from "@/lib/account-links";
+import { listClubs, loadClub, todayInVietnam } from "@/lib/club";
 import { formatDayLabel, formatMonthLabel } from "@/lib/dates";
 import { listRefundable } from "@/lib/fee-adjust";
 import { translator, type Locale } from "@/lib/i18n";
@@ -23,7 +24,7 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 async function MemberDetail({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   if (!UUID.test(id)) notFound();
-  const [{ club }, locale] = await Promise.all([loadClub(), getLocale()]);
+  const [{ userId, club }, locale] = await Promise.all([loadClub(), getLocale()]);
   if (!club) notFound();
   const t = translator(locale);
 
@@ -93,12 +94,21 @@ async function MemberDetail({ params }: { params: Promise<{ id: string }> }) {
         <section>
           <h2 className="section-title mb-2">{t("Tài khoản đăng nhập")}</h2>
           <div className="card p-4">
-            <MemberAccountPanel memberId={m.id} account={await getMemberAccount(m.id)} />
+            <AccountPanel userId={userId} clubId={club.id} memberId={m.id} memberName={m.full_name} />
           </div>
         </section>
       )}
     </div>
   );
+}
+
+async function AccountPanel(props: { userId: string; clubId: string; memberId: string; memberName: string }) {
+  const account = await getMemberAccount(props.memberId);
+  // Members of the other clubs are only offered while making a new login (TK-6).
+  const candidates = account
+    ? []
+    : await listLinkCandidates(await listClubs(props.userId), props.clubId, props.memberName);
+  return <MemberAccountPanel memberId={props.memberId} account={account} candidates={candidates} />;
 }
 
 const PAY_LABEL = { paid: "Đã nộp", unpaid: "Chưa nộp", exempt: "Miễn", waived: "Miễn" } as const;
