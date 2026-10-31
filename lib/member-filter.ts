@@ -10,6 +10,7 @@ export type MemberFilter = (typeof MEMBER_FILTERS)[number]["key"];
 export type MemberRow = {
   id: string;
   full_name: string;
+  nickname: string | null;
   gender: "male" | "female";
   phone: string | null;
   member_type: "fixed" | "guest";
@@ -32,6 +33,10 @@ export function filterMembers(members: MemberRow[], filter: MemberFilter, q: str
     if (filter === "fixed" && (m.member_type !== "fixed" || m.status !== "active")) return false;
     if (filter === "inactive" && m.status !== "inactive") return false;
     if (!term) return true;
-    return foldText(m.full_name).includes(term) || (m.phone ?? "").includes(term);
+    return (
+      foldText(m.full_name).includes(term) ||
+      (m.nickname !== null && foldText(m.nickname).includes(term)) ||
+      (m.phone ?? "").includes(term)
+    );
   });
 }

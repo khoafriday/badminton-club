@@ -38,6 +38,9 @@ class Query {
     this.one = true;
     return this;
   }
+  maybeSingle() {
+    return this.single();
+  }
   is(c: string, v: null) {
     return this.where(c, (x) => (x ?? null) === v);
   }

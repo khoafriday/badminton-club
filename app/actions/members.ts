@@ -2,9 +2,9 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { requireClub, todayInVietnam } from "@/lib/club";
+import { listClubs, requireClub, todayInVietnam } from "@/lib/club";
 import { dropIssuedSlips, listRefundable, refundMonths } from "@/lib/fee-adjust";
-import { parseMember, rejoinedOnAfterEdit, readMemberForm, type MemberFormValues } from "@/lib/members";
+import { parseFixedSince, parseMember, rejoinedOnAfterEdit, readMemberForm, type MemberFormValues } from "@/lib/members";
 import { db } from "@/lib/supabase";
 
 export type MemberFormState = { error: string | null; values: MemberFormValues };
@@ -23,9 +23,71 @@ async function fixedNameTaken(clubId: string, name: string, exceptId?: string): 
   return data.some((m) => m.id !== exceptId && key(m.full_name) === key(name));
 }
 
+/**
+ * Someone already in the app, picked from the list on Thêm thành viên. A guest of this club becomes fixed on the
+ * same row, so their sessions stay theirs. A member of another club is copied into this one and keeps their login
+ * (TK: one login for every club the person plays in).
+ */
+async function addExistingMember(userId: string, clubId: string, values: MemberFormValues): Promise<MemberFormState> {
+  const fixedSince = parseFixedSince(values.fixed_since);
+  if ("error" in fixedSince) return { error: fixedSince.error, values };
+  const clubIds = (await listClubs(userId)).map((c) => c.id);
+  const { data: source, error: readError } = await db()
+    .from("members")
+    .select("id, club_id, full_name, nickname, gender, phone, member_type")
+    .eq("id", values.source_member_id)
+    .in("club_id", clubIds)
+    .maybeSingle();
+  if (readError) throw readError;
+  if (!source || (source.club_id === clubId && source.member_type === "fixed")) {
+    return { error: "Không tìm thấy thành viên.", values };
+  }
+  if (await fixedNameTaken(clubId, source.full_name)) return { error: NAME_TAKEN, values };
+
+  const fixed = { member_type: "fixed", status: "active", fixed_since: fixedSince.data, rejoined_on: null };
+  if (source.club_id === clubId) {
+    const { error } = await db()
+      .from("members")
+      .update({ ...fixed, updated_at: new Date().toISOString() })
+      .eq("id", source.id)
+      .eq("club_id", clubId);
+    if (error) return { error: "Không lưu được. Thử lại sau.", values };
+    return { error: null, values };
+  }
+
+  const id = crypto.randomUUID();
+  const { error } = await db()
+    .from("members")
+    .insert({
+      id,
+      club_id: clubId,
+      full_name: source.full_name,
+      nickname: source.nickname,
+      gender: source.gender,
+      phone: source.phone,
+      ...fixed,
+    });
+  if (error) return { error: "Không lưu được. Thử lại sau.", values };
+  const { data: link, error: linkError } = await db()
+    .from("account_members")
+    .select("account_id")
+    .eq("member_id", source.id)
+    .maybeSingle();
+  if (linkError) throw linkError;
+  // The member is saved either way; a login that failed to link can still be linked from their detail screen.
+  if (link) await db().from("account_members").insert({ member_id: id, account_id: link.account_id });
+  return { error: null, values };
+}
+
 export async function createMember(_prev: MemberFormState, formData: FormData): Promise<MemberFormState> {
-  const { club } = await requireClub();
+  const { userId, club } = await requireClub();
   const values = readMemberForm(formData);
+  if (values.source_member_id) {
+    const added = await addExistingMember(userId, club.id, values);
+    if (added.error) return added;
+    revalidatePath("/members");
+    redirect("/members");
+  }
   const parsed = parseMember(values);
   if ("error" in parsed) return { error: parsed.error, values };
   if (parsed.data.member_type === "fixed" && (await fixedNameTaken(club.id, parsed.data.full_name))) {

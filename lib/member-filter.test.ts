@@ -4,6 +4,7 @@ import { filterMembers, parseMemberFilter, type MemberRow } from "./member-filte
 const member = (over: Partial<MemberRow>): MemberRow => ({
   id: over.full_name ?? "x",
   full_name: "x",
+  nickname: null,
   gender: "male",
   phone: null,
   member_type: "fixed",
@@ -14,7 +15,7 @@ const member = (over: Partial<MemberRow>): MemberRow => ({
 const members = [
   member({ full_name: "Nguyễn Văn An", phone: "0901 234 567" }),
   member({ full_name: "Đỗ Thị Bình", gender: "female", member_type: "guest" }),
-  member({ full_name: "Trần Cường", status: "inactive" }),
+  member({ full_name: "Trần Cường", nickname: "Cường Mập", status: "inactive" }),
 ];
 const names = (rows: MemberRow[]) => rows.map((m) => m.full_name);
 
@@ -31,6 +32,7 @@ describe("filterMembers", () => {
     expect(names(filterMembers(members, "all", "nguyen"))).toEqual(["Nguyễn Văn An"]);
     expect(names(filterMembers(members, "all", "do thi"))).toEqual(["Đỗ Thị Bình"]);
     expect(names(filterMembers(members, "all", "234"))).toEqual(["Nguyễn Văn An"]);
+    expect(names(filterMembers(members, "all", "map"))).toEqual(["Trần Cường"]);
   });
 
   it("falls back to Tất cả for an unknown filter", () => {

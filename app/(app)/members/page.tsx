@@ -21,7 +21,7 @@ async function Members({ searchParams }: { searchParams: PageProps<"/members">["
   // only come back as suggestions when adding a guest to a session.
   const { data, error } = await db()
     .from("members")
-    .select("id, full_name, gender, phone, member_type, status")
+    .select("id, full_name, nickname, gender, phone, member_type, status")
     .eq("club_id", club.id)
     .eq("member_type", "fixed")
     .order("full_name");
