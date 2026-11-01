@@ -5,9 +5,13 @@ import { redirect } from "next/navigation";
 import { listClubs, requireClub, todayInVietnam } from "@/lib/club";
 import { dropIssuedSlips, listRefundable, refundMonths } from "@/lib/fee-adjust";
 import { parseFixedSince, parseMember, rejoinedOnAfterEdit, readMemberForm, type MemberFormValues } from "@/lib/members";
+import { createAutoAccount, type AutoAccount } from "@/lib/member-accounts";
 import { db } from "@/lib/supabase";
 
-export type MemberFormState = { error: string | null; values: MemberFormValues };
+/** A member just added on Thêm thành viên, with the login made for them (null if it could not be made). */
+export type CreatedMember = { memberId: string; name: string; account: AutoAccount | null };
+
+export type MemberFormState = { error: string | null; values: MemberFormValues; created?: CreatedMember };
 
 const NAME_TAKEN = "CLB đã có thành viên cố định tên này. Đặt tên khác, ví dụ thêm họ hoặc số.";
 
@@ -52,7 +56,7 @@ async function addExistingMember(userId: string, clubId: string, values: MemberF
       .eq("id", source.id)
       .eq("club_id", clubId);
     if (error) return { error: "Không lưu được. Thử lại sau.", values };
-    return { error: null, values };
+    return withLogin(source.id, source, values);
   }
 
   const id = crypto.randomUUID();
@@ -75,8 +79,28 @@ async function addExistingMember(userId: string, clubId: string, values: MemberF
     .maybeSingle();
   if (linkError) throw linkError;
   // The member is saved either way; a login that failed to link can still be linked from their detail screen.
-  if (link) await db().from("account_members").insert({ member_id: id, account_id: link.account_id });
-  return { error: null, values };
+  if (link) {
+    await db().from("account_members").insert({ member_id: id, account_id: link.account_id });
+    return { error: null, values };
+  }
+  return withLogin(id, source, values);
+}
+
+/** A picked person with no login yet gets one, like a new member. Someone who has a login keeps it. */
+async function withLogin(
+  memberId: string,
+  person: { full_name: string; nickname: string | null },
+  values: MemberFormValues,
+): Promise<MemberFormState> {
+  const { data: link, error } = await db()
+    .from("account_members")
+    .select("account_id")
+    .eq("member_id", memberId)
+    .maybeSingle();
+  if (error) throw error;
+  if (link) return { error: null, values };
+  const account = await createAutoAccount(memberId, person.nickname || person.full_name);
+  return { error: null, values, created: { memberId, name: person.full_name, account } };
 }
 
 export async function createMember(_prev: MemberFormState, formData: FormData): Promise<MemberFormState> {
@@ -86,7 +110,9 @@ export async function createMember(_prev: MemberFormState, formData: FormData): 
     const added = await addExistingMember(userId, club.id, values);
     if (added.error) return added;
     revalidatePath("/members");
-    redirect("/members");
+    if (!added.created) redirect("/members");
+    revalidatePath("/settings/accounts");
+    return added;
   }
   const parsed = parseMember(values);
   if ("error" in parsed) return { error: parsed.error, values };
@@ -94,11 +120,18 @@ export async function createMember(_prev: MemberFormState, formData: FormData): 
     return { error: NAME_TAKEN, values };
   }
 
-  const { error } = await db().from("members").insert({ ...parsed.data, club_id: club.id });
+  const id = crypto.randomUUID();
+  const { error } = await db()
+    .from("members")
+    .insert({ id, ...parsed.data, club_id: club.id });
   if (error) return { error: "Không lưu được. Thử lại sau.", values };
-  // Back to the list: the detail screen looks like the add form, so landing there read as "not saved".
   revalidatePath("/members");
-  redirect("/members");
+  // Guests are added in a session; only a fixed member logs in.
+  if (parsed.data.member_type !== "fixed") redirect("/members");
+  const account = await createAutoAccount(id, parsed.data.nickname || parsed.data.full_name);
+  revalidatePath("/settings/accounts");
+  // The form shows the new ID and password once, then goes back to the list (MemberForm).
+  return { error: null, values, created: { memberId: id, name: parsed.data.full_name, account } };
 }
 
 export async function updateMember(

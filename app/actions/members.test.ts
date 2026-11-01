@@ -45,8 +45,8 @@ describe("two fixed members with the same name", () => {
   });
 
   it("allows a name used only by a guest, or in another club", async () => {
-    expect(await add("Bình")).toBe("REDIRECT");
-    expect(await add("Cường")).toBe("REDIRECT");
+    expect(await add("Bình")).toMatchObject({ error: null, created: { name: "Bình" } });
+    expect(await add("Cường")).toMatchObject({ error: null, created: { name: "Cường" } });
   });
 });
 
@@ -79,8 +79,10 @@ describe("adding someone already in the app", () => {
     expect(tables.account_members).toContainEqual({ id: expect.any(String), member_id: copy?.id, account_id: "acc-dung" });
   });
 
-  it("turns a guest of this club into a fixed member on the same row", async () => {
-    expect(await pick("binh")).toBe("REDIRECT");
+  it("turns a guest of this club into a fixed member on the same row, with a new login", async () => {
+    expect(await pick("binh")).toMatchObject({
+      created: { memberId: "binh", account: { loginId: expect.stringMatching(/^binh\d{2}$/) } },
+    });
     expect(tables.members.find((m) => m.id === "binh")).toMatchObject({ member_type: "fixed", status: "active" });
     expect(tables.members.filter((m) => m.full_name === "Bình")).toHaveLength(1);
   });
@@ -92,5 +94,43 @@ describe("adding someone already in the app", () => {
 
   it("needs the fixed-since day", async () => {
     expect(await pick("dung", "")).toMatchObject({ error: "Chọn ngày bắt đầu cố định." });
+  });
+});
+
+describe("a login for every new member", () => {
+  beforeEach(() => {
+    tables.accounts = [];
+    tables.account_members = [];
+  });
+
+  function addWith(fields: Record<string, string>) {
+    const fd = new FormData();
+    for (const [k, v] of Object.entries({ gender: "male", member_type: "fixed", fixed_since: "2026-10-01", ...fields })) {
+      fd.append(k, v);
+    }
+    return createMember({ error: null, values: empty }, fd);
+  }
+
+  it("makes <name>xx and a 6-character password, and links it", async () => {
+    const state = await addWith({ full_name: "Trần Thị Hồng" });
+    const account = state.created?.account;
+    expect(account?.loginId).toMatch(/^tranthihong\d{2}$/);
+    expect(account?.password).toMatch(/^[a-z2-9]{6}$/);
+    expect(tables.accounts).toContainEqual(expect.objectContaining({ id: account?.accountId, login_id: account?.loginId }));
+    expect(tables.accounts[0].password_hash).not.toContain(account?.password);
+    expect(tables.account_members).toContainEqual(
+      expect.objectContaining({ member_id: state.created?.memberId, account_id: account?.accountId }),
+    );
+  });
+
+  it("uses the nickname when there is one", async () => {
+    const state = await addWith({ full_name: "Lê Văn Tùng", nickname: "Tùng Béo" });
+    expect(state.created?.account?.loginId).toMatch(/^tungbeo\d{2}$/);
+  });
+
+  it("skips IDs already taken", async () => {
+    tables.accounts = Array.from({ length: 99 }, (_, i) => ({ id: `a${i}`, login_id: `hai${String(i).padStart(2, "0")}` }));
+    const state = await addWith({ full_name: "Hải" });
+    expect(state.created?.account?.loginId).toBe("hai99");
   });
 });

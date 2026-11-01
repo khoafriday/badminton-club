@@ -532,4 +532,16 @@ export const EN: Record<string, string> = {
   "Số điện thoại chỉ gồm chữ số.": "Use digits only for the phone number.",
   "Chọn Cố định hoặc Vãng lai.": "Pick Regular or Drop-in.",
   "Chọn ngày bắt đầu cố định.": "Pick the date they became regular.",
+  "Thêm thành viên cho CLB {name}": "Add a member to {name}",
+  "Đã thêm {name}": "{name} added",
+  "Đã tạo tài khoản đăng nhập. Gửi ID và mật khẩu này cho thành viên.":
+    "A login was made. Send this ID and password to the member.",
+  "Chưa tạo được tài khoản đăng nhập. Tạo lại trong Cài đặt.": "The login could not be made. Make it in Settings.",
+  "Mật khẩu chỉ hiện lần này. Lần đầu đăng nhập, thành viên sẽ được hỏi đổi mật khẩu.":
+    "The password shows only this once. The member is asked to change it at first login.",
+  "Đổi ID hoặc mật khẩu": "Change ID or password",
+  "ID mới": "New ID",
+  "Đổi ID": "Change ID",
+  "Xong": "Done",
+  "Đã đổi ID. Mật khẩu giữ nguyên.": "ID changed. The password stays the same.",
 };
