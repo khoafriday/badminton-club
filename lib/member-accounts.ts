@@ -129,7 +129,7 @@ export type AutoAccount = {
 };
 
 /**
- * TK: every new fixed member gets a login. The ID is "<nickname or name without accents>-xx" with 2 random digits,
+ * TK: every new fixed member gets a login. The ID is "<nickname or name without accents>xx" with 2 random digits,
  * the password 6 random characters; the member is asked to change it when they log in.
  * Null when it could not be saved: the member stays, and the owner can make the login in Cài đặt.
  */

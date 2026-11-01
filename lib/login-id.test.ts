@@ -7,8 +7,8 @@ describe("loginIdBase", () => {
     expect(loginIdBase("  Dũng Mập! ")).toBe("dungmap");
   });
 
-  it("keeps room for -xx in 30 characters", () => {
-    const id = `${loginIdBase("a".repeat(40))}-12`;
+  it("keeps room for xx in 30 characters", () => {
+    const id = `${loginIdBase("a".repeat(40))}12`;
     expect(id.length).toBe(30);
     expect(id).toMatch(LOGIN_ID_PATTERN);
   });
@@ -19,18 +19,18 @@ describe("loginIdBase", () => {
 });
 
 describe("pickLoginId", () => {
-  it("is <base>-xx with two digits", () => {
-    expect(pickLoginId("an", new Set())).toMatch(/^an-\d{2}$/);
+  it("is <base>xx with two digits", () => {
+    expect(pickLoginId("an", new Set())).toMatch(/^an\d{2}$/);
   });
 
   it("skips IDs already taken", () => {
     const options = loginIdOptions("an");
-    const taken = new Set(options.filter((id) => id !== "an-37"));
-    expect(pickLoginId("an", taken)).toBe("an-37");
+    const taken = new Set(options.filter((id) => id !== "an37"));
+    expect(pickLoginId("an", taken)).toBe("an37");
   });
 
   it("adds a third digit when all 100 are taken", () => {
-    expect(pickLoginId("an", new Set(loginIdOptions("an")))).toMatch(/^an-\d{3}$/);
+    expect(pickLoginId("an", new Set(loginIdOptions("an")))).toMatch(/^an\d{3}$/);
   });
 });
 
