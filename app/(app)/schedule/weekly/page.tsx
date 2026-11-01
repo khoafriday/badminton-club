@@ -13,12 +13,20 @@ import { listSchedules } from "@/lib/schedule";
 
 async function WeeklyContent() {
   const { club } = await loadClub();
-  if (!club) return <NoClub />;
+  if (!club) {
+    return (
+      <>
+        <PageHeader title="Lịch cố định" backHref="/schedule" />
+        <NoClub />
+      </>
+    );
+  }
   const [schedules, locale] = await Promise.all([listSchedules(club.id), getLocale()]);
   const t = translator(locale);
 
   return (
     <>
+      <PageHeader title={t("Lịch cố định của CLB {name}", { name: club.name })} backHref="/schedule" />
       <p className="px-5 pt-1 text-sm text-muted">{t("App tự tạo buổi cho 4 tuần tới theo các khung giờ này.")}</p>
       {schedules.length === 0 ? (
         <p className="px-5 py-10 text-center text-sm text-muted">{t("Chưa có lịch cố định. Bấm + để thêm.")}</p>
@@ -61,8 +69,15 @@ async function WeeklyContent() {
 export default function WeeklySchedulePage() {
   return (
     <main className="flex flex-1 flex-col">
-      <PageHeader title="Lịch cố định" backHref="/schedule" />
-      <Suspense fallback={<Loading />}>
+      {/* The title names the club, so it is drawn once the club is loaded. */}
+      <Suspense
+        fallback={
+          <>
+            <PageHeader title="Lịch cố định" backHref="/schedule" />
+            <Loading />
+          </>
+        }
+      >
         <RequireDatabase>
           <WeeklyContent />
         </RequireDatabase>

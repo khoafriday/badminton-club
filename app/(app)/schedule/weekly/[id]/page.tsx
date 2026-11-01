@@ -21,41 +21,51 @@ async function EditSchedule({ params }: { params: Promise<{ id: string }> }) {
   if (!schedule) notFound();
 
   return (
-    <div className="flex flex-col gap-6 px-5 py-6">
-      <Fresh>
-        <ScheduleForm
-          action={updateSchedule.bind(null, schedule.id)}
-          submitLabel="Lưu"
-          courts={courts}
-          initialValues={{
-            weekday: String(schedule.weekday),
-            start_time: formatTime(schedule.start_time),
-            end_time: formatTime(schedule.end_time),
-            court_id: schedule.court_id ?? club.court_id ?? "",
-          }}
-        />
-      </Fresh>
-      <p className="text-xs text-muted">
-        {t("Sửa giờ sẽ cập nhật các buổi sắp tới chưa điểm danh. Buổi đã điểm danh hoặc đã hủy giữ nguyên.")}
-      </p>
-      <form action={setScheduleActive.bind(null, schedule.id, !schedule.is_active)}>
-        <button
-          className={`h-11 w-full rounded-2xl border text-sm font-semibold ${
-            schedule.is_active ? "border-amber-300 text-amber-700" : "border-brand-600 text-brand-700"
-          }`}
-        >
-          {t(schedule.is_active ? "Tạm ngưng khung giờ này" : "Bật lại khung giờ này")}
-        </button>
-      </form>
-    </div>
+    <>
+      <PageHeader title={t("Sửa khung giờ của CLB {name}", { name: club.name })} backHref="/schedule/weekly" />
+      <div className="flex flex-col gap-6 px-5 py-6">
+        <Fresh>
+          <ScheduleForm
+            action={updateSchedule.bind(null, schedule.id)}
+            submitLabel="Lưu"
+            courts={courts}
+            initialValues={{
+              weekday: String(schedule.weekday),
+              start_time: formatTime(schedule.start_time),
+              end_time: formatTime(schedule.end_time),
+              court_id: schedule.court_id ?? club.court_id ?? "",
+            }}
+          />
+        </Fresh>
+        <p className="text-xs text-muted">
+          {t("Sửa giờ sẽ cập nhật các buổi sắp tới chưa điểm danh. Buổi đã điểm danh hoặc đã hủy giữ nguyên.")}
+        </p>
+        <form action={setScheduleActive.bind(null, schedule.id, !schedule.is_active)}>
+          <button
+            className={`h-11 w-full rounded-2xl border text-sm font-semibold ${
+              schedule.is_active ? "border-amber-300 text-amber-700" : "border-brand-600 text-brand-700"
+            }`}
+          >
+            {t(schedule.is_active ? "Tạm ngưng khung giờ này" : "Bật lại khung giờ này")}
+          </button>
+        </form>
+      </div>
+    </>
   );
 }
 
 export default function EditSchedulePage({ params }: PageProps<"/schedule/weekly/[id]">) {
   return (
     <main className="flex flex-1 flex-col">
-      <PageHeader title="Sửa khung giờ" backHref="/schedule/weekly" />
-      <Suspense fallback={<Loading />}>
+      {/* The title names the club, so it is drawn once the club is loaded. */}
+      <Suspense
+        fallback={
+          <>
+            <PageHeader title="Sửa khung giờ" backHref="/schedule/weekly" />
+            <Loading />
+          </>
+        }
+      >
         <RequireDatabase>
           <EditSchedule params={params} />
         </RequireDatabase>

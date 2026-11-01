@@ -544,4 +544,7 @@ export const EN: Record<string, string> = {
   "Đổi ID": "Change ID",
   "Xong": "Done",
   "Đã đổi ID. Mật khẩu giữ nguyên.": "ID changed. The password stays the same.",
+  "Lịch cố định của CLB {name}": "Weekly schedule of {name}",
+  "Thêm khung giờ cho CLB {name}": "Add a time slot to {name}",
+  "Sửa khung giờ của CLB {name}": "Edit a time slot of {name}",
 };
