@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { checkLinkPicks, getOwnerAccount, listLinkCandidates, type LinkCandidate } from "@/lib/account-links";
 import { listClubs, requireUser } from "@/lib/club";
 import { getT } from "@/lib/i18n/server";
+import { LOGIN_ID_PATTERN } from "@/lib/login-id";
 import { MIN_PASSWORD, normalizeLoginId, setAccountPassword } from "@/lib/member-accounts";
 import { hashPassword } from "@/lib/password";
 import { currentUser } from "@/lib/session";
@@ -20,6 +21,7 @@ export type AccountFormState = {
 
 const passwordTooShort = async () => (await getT())("Mật khẩu ít nhất {min} ký tự.", { min: MIN_PASSWORD });
 const SAVE_FAILED = "Không lưu được. Thử lại sau.";
+const BAD_ID = "ID từ 3 đến 30 ký tự: chữ không dấu, số, dấu chấm, gạch.";
 const PICK_GONE = "Có thành viên không gắn được. Tải lại trang rồi chọn lại.";
 
 function revalidateAccounts(accountId?: string) {
@@ -32,12 +34,20 @@ function revalidateAccounts(accountId?: string) {
 async function resolvePicks(
   userId: string,
   formData: FormData,
-): Promise<{ ids: string[]; picks: LinkCandidate[] | null; clubs: Awaited<ReturnType<typeof listClubs>> }> {
+): Promise<{
+  ids: string[];
+  picks: LinkCandidate[] | null;
+  clubs: Awaited<ReturnType<typeof listClubs>>;
+}> {
   const ids = [...new Set(formData.getAll("member").map(String).filter(Boolean))];
   const clubs = await listClubs(userId);
   const candidates = await listLinkCandidates(clubs);
   const picks = ids.map((id) => candidates.find((c) => c.memberId === id));
-  return { ids, clubs, picks: picks.every((p) => p !== undefined) ? picks : null };
+  return {
+    ids,
+    clubs,
+    picks: picks.every((p) => p !== undefined) ? picks : null,
+  };
 }
 
 /** Drops the given members' links, and any login other than `keep` left with no member. */
@@ -83,10 +93,13 @@ export async function createAccount(_prev: AccountFormState, formData: FormData)
   const loginId = normalizeLoginId(String(formData.get("login_id") ?? ""));
   const password = String(formData.get("password") ?? "");
   const { ids, picks } = await resolvePicks(userId, formData);
-  const fail = (error: string): AccountFormState => ({ error, saved: false, loginId, members: ids });
-  if (!/^[a-z0-9._-]{3,30}$/.test(loginId)) {
-    return fail("ID từ 3 đến 30 ký tự: chữ không dấu, số, dấu chấm, gạch.");
-  }
+  const fail = (error: string): AccountFormState => ({
+    error,
+    saved: false,
+    loginId,
+    members: ids,
+  });
+  if (!LOGIN_ID_PATTERN.test(loginId)) return fail(BAD_ID);
   if (loginId === normalizeLoginId(process.env.ADMIN_ID ?? "")) return fail("ID này đã có người dùng.");
   if (password.length < MIN_PASSWORD) return fail(await passwordTooShort());
   if (ids.length === 0) return fail("Chọn ít nhất một thành viên.");
@@ -114,7 +127,12 @@ export async function linkAccountMembers(
 ): Promise<AccountFormState> {
   const userId = await requireUser();
   const { ids, picks, clubs } = await resolvePicks(userId, formData);
-  const fail = (error: string): AccountFormState => ({ error, saved: false, loginId: "", members: ids });
+  const fail = (error: string): AccountFormState => ({
+    error,
+    saved: false,
+    loginId: "",
+    members: ids,
+  });
   const account = await getOwnerAccount(clubs, accountId);
   if (!account) return fail("Không tìm thấy tài khoản.");
   if (ids.length === 0) return fail("Chọn ít nhất một thành viên.");
@@ -158,6 +176,34 @@ export async function resetAccountPassword(
   }
   revalidateAccounts(accountId);
   return { error: null, saved: true, loginId: "" };
+}
+
+/** A new login ID, for every club of this login. The password and the member's session stay. */
+export async function renameAccount(
+  accountId: string,
+  _prev: AccountFormState,
+  formData: FormData,
+): Promise<AccountFormState> {
+  const userId = await requireUser();
+  const loginId = normalizeLoginId(String(formData.get("login_id") ?? ""));
+  const fail = (error: string): AccountFormState => ({
+    error,
+    saved: false,
+    loginId,
+  });
+  const account = await getOwnerAccount(await listClubs(userId), accountId);
+  if (!account) return fail("Không tìm thấy tài khoản.");
+  if (!LOGIN_ID_PATTERN.test(loginId)) return fail(BAD_ID);
+  if (loginId === account.loginId) return { error: null, saved: true, loginId };
+  if (loginId === normalizeLoginId(process.env.ADMIN_ID ?? "")) return fail("ID này đã có người dùng.");
+  const { error } = await db()
+    .from("accounts")
+    .update({ login_id: loginId, updated_at: new Date().toISOString() })
+    .eq("id", accountId);
+  if (error?.code === "23505") return fail("ID này đã có người dùng.");
+  if (error) return fail(SAVE_FAILED);
+  revalidateAccounts(accountId);
+  return { error: null, saved: true, loginId };
 }
 
 /** Deletes the login and every link it has. The members stay. */

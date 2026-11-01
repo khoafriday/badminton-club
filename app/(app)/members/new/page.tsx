@@ -6,6 +6,7 @@ import { Fresh } from "@/app/ui/fresh";
 import { PageHeader } from "@/app/ui/page-header";
 import { NoClub } from "@/app/clubs/no-club";
 import { listClubs, loadClub, todayInVietnam, type Club } from "@/lib/club";
+import { getT } from "@/lib/i18n/server";
 import { memberCandidates, type CandidateRow } from "@/lib/member-candidates";
 import { db } from "@/lib/supabase";
 import { MemberForm } from "../member-form";
@@ -35,36 +36,53 @@ async function loadCandidates(clubs: Club[], clubId: string) {
 
 async function NewMember() {
   const { userId, club } = await loadClub();
-  if (!club) return <NoClub />;
-  const candidates = await loadCandidates(await listClubs(userId), club.id);
+  if (!club) {
+    return (
+      <>
+        <PageHeader title="Thêm thành viên" backHref="/members" />
+        <NoClub />
+      </>
+    );
+  }
+  const [candidates, t] = await Promise.all([loadCandidates(await listClubs(userId), club.id), getT()]);
   return (
-    <div className="px-5 py-6">
-      <Fresh>
-        <MemberForm
-          action={createMember}
-          submitLabel="Thêm thành viên"
-          candidates={candidates}
-          initialValues={{
-            full_name: "",
-            nickname: "",
-            gender: "male",
-            phone: "",
-            member_type: "fixed",
-            status: "active",
-            fixed_since: todayInVietnam(),
-            note: "",
-          }}
-        />
-      </Fresh>
-    </div>
+    <>
+      <PageHeader title={t("Thêm thành viên cho CLB {name}", { name: club.name })} backHref="/members" />
+      <div className="px-5 py-6">
+        <Fresh>
+          <MemberForm
+            action={createMember}
+            submitLabel="Thêm thành viên"
+            candidates={candidates}
+            initialValues={{
+              full_name: "",
+              nickname: "",
+              gender: "male",
+              phone: "",
+              member_type: "fixed",
+              status: "active",
+              fixed_since: todayInVietnam(),
+              note: "",
+            }}
+          />
+        </Fresh>
+      </div>
+    </>
   );
 }
 
 export default function NewMemberPage() {
   return (
     <main className="flex flex-1 flex-col">
-      <PageHeader title="Thêm thành viên" backHref="/members" />
-      <Suspense fallback={<Loading />}>
+      {/* The title names the club, so it is drawn once the club is loaded. */}
+      <Suspense
+        fallback={
+          <>
+            <PageHeader title="Thêm thành viên" backHref="/members" />
+            <Loading />
+          </>
+        }
+      >
         <RequireDatabase>
           <NewMember />
         </RequireDatabase>

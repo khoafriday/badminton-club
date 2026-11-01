@@ -11,6 +11,7 @@ import { formatFullDate, formatMonthLabel } from "@/lib/dates";
 import { translator } from "@/lib/i18n";
 import type { Candidate } from "@/lib/member-candidates";
 import { MemberPicker } from "./member-picker";
+import { NewLoginDialog } from "./new-login-dialog";
 
 type Props = {
   action: (prev: MemberFormState, formData: FormData) => Promise<MemberFormState>;
@@ -185,9 +186,10 @@ export function MemberForm({
       <p aria-live="polite" className="min-h-5 text-sm text-red-600">
         {state.error && t(state.error)}
       </p>
-      <button disabled={pending} className={primaryButtonClass}>
+      <button disabled={pending || Boolean(state.created)} className={primaryButtonClass}>
         {t(pending ? "Đang lưu..." : submitLabel)}
       </button>
+      {state.created && <NewLoginDialog created={state.created} />}
     </form>
   );
 }

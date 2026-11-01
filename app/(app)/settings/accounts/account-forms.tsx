@@ -6,6 +6,7 @@ import {
   createAccount,
   deleteAccount,
   linkAccountMembers,
+  renameAccount,
   resetAccountPassword,
   unlinkAccountMember,
   type AccountFormState,
@@ -179,6 +180,32 @@ export function LinkMembersForm({
       </p>
       <button disabled={pending || picked.length === 0} className={primaryButtonClass}>
         {t(pending ? "Đang gắn..." : "Gắn thành viên")}
+      </button>
+    </form>
+  );
+}
+
+export function RenameLoginForm({ accountId, loginId }: { accountId: string; loginId: string }) {
+  const t = useT();
+  const [state, formAction, pending] = useActionState(renameAccount.bind(null, accountId), { ...EMPTY, loginId });
+  return (
+    <form action={formAction} className="flex flex-col gap-2">
+      <label className={labelClass}>
+        {t("ID mới")}
+        <input
+          name="login_id"
+          defaultValue={state.loginId}
+          autoComplete="off"
+          autoCapitalize="none"
+          required
+          className={inputClass}
+        />
+      </label>
+      <p aria-live="polite" className={`min-h-5 text-sm ${state.error ? "text-red-600" : "text-brand-700"}`}>
+        {state.error ? t(state.error) : state.saved ? t("Đã đổi ID. Mật khẩu giữ nguyên.") : ""}
+      </p>
+      <button disabled={pending} className="h-11 rounded-full border border-line-strong text-sm font-semibold">
+        {t(pending ? "Đang lưu..." : "Đổi ID")}
       </button>
     </form>
   );

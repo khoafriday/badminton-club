@@ -8,7 +8,13 @@ import { PageHeader } from "@/app/ui/page-header";
 import { formatLoginTime, getOwnerAccount, listLinkCandidates } from "@/lib/account-links";
 import { listClubs, requireUser } from "@/lib/club";
 import { getT } from "@/lib/i18n/server";
-import { DeleteAccountButton, LinkMembersForm, ResetPasswordForm, UnlinkMemberButton } from "../account-forms";
+import {
+  DeleteAccountButton,
+  LinkMembersForm,
+  RenameLoginForm,
+  ResetPasswordForm,
+  UnlinkMemberButton,
+} from "../account-forms";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -30,7 +36,9 @@ async function AccountDetail({ params }: { params: Promise<{ id: string }> }) {
         </span>
         <span className="text-sm text-muted">
           {account.lastLoginAt
-            ? t("Đăng nhập gần nhất: {time}", { time: formatLoginTime(account.lastLoginAt) })
+            ? t("Đăng nhập gần nhất: {time}", {
+                time: formatLoginTime(account.lastLoginAt),
+              })
             : t("Chưa đăng nhập")}
         </span>
       </div>
@@ -68,6 +76,15 @@ async function AccountDetail({ params }: { params: Promise<{ id: string }> }) {
           </div>
         </section>
       )}
+
+      <section className="flex flex-col gap-2">
+        <h2 className="section-title">{t("ID đăng nhập")}</h2>
+        <div className="card p-4">
+          <Fresh>
+            <RenameLoginForm accountId={account.id} loginId={account.loginId} />
+          </Fresh>
+        </div>
+      </section>
 
       <section className="flex flex-col gap-2">
         <h2 className="section-title">{t("Mật khẩu")}</h2>

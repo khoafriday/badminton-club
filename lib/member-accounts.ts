@@ -1,4 +1,5 @@
 import "server-only";
+import { generatePassword, loginIdBase, loginIdOptions, pickLoginId } from "./login-id";
 import { hashPassword, verifyPassword } from "./password";
 import { db } from "./supabase";
 
@@ -49,7 +50,11 @@ export async function accountMemberships(accountId: string): Promise<Membership[
   };
   return (data as unknown as Row[])
     .filter((r) => r.members.status === "active" && r.members.member_type === "fixed" && !r.members.clubs.archived_at)
-    .map((r) => ({ memberId: r.member_id, name: r.members.full_name, clubId: r.members.club_id }));
+    .map((r) => ({
+      memberId: r.member_id,
+      name: r.members.full_name,
+      clubId: r.members.club_id,
+    }));
 }
 
 export type MemberAccount = {
@@ -95,7 +100,12 @@ export async function getAccount(accountId: string) {
     .eq("id", accountId)
     .maybeSingle();
   if (error) throw error;
-  return data as { id: string; login_id: string; password_changed: boolean; last_club_id: string | null } | null;
+  return data as {
+    id: string;
+    login_id: string;
+    password_changed: boolean;
+    last_club_id: string | null;
+  } | null;
 }
 
 /** A new password. `changedByMember` false: set by the owner, so the member is asked to change it. */
@@ -109,4 +119,49 @@ export async function setAccountPassword(accountId: string, password: string, ch
     })
     .eq("id", accountId);
   if (error) throw error;
+}
+
+/** The login made for a new member, shown once to the owner: only the hash is kept. */
+export type AutoAccount = {
+  accountId: string;
+  loginId: string;
+  password: string;
+};
+
+/**
+ * TK: every new fixed member gets a login. The ID is "<nickname or name without accents>-xx" with 2 random digits,
+ * the password 6 random characters; the member is asked to change it when they log in.
+ * Null when it could not be saved: the member stays, and the owner can make the login in Cài đặt.
+ */
+export async function createAutoAccount(memberId: string, name: string): Promise<AutoAccount | null> {
+  const base = loginIdBase(name);
+  const { data, error } = await db().from("accounts").select("login_id").in("login_id", loginIdOptions(base));
+  if (error) return null;
+  const taken = new Set((data as { login_id: string }[]).map((r) => r.login_id));
+  taken.add(normalizeLoginId(process.env.ADMIN_ID ?? ""));
+  const password = generatePassword();
+  const passwordHash = await hashPassword(password);
+  // Another login can take the same ID between the read and the insert: try another one.
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const loginId = pickLoginId(base, taken);
+    const { data: account, error: insertError } = await db()
+      .from("accounts")
+      .insert({ login_id: loginId, password_hash: passwordHash })
+      .select("id")
+      .single();
+    if (insertError?.code === "23505") {
+      taken.add(loginId);
+      continue;
+    }
+    if (insertError || !account) return null;
+    const { error: linkError } = await db()
+      .from("account_members")
+      .insert({ member_id: memberId, account_id: account.id });
+    if (linkError) {
+      await db().from("accounts").delete().eq("id", account.id);
+      return null;
+    }
+    return { accountId: account.id, loginId, password };
+  }
+  return null;
 }
