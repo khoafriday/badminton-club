@@ -187,6 +187,8 @@ export const EN: Record<string, string> = {
   'Người "{name}" đã nộp tiền buổi này nên không xóa được.\nMuốn xóa thì bấm Đã nộp để chuyển về Chưa nộp trước.':
     '"{name}" has paid for this session, so they cannot be removed.\nTo remove them, tap Paid first to set it back to Unpaid.',
   "{present} người có mặt, sân chỉ tối đa {max} người.": "{present} here, but the court takes at most {max}.",
+  "{present} người đã điểm danh": "{present} checked in",
+  "{present} trên {max} người đã điểm danh": "{present} of {max} checked in",
   "Cố định · {present}/{total} có mặt": "Regular · {present}/{total} here",
   "Chưa có thành viên cố định.": "No regular members yet.",
   "Vào giữa tháng, tính giá vãng lai": "Joined mid-month, drop-in price",

@@ -127,6 +127,20 @@ export async function sessionsWithData(sessionIds: string[]): Promise<Set<string
   return new Set([...attendance.data, ...transactions.data].map((r) => r.session_id as string));
 }
 
+/** People marked present in each session. Sessions nobody came to are left out. */
+export async function presentCounts(sessionIds: string[]): Promise<Map<string, number>> {
+  const counts = new Map<string, number>();
+  if (sessionIds.length === 0) return counts;
+  const { data, error } = await db()
+    .from("attendance")
+    .select("session_id")
+    .in("session_id", sessionIds)
+    .eq("is_present", true);
+  if (error) throw error;
+  for (const r of data) counts.set(r.session_id as string, (counts.get(r.session_id as string) ?? 0) + 1);
+  return counts;
+}
+
 export async function listSessions(clubId: string, from: string, to: string): Promise<SessionRow[]> {
   const { data, error } = await db()
     .from("sessions")

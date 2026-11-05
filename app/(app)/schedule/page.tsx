@@ -20,7 +20,8 @@ import {
 import { monthEnd } from "@/lib/billing";
 import { translator, type T } from "@/lib/i18n";
 import { getLocale } from "@/lib/i18n/server";
-import { ensureSessions, listSessions, listUpcomingSessions, type SessionRow } from "@/lib/schedule";
+import { ensureSessions, listSessions, listUpcomingSessions, presentCounts, type SessionRow } from "@/lib/schedule";
+import { turnout, type Turnout } from "@/lib/turnout";
 
 type View = "week" | "month" | "all";
 type ListedSession = SessionRow & { club_id: string };
@@ -105,6 +106,7 @@ async function ScheduleContent({ searchParams }: { searchParams: PageProps<"/sch
     }
   }
   const clubById = new Map(clubs.map((c) => [c.id, c]));
+  const present = await presentCounts(sessions.map((s) => s.id));
   const byDate = new Map<string, ListedSession[]>();
   for (const s of sessions) byDate.set(s.session_date, [...(byDate.get(s.session_date) ?? []), s]);
   const emptyText = {
@@ -207,6 +209,7 @@ async function ScheduleContent({ searchParams }: { searchParams: PageProps<"/sch
                       session={s}
                       club={clubById.get(s.club_id) ?? club}
                       isCurrentClub={s.club_id === club.id}
+                      present={present.get(s.id) ?? 0}
                       today={today}
                       readOnly={!admin}
                       t={t}
@@ -223,11 +226,19 @@ async function ScheduleContent({ searchParams }: { searchParams: PageProps<"/sch
   );
 }
 
+/** Below the court's max: blue. Exactly full: green. Over: orange. */
+const TURNOUT_CLASS: Record<Turnout, string> = {
+  under: "bg-blue-50 text-blue-700",
+  full: "bg-brand-50 text-brand-700",
+  over: "bg-orange-50 text-orange-700",
+};
+
 /** One session. Shows its club, since the "Tất cả" list mixes clubs. */
 function SessionCard({
   session: s,
   club,
   isCurrentClub,
+  present,
   today,
   readOnly,
   t,
@@ -235,12 +246,17 @@ function SessionCard({
   session: ListedSession;
   club: Club;
   isCurrentClub: boolean;
+  /** People marked present. */
+  present: number;
   today: string;
   /** A member's view: the card opens nothing. */
   readOnly: boolean;
   t: T;
 }) {
   const className = "card flex items-center gap-3 px-4 py-3 active:bg-surface-2";
+  // SAN-1: a session without its own court uses the club's court.
+  const max = s.court_id ? s.court_max_players : club.court_max_players;
+  const tone = turnout(present, max);
   const content = (
     <>
       <span className={`min-w-0 flex-1 ${s.status === "cancelled" ? "text-faint line-through" : ""}`}>
@@ -253,13 +269,29 @@ function SessionCard({
           {s.schedule_id ? "" : ` · ${t("Buổi lẻ")}`}
         </span>
       </span>
-      {s.status === "cancelled" ? (
-        <span className="rounded-full bg-red-50 px-2.5 py-1 text-xs font-bold text-red-600">{t("Hủy")}</span>
-      ) : (
-        s.session_date === today && (
-          <span className="rounded-full bg-brand-50 px-2.5 py-1 text-xs font-bold text-brand-700">{t("Hôm nay")}</span>
-        )
-      )}
+      <span className="flex shrink-0 flex-col items-end gap-1">
+        {s.status !== "cancelled" && (
+          <span
+            className={`rounded-full px-2.5 py-1 text-xs font-bold tabular-nums ${tone ? TURNOUT_CLASS[tone] : "bg-surface-2 text-muted"}`}
+            aria-label={
+              max === null
+                ? t("{present} người đã điểm danh", { present })
+                : t("{present} trên {max} người đã điểm danh", { present, max })
+            }
+          >
+            {max === null ? present : `${present}/${max}`}
+          </span>
+        )}
+        {s.status === "cancelled" ? (
+          <span className="rounded-full bg-red-50 px-2.5 py-1 text-xs font-bold text-red-600">{t("Hủy")}</span>
+        ) : (
+          s.session_date === today && (
+            <span className="rounded-full bg-brand-50 px-2.5 py-1 text-xs font-bold text-brand-700">
+              {t("Hôm nay")}
+            </span>
+          )
+        )}
+      </span>
     </>
   );
   const href = `/sessions/${s.id}`;

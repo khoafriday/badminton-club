@@ -36,6 +36,8 @@
   --blue-700: #1d4ed8;
   --pink-50: #fdf2f8;
   --pink-700: #be185d;
+  --orange-50: #fff7ed;
+  --orange-700: #c2410c;
 
   --amber-50: #fffbeb;
   --amber-200: #fde68a;
@@ -79,6 +81,8 @@
   --blue-700: #93c5fd;
   --pink-50: rgb(244 114 182 / 0.14);
   --pink-700: #f9a8d4;
+  --orange-50: rgb(251 146 60 / 0.16);
+  --orange-700: #fdba74;
 
   --amber-50: rgb(251 191 36 / 0.1);
   --amber-200: rgb(251 191 36 / 0.3);
@@ -126,6 +130,8 @@
   --color-blue-700: var(--blue-700);
   --color-pink-50: var(--pink-50);
   --color-pink-700: var(--pink-700);
+  --color-orange-50: var(--orange-50);
+  --color-orange-700: var(--orange-700);
 
   --color-amber-50: var(--amber-50);
   --color-amber-200: var(--amber-200);
