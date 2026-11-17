@@ -4,6 +4,7 @@ export const MEMBER_FILTERS = [
   { key: "all", label: "Tất cả" },
   { key: "fixed", label: "Đang chơi" },
   { key: "inactive", label: "Nghỉ" },
+  { key: "guest", label: "Vãng lai" },
 ] as const;
 export type MemberFilter = (typeof MEMBER_FILTERS)[number]["key"];
 
@@ -29,9 +30,10 @@ export function foldText(text: string): string {
 export function filterMembers(members: MemberRow[], filter: MemberFilter, q: string): MemberRow[] {
   const term = foldText(q.trim());
   return members.filter((m) => {
-    // Đang chơi shows fixed members still playing; Nghỉ shows those who stopped.
+    // Đang chơi shows fixed members still playing; Nghỉ shows fixed members who stopped; Vãng lai shows guests.
     if (filter === "fixed" && (m.member_type !== "fixed" || m.status !== "active")) return false;
-    if (filter === "inactive" && m.status !== "inactive") return false;
+    if (filter === "inactive" && (m.member_type !== "fixed" || m.status !== "inactive")) return false;
+    if (filter === "guest" && m.member_type !== "guest") return false;
     if (!term) return true;
     return (
       foldText(m.full_name).includes(term) ||

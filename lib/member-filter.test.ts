@@ -16,6 +16,7 @@ const members = [
   member({ full_name: "Nguyễn Văn An", phone: "0901 234 567" }),
   member({ full_name: "Đỗ Thị Bình", gender: "female", member_type: "guest" }),
   member({ full_name: "Trần Cường", nickname: "Cường Mập", status: "inactive" }),
+  member({ full_name: "Lê Dũng", member_type: "guest", status: "inactive" }),
 ];
 const names = (rows: MemberRow[]) => rows.map((m) => m.full_name);
 
@@ -28,6 +29,10 @@ describe("filterMembers", () => {
     expect(names(filterMembers(members, "inactive", ""))).toEqual(["Trần Cường"]);
   });
 
+  it("lists guests under Vãng lai only, never under Đang chơi or Nghỉ", () => {
+    expect(names(filterMembers(members, "guest", ""))).toEqual(["Đỗ Thị Bình", "Lê Dũng"]);
+  });
+
   it("finds a name typed without marks, and a phone number", () => {
     expect(names(filterMembers(members, "all", "nguyen"))).toEqual(["Nguyễn Văn An"]);
     expect(names(filterMembers(members, "all", "do thi"))).toEqual(["Đỗ Thị Bình"]);
@@ -38,7 +43,6 @@ describe("filterMembers", () => {
   it("falls back to Tất cả for an unknown filter", () => {
     expect(parseMemberFilter("nope")).toBe("all");
     expect(parseMemberFilter("inactive")).toBe("inactive");
-    // Guests are no longer listed, so an old ?filter=guest link opens Tất cả.
-    expect(parseMemberFilter("guest")).toBe("all");
+    expect(parseMemberFilter("guest")).toBe("guest");
   });
 });
