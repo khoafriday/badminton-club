@@ -73,31 +73,62 @@ export function MemberList({
           )}
         </p>
       ) : (
-        <ul className="flex flex-col gap-2 px-5">
-          {shown.map((m) => (
-            <li key={m.id}>
-              <Link href={`/members/${m.id}`} className="card flex items-center gap-3 px-3 py-2.5 active:bg-surface-2">
-                <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-brand-50 font-bold text-brand-700">
-                  {m.full_name.trim().charAt(0).toUpperCase()}
-                </span>
-                <span className="flex min-w-0 flex-1 flex-col">
-                  <span className="truncate font-semibold">
-                    {m.full_name}
-                    {m.nickname && <span className="font-normal text-muted"> ({m.nickname})</span>}
-                  </span>
-                  <span className="text-xs text-muted">
-                    {t(m.member_type === "fixed" ? "Cố định" : "Vãng lai")} · {t(m.gender === "male" ? "Nam" : "Nữ")}
-                    {m.phone ? ` · ${m.phone}` : ""}
-                  </span>
-                </span>
-                {m.status === "inactive" && (
-                  <span className="rounded-full bg-surface-2 px-2.5 py-1 text-xs font-bold text-muted">{t("Nghỉ")}</span>
-                )}
-              </Link>
-            </li>
-          ))}
-        </ul>
+        <MemberSections members={shown} split={filter === "all"} />
       )}
     </>
+  );
+}
+
+/** Under Tất cả, fixed members and guests get their own sections; any other filter is a single list. */
+function MemberSections({ members, split }: { members: MemberRow[]; split: boolean }) {
+  const t = useT();
+  if (!split) return <MemberCards members={members} />;
+  const fixed = members.filter((m) => m.member_type === "fixed");
+  const guests = members.filter((m) => m.member_type === "guest");
+  return (
+    <div className="flex flex-col gap-5">
+      {fixed.length > 0 && (
+        <section>
+          <h2 className="section-title mx-5 mb-2">{t("Cố định · {count} người", { count: fixed.length })}</h2>
+          <MemberCards members={fixed} />
+        </section>
+      )}
+      {guests.length > 0 && (
+        <section>
+          <h2 className="section-title mx-5 mb-2">{t("Vãng lai · {count} người", { count: guests.length })}</h2>
+          <MemberCards members={guests} />
+        </section>
+      )}
+    </div>
+  );
+}
+
+function MemberCards({ members }: { members: MemberRow[] }) {
+  const t = useT();
+  return (
+    <ul className="flex flex-col gap-2 px-5">
+      {members.map((m) => (
+        <li key={m.id}>
+          <Link href={`/members/${m.id}`} className="card flex items-center gap-3 px-3 py-2.5 active:bg-surface-2">
+            <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-brand-50 font-bold text-brand-700">
+              {m.full_name.trim().charAt(0).toUpperCase()}
+            </span>
+            <span className="flex min-w-0 flex-1 flex-col">
+              <span className="truncate font-semibold">
+                {m.full_name}
+                {m.nickname && <span className="font-normal text-muted"> ({m.nickname})</span>}
+              </span>
+              <span className="text-xs text-muted">
+                {t(m.member_type === "fixed" ? "Cố định" : "Vãng lai")} · {t(m.gender === "male" ? "Nam" : "Nữ")}
+                {m.phone ? ` · ${m.phone}` : ""}
+              </span>
+            </span>
+            {m.member_type === "fixed" && m.status === "inactive" && (
+              <span className="rounded-full bg-surface-2 px-2.5 py-1 text-xs font-bold text-muted">{t("Nghỉ")}</span>
+            )}
+          </Link>
+        </li>
+      ))}
+    </ul>
   );
 }

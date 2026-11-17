@@ -193,6 +193,7 @@ export const EN: Record<string, string> = {
   "Chưa có thành viên cố định.": "No regular members yet.",
   "Vào giữa tháng, tính giá vãng lai": "Joined mid-month, drop-in price",
   "Vãng lai · {count} người": "Drop-in · {count} person|Drop-in · {count} people",
+  "Cố định · {count} người": "Regular · {count} person|Regular · {count} people",
   "Khách": "Guest",
   "Bấm vào giá để sửa giá riêng. Bỏ dấu ✓ để xóa khách khỏi buổi.":
     "Tap a price to change it for one person. Untick ✓ to remove a guest from the session.",
